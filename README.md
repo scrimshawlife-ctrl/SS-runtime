@@ -13,6 +13,10 @@ iPhone runtime for the one-level **Surveillance Survivor** reboot.
 
 Runtime behavior must trace to that baseline or a later explicitly adopted specification commit.
 
+## Agent contract
+
+Coding agents follow [`AGENTS.md`](AGENTS.md). Claude adapters use [`CLAUDE.md`](CLAUDE.md). Runtime-only intents live in [`intent/`](intent/). Gameplay intent is SS-specs at the pin above — do not invent it here.
+
 ## Platform
 
 - iPhone only
