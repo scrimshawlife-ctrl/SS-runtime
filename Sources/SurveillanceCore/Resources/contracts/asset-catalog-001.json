@@ -9207,87 +9207,7 @@
       "admissionDecision": "plannedOriginal",
       "record": {
         "schemaVersion": "asset-record-001",
-        "assetId": "camera_hit_02",
-        "kind": "audio",
-        "productionStatus": "planned",
-        "runtimeRequired": true,
-        "provenance": "projectOriginal",
-        "license": null,
-        "source": null,
-        "runtimePath": null,
-        "sha256": null,
-        "dimensions": null,
-        "colorSpace": null,
-        "alpha": null,
-        "ownerContract": "audio-haptics-001",
-        "notes": "T501 planned original. presentation-assets-001 required audio event ID. No clip admitted under LC-010."
-      }
-    },
-    {
-      "admissionDecision": "plannedOriginal",
-      "record": {
-        "schemaVersion": "asset-record-001",
-        "assetId": "daemon_dash",
-        "kind": "audio",
-        "productionStatus": "planned",
-        "runtimeRequired": true,
-        "provenance": "projectOriginal",
-        "license": null,
-        "source": null,
-        "runtimePath": null,
-        "sha256": null,
-        "dimensions": null,
-        "colorSpace": null,
-        "alpha": null,
-        "ownerContract": "audio-haptics-001",
-        "notes": "T501 planned original. presentation-assets-001 required audio event ID. No clip admitted under LC-010."
-      }
-    },
-    {
-      "admissionDecision": "plannedOriginal",
-      "record": {
-        "schemaVersion": "asset-record-001",
-        "assetId": "boss_defeated",
-        "kind": "audio",
-        "productionStatus": "planned",
-        "runtimeRequired": true,
-        "provenance": "projectOriginal",
-        "license": null,
-        "source": null,
-        "runtimePath": null,
-        "sha256": null,
-        "dimensions": null,
-        "colorSpace": null,
-        "alpha": null,
-        "ownerContract": "audio-haptics-001",
-        "notes": "T501 planned original. presentation-assets-001 required audio event ID. No clip admitted under LC-010."
-      }
-    },
-    {
-      "admissionDecision": "plannedOriginal",
-      "record": {
-        "schemaVersion": "asset-record-001",
         "assetId": "extraction_tick",
-        "kind": "audio",
-        "productionStatus": "planned",
-        "runtimeRequired": true,
-        "provenance": "projectOriginal",
-        "license": null,
-        "source": null,
-        "runtimePath": null,
-        "sha256": null,
-        "dimensions": null,
-        "colorSpace": null,
-        "alpha": null,
-        "ownerContract": "audio-haptics-001",
-        "notes": "T501 planned original. presentation-assets-001 required audio event ID. No clip admitted under LC-010."
-      }
-    },
-    {
-      "admissionDecision": "plannedOriginal",
-      "record": {
-        "schemaVersion": "asset-record-001",
-        "assetId": "extraction_reset",
         "kind": "audio",
         "productionStatus": "planned",
         "runtimeRequired": true,
@@ -23495,6 +23415,26 @@
       "admissionDecision": "adaptedAdmitted",
       "record": {
         "schemaVersion": "asset-record-001",
+        "assetId": "boss_defeated",
+        "kind": "audio",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Cities/atlanta/stinger_atlanta_final_blind_spot.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "stinger_atlanta_final_blind_spot.m4a",
+        "sha256": "7c1a66fcb3364aa77b96086d58427f51057e9e5e7ce237c32e0f3265e1f89d80",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as boss_defeated. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
         "assetId": "camera_critical",
         "kind": "audio",
         "productionStatus": "accepted",
@@ -23561,6 +23501,26 @@
         "runtimeRequired": true,
         "provenance": "adaptedLegacy",
         "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Runtime/sfx_countermeasure_hit.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "sfx_countermeasure_hit.m4a",
+        "sha256": "e53e6f194c9edb7382f8928179aba00c57fd9898e86bb6076df7ea27d5d2730c",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as camera_hit_01. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "camera_hit_02",
+        "kind": "audio",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
         "source": "legacy://Resources/Audio/Delivery/Shared/sfx_camera_scan_sweep.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
         "runtimePath": "sfx_camera_scan_sweep.m4a",
         "sha256": "b156b0016193084cf8288b25c938ac7e3f678f89a363fc3989127435f610ca15",
@@ -23568,7 +23528,7 @@
         "colorSpace": null,
         "alpha": null,
         "ownerContract": "audio-haptics-001",
-        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as camera_hit_01. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as camera_hit_02. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
       }
     },
     {
@@ -23589,6 +23549,26 @@
         "alpha": null,
         "ownerContract": "audio-haptics-001",
         "notes": "LC-010 bounded ADAPT. Same gameplay meaning as camera_network_tamper. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "daemon_dash",
+        "kind": "audio",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Cities/louisville/sfx_louisville_map_redaction.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "sfx_louisville_map_redaction.m4a",
+        "sha256": "23a1587a7a5d91bd78479dd0d6ac5bed3b6af9c008d1b331fcd43f328cbddd16",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as daemon_dash. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
       }
     },
     {
@@ -23649,6 +23629,26 @@
         "alpha": null,
         "ownerContract": "audio-haptics-001",
         "notes": "LC-010 bounded ADAPT. Same gameplay meaning as extraction_armed. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "extraction_reset",
+        "kind": "audio",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Cities/los_angeles/sfx_los_angeles_private_network_persist.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "sfx_los_angeles_private_network_persist.m4a",
+        "sha256": "45ec46e41ee11941a97255220421b3486a698ea0c5d7ea5dfbfab3cf6a784623",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as extraction_reset. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
       }
     },
     {

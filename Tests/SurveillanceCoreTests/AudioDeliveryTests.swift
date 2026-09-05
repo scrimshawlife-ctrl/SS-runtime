@@ -76,7 +76,7 @@ struct AudioDeliveryTests {
         }
     }
 
-    /// Coverage is what the record says it is: 18 of 24 event IDs backed.
+    /// Coverage is what the record says it is: 22 of 24 event IDs backed.
     @Test func audioCoverageIsMeasurable() throws {
         let catalog = try AssetCatalog.bundled()
         let eventIds = Set(try presentation()["audioEventIds"] as! [String])
@@ -86,7 +86,7 @@ struct AudioDeliveryTests {
             .filter { eventIds.contains($0) }
 
         #expect(eventIds.count == 24)
-        #expect(backed.count == 18)
+        #expect(backed.count == 22)
     }
 
     /// One source may legitimately back several IDs — `sfx_upgrade_selected`
@@ -178,12 +178,8 @@ struct UnbackedCueTests {
         let unbacked = Set((presentation["audioEventIds"] as! [String]).filter { !backed.contains($0) })
 
         #expect(unbacked == [
-            "player_dodge",       // no legacy dodge; the mechanic did not exist
-            "camera_hit_02",      // must differ audibly from camera_hit_01
-            "daemon_dash",        // no legacy rush or charge cue
-            "boss_defeated",      // legacy has activation, which is the opposite
-            "extraction_tick",    // no legacy countdown metronome
-            "extraction_reset"    // no legacy failure-to-hold cue
+            "player_dodge",     // the legacy build had no dodge mechanic
+            "extraction_tick"   // nothing in the library is a countdown metronome
         ])
     }
 
@@ -191,10 +187,7 @@ struct UnbackedCueTests {
     /// short of an ID.
     @Test func unbackedCuesRemainPlanned() throws {
         let catalog = try AssetCatalog.bundled()
-        for id in [
-            "player_dodge", "camera_hit_02", "daemon_dash",
-            "boss_defeated", "extraction_tick", "extraction_reset"
-        ] {
+        for id in ["player_dodge", "extraction_tick"] {
             let entry = try #require(catalog.entries.first { $0.record.assetId == id }, "\(id)")
             #expect(entry.admissionDecision == .plannedOriginal, "\(id)")
         }
@@ -207,7 +200,7 @@ struct UnbackedCueTests {
         let first = catalog.entries.first { $0.record.assetId == "camera_hit_01" }?.record.runtimePath
         let second = catalog.entries.first { $0.record.assetId == "camera_hit_02" }?.record.runtimePath
         #expect(first != nil)
-        // Unbacked today; if it is ever backed it must not reuse _01's file.
-        if let second { #expect(second != first) }
+        #expect(second != nil)
+        #expect(second != first)
     }
 }
