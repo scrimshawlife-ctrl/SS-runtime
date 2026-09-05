@@ -8,7 +8,11 @@ struct RuntimeBundleTests {
         let reachable = try RuntimeBundleFilter.reachableAssetIds()
         let projection = RuntimeBundleFilter.project(catalog: catalog, reachable: reachable)
         let eligible = catalog.entries
-            .filter { $0.admissionDecision == .plannedOriginal || $0.admissionDecision == .adaptedAdmitted }
+            .filter {
+                $0.admissionDecision == .plannedOriginal
+                    || $0.admissionDecision == .adaptedAdmitted
+                    || $0.admissionDecision == .originalAccepted
+            }
             .map(\.record.assetId)
             .sorted()
         #expect(projection.bundleAssetIds == eligible)
@@ -17,7 +21,9 @@ struct RuntimeBundleTests {
         // Nothing excluded, rejected, or merely an SF candidate may ship.
         #expect(
             catalog.entries.filter {
-                $0.admissionDecision != .plannedOriginal && $0.admissionDecision != .adaptedAdmitted
+                $0.admissionDecision != .plannedOriginal
+                    && $0.admissionDecision != .adaptedAdmitted
+                    && $0.admissionDecision != .originalAccepted
             }.allSatisfy {
                 !projection.bundleAssetIds.contains($0.record.assetId)
             }

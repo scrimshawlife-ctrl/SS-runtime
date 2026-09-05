@@ -20,7 +20,11 @@ struct CivicSeamIdentityTests {
         // guarantee is stated directly: nothing rejected or excluded ships, and
         // no literal landmark, seal, or logo reaches the bundle.
         for entry in catalog.entries where entry.record.runtimePath != nil {
-            #expect(entry.admissionDecision == .adaptedAdmitted, "\(entry.record.assetId)")
+            #expect(
+                entry.admissionDecision == .adaptedAdmitted
+                    || entry.admissionDecision == .originalAccepted,
+                "\(entry.record.assetId)"
+            )
             let id = entry.record.assetId.lowercased()
             #expect(!id.contains("landmark"), "\(entry.record.assetId)")
             #expect(!id.contains("_seal_"), "\(entry.record.assetId)")
