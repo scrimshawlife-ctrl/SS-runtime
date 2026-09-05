@@ -1,6 +1,9 @@
 import SpriteKit
 import SurveillanceCore
 import UIKit
+#if DEBUG
+import os
+#endif
 
 final class GameSession {
     private(set) var simulation: Simulation
@@ -108,6 +111,12 @@ final class GameSession {
         cameraHUDProjection = cameraHUD.project(tick: result.tick, events: result.events, query: query)
     }
 
+#if DEBUG
+    func seedScenario(_ scenario: String) -> Bool {
+        simulation.debug_seedScenario(scenario)
+    }
+#endif
+
     var snapshot: PresentationSnapshot {
         PresentationSnapshot(simulation.state)
     }
@@ -128,6 +137,12 @@ final class GameScene: SKScene {
     private var runPaused = false
 #if DEBUG
     private var autopilot: DebugAutopilot?
+    /// The `--console-pty` stream drops on long runs; the unified log survives,
+    /// so a full playthrough stays observable after the pipe closes.
+    private static let autopilotLog = Logger(
+        subsystem: "com.zer0state.surveillancesurvivor",
+        category: "autopilot"
+    )
 #endif
 
     override func didMove(to view: SKView) {
@@ -149,10 +164,18 @@ final class GameScene: SKScene {
             self?.instrumentation.noteMemoryWarning()
         }
 #if DEBUG
-        autopilot = DebugAutopilot.fromLaunchArguments(
-            ProcessInfo.processInfo.arguments,
-            arena: session.simulation.state.arena
-        )
+        let arguments = ProcessInfo.processInfo.arguments
+        autopilot = DebugAutopilot.fromLaunchArguments(arguments, arena: session.simulation.state.arena)
+        // `-SSSeed <scenario>` puts the simulation into a named legal late-game
+        // state so the renderer can be observed there. Presentation evidence
+        // only: a seeded run says nothing about balance or the acceptance gates.
+        if let seedFlag = arguments.firstIndex(of: "-SSSeed"),
+           arguments.index(after: seedFlag) < arguments.endIndex
+        {
+            let scenario = arguments[arguments.index(after: seedFlag)]
+            let seeded = session.seedScenario(scenario)
+            Self.autopilotLog.notice("seed \(scenario, privacy: .public) -> \(seeded, privacy: .public)")
+        }
 #endif
         configureHUD(for: view)
         redraw()
@@ -193,21 +216,45 @@ final class GameScene: SKScene {
 #if DEBUG
         if autopilot != nil {
             let snapshot = session.snapshot
-            let steer = autopilot!.command(from: VecI(x: snapshot.player.x, y: snapshot.player.y))
+            // The upgrade gate is a hard blocker: the simulation refuses to
+            // advance until a valid choice arrives. Reach it the way a finger
+            // does, through the real hit test, so the gate is actually proven.
+            if snapshot.upgradePending, session.pendingUpgradeChoice == nil {
+                if let projector,
+                   let tap = autopilot!.upgradeTapPoint(projector: projector, hud: hud),
+                   let choice = hud.upgradeCardIndex(atPoints: tap, projector: projector)
+                {
+                    session.pendingUpgradeChoice = choice
+                    Self.autopilotLog.notice("upgrade tap at \(tap.debugDescription, privacy: .public) -> index \(choice, privacy: .public)")
+                } else {
+                    Self.autopilotLog.error("upgrade overlay open but no card was hit — gate is stuck")
+                }
+            }
+            let steer = autopilot!.command(snapshot)
             session.moveX = steer.moveX
             session.moveY = steer.moveY
+            session.dodgePressed = steer.dodge
             if snapshot.tick % 60 == 0 {
-                print("""
-                    SSAUTOPILOT tick=\(snapshot.tick)                     player=\(snapshot.player.x),\(snapshot.player.y)                     hp=\(snapshot.playerIntegrity) exposure=\(snapshot.exposure)                     enemies=\(snapshot.enemies.count) shots=\(snapshot.projectiles.count)                     telegraphs=\(snapshot.telegraphs.count) boss=\(snapshot.boss?.integrity ?? -1)                     objective=\(snapshot.combatObjectiveCopy) \
+                let line = """
+                    tick=\(snapshot.tick) \
+                    player=\(snapshot.player.x),\(snapshot.player.y) \
+                    hp=\(snapshot.playerIntegrity) exposure=\(snapshot.exposure) \
+                    detection=\(snapshot.detection.rawValue) \
+                    enemies=\(snapshot.enemies.count) shots=\(snapshot.projectiles.count) \
+                    telegraphs=\(snapshot.telegraphs.count) boss=\(snapshot.boss?.integrity ?? -1) \
+                    node=\(snapshot.objectiveNode.rawValue) upgrade=\(snapshot.upgrade?.rawValue ?? "-") \
+                    armed=\(snapshot.extractionArmed) outcome=\(snapshot.outcome.rawValue) \
                     music=\(soundEngine.musicState.rawValue) \
-                    missingCues=\(soundEngine.missingCueIds.sorted().joined(separator: ","))
-                    """)
+                    sprites=\(renderer.spriteCoverage.backed)/\(renderer.spriteCoverage.total)
+                    """
+                Self.autopilotLog.notice("\(line, privacy: .public)")
+            }
+            if autopilot!.stalled {
+                Self.autopilotLog.error("stalled on node \(snapshot.objectiveNode.rawValue, privacy: .public)")
             }
         } else {
             applyController()
         }
-#else
-        applyController()
 #endif
         session.step()
         soundEngine.apply(session.audio)

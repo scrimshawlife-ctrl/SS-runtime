@@ -1648,3 +1648,39 @@ public struct Simulation: Equatable, Sendable {
         return result
     }
 }
+
+#if DEBUG
+extension Simulation {
+    /// DEBUG-only scenario seeding for the runtime's own verification harness.
+    ///
+    /// The objective graph gates the boss behind the elite, and the elite
+    /// behind three encounters, so a late-game presentation path cannot be
+    /// reached by playing unless the pilot is good enough to clear them. This
+    /// puts the simulation into a named legal state so the *renderer* can be
+    /// observed there.
+    ///
+    /// It seeds authoritative state directly, so a run seeded this way is
+    /// evidence about presentation only — never about balance, pacing, or the
+    /// acceptance gates, which require an actually-played run. Never compiled
+    /// into a release build.
+    public mutating func debug_seedScenario(_ scenario: String) -> Bool {
+        switch scenario {
+        case "elite":
+            testing_completeEncounter("M-A")
+            testing_completeEncounter("M-B")
+            testing_completeEncounter("M-C")
+            return true
+        case "boss":
+            testing_completeMobAndEliteGraph()
+            testing_installBoss()
+            return true
+        case "extraction":
+            testing_completeCombatGraph()
+            testing_armExtraction()
+            return true
+        default:
+            return false
+        }
+    }
+}
+#endif

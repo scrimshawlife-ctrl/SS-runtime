@@ -583,13 +583,45 @@ final class HUDRenderer {
     /// and clears them on restart; this only draws them.
     var captions: [String] = []
 
+    /// Card geometry in safe-rectangle point space — the single source the
+    /// drawing, the hit test, and any synthetic tap all read. Computing it
+    /// twice is how a card ends up drawn somewhere it cannot be pressed.
+    static let upgradeCardSize = CGSize(width: 200, height: 130)
+    static let upgradeCardGap: CGFloat = 24
+
+    func upgradeCardRects(projector: HUDProjector) -> [(upgrade: UpgradeID, rect: CGRect)] {
+        let cards = UpgradePresentation.selectionCards()
+        let width = Self.upgradeCardSize.width
+        let height = Self.upgradeCardSize.height
+        let gap = Self.upgradeCardGap
+        let total = width * CGFloat(cards.count) + gap * CGFloat(cards.count - 1)
+        let originX = CGFloat(projector.safeWidth) / 2 - total / 2
+        let centreY = CGFloat(projector.safeHeight) / 2
+        return cards.enumerated().map { index, card in
+            (
+                card.upgrade,
+                CGRect(
+                    x: originX + CGFloat(index) * (width + gap),
+                    y: centreY - height / 2,
+                    width: width,
+                    height: height
+                )
+            )
+        }
+    }
+
+    func upgradeCardCentre(for upgrade: UpgradeID, projector: HUDProjector) -> CGPoint? {
+        upgradeCardRects(projector: projector)
+            .first { $0.upgrade == upgrade }
+            .map { CGPoint(x: $0.rect.midX, y: $0.rect.midY) }
+    }
+
     /// Three equal cards in canonical order, no default and no timeout.
     private func drawUpgradeSelection(_ projector: HUDProjector) {
         let cards = UpgradePresentation.selectionCards()
-        let cardWidth = projector.sceneLength(points: 200)
-        let cardHeight = projector.sceneLength(points: 130)
-        let gap = projector.sceneLength(points: 24)
-        let totalWidth = cardWidth * CGFloat(cards.count) + gap * CGFloat(cards.count - 1)
+        let rects = upgradeCardRects(projector: projector)
+        let cardWidth = projector.sceneLength(points: Int(Self.upgradeCardSize.width))
+        let cardHeight = projector.sceneLength(points: Int(Self.upgradeCardSize.height))
 
         let scrim = node("upgrade-scrim") { () -> SKShapeNode in
             let shape = SKShapeNode(
@@ -610,8 +642,10 @@ final class HUDRenderer {
         )
 
         for (index, card) in cards.enumerated() {
-            let x = -totalWidth / 2 + cardWidth / 2 + CGFloat(index) * (cardWidth + gap)
-            let centre = CGPoint(x: scrim.position.x + x, y: scrim.position.y)
+            // Drawn at exactly the rect the hit test will read back.
+            let centre = projector.scenePoint(
+                fromPoints: CGPoint(x: rects[index].rect.midX, y: rects[index].rect.midY)
+            )
 
             let backdrop = node("upgrade-card-\(card.upgrade.rawValue)") { () -> SKShapeNode in
                 let shape = SKShapeNode(
@@ -658,22 +692,10 @@ final class HUDRenderer {
         }
     }
 
-    /// Reference-space rects for the three selection cards, for hit testing.
+    /// Which card a touch landed on, read from the same rects that were drawn.
     func upgradeCardIndex(atPoints point: CGPoint, projector: HUDProjector) -> UInt8? {
-        let cards = UpgradePresentation.selectionCards()
-        let width = 200
-        let gap = 24
-        let total = width * cards.count + gap * (cards.count - 1)
-        let originX = projector.safeWidth / 2 - total / 2
-        let centreY = CGFloat(projector.safeHeight) / 2
-        let height: CGFloat = 130
-        guard abs(point.y - centreY) <= height / 2 else { return nil }
-
-        for (index, card) in cards.enumerated() {
-            let x = CGFloat(originX + index * (width + gap))
-            if point.x >= x, point.x <= x + CGFloat(width) {
-                return card.selectionIndex
-            }
+        for (upgrade, rect) in upgradeCardRects(projector: projector) where rect.contains(point) {
+            return upgrade.selectionIndex
         }
         return nil
     }

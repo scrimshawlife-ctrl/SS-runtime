@@ -187,3 +187,28 @@ struct CombatVisibilityTests {
         #expect(projected.radius == 40)
     }
 }
+
+/// The objective node is projected so a caller can reason about progress
+/// without parsing display copy.
+@Suite(.serialized)
+struct ObjectiveProjectionTests {
+    @Test func snapshotExposesTheAuthoritativeObjectiveNode() throws {
+        var sim = try Simulation.make(seed: 1)
+        #expect(PresentationSnapshot(sim.state).objectiveNode == .mobA)
+
+        sim.testing_completeMobAndEliteGraph()
+        #expect(PresentationSnapshot(sim.state).objectiveNode == .algorithmicModerate)
+
+        sim.testing_completeCombatGraph()
+        #expect(PresentationSnapshot(sim.state).objectiveNode == .extraction)
+    }
+
+    /// The node and the copy the HUD draws never disagree.
+    @Test func nodeAndCopyAgree() throws {
+        var sim = try Simulation.make(seed: 1)
+        sim.testing_completeMobAndEliteGraph()
+        let snapshot = PresentationSnapshot(sim.state)
+        #expect(snapshot.combatObjectiveCopy == "ALGORITHMIC MODERATE")
+        #expect(snapshot.objectiveNode == .algorithmicModerate)
+    }
+}
