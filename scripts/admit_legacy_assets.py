@@ -99,6 +99,28 @@ AUDIO_MAP: dict[str, str] = {
     "upgrade_selected_signalJammer": "Runtime/sfx_upgrade_selected.caf",
     "upgrade_selected_ricochetPulse": "Runtime/sfx_upgrade_selected.caf",
     "upgrade_selected_ghostStep": "Runtime/sfx_upgrade_selected.caf",
+    # Five more cues whose legacy sound-design intent is the same gameplay
+    # meaning, per the LC-010 admission test. The manifest prompt at the frozen
+    # commit is quoted in each record's notes so the match can be checked.
+    #
+    #   camera_critical       <- "infrastructure integrity shift ... municipal
+    #                            fault tone": a Camera at Integrity 1 is exactly
+    #                            that
+    #   camera_network_tamper <- "enemy coordination chain update ... cascade
+    #                            confirm": the surveillance network losing a node
+    #   lockdown_enter        <- "municipal PA power-up, security shutters,
+    #                            synchronized camera servos ... institutional
+    #                            authority": Lockdown is the city asserting itself
+    #   daemon_query          <- "bureaucratic relay click, budget stamp,
+    #                            institutional alert": an improper search is a
+    #                            determination being made
+    #   network_blackout      <- "lattice lock-in chirp, prepared-electronic
+    #                            confirm": completing the full set of eight
+    "camera_critical": "Runtime/sfx_city_state_changed.caf",
+    "camera_network_tamper": "Runtime/sfx_coordination_changed.caf",
+    "lockdown_enter": "Runtime/sfx_boss_activated.caf",
+    "daemon_query": "Runtime/sfx_director_decision.caf",
+    "network_blackout": "Runtime/sfx_build_synergy_changed.caf",
 }
 
 # Music beds, registered as `musicAssetIds` in presentation-assets-001. These
