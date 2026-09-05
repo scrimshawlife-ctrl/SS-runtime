@@ -75,7 +75,12 @@ struct LegacyAdmissionTests {
             "atlanta", "columbus", "dayton", "los_angeles", "louisville",
             "new_york", "oakland", "tulsa", "wichita"
         ]
-        let permitted: Set<String> = ["daemon_dash", "boss_defeated", "extraction_reset"]
+        // The spec names three single cues and the four boss phase beds.
+        let permittedCues: Set<String> = ["daemon_dash", "boss_defeated", "extraction_reset"]
+        let permittedBeds: Set<String> = [
+            "music_boss_publicSafety", "music_boss_civilLiberties",
+            "music_boss_temporarySafeguard", "music_boss_independentReview"
+        ]
 
         for entry in try admitted() {
             let id = entry.record.assetId
@@ -89,15 +94,24 @@ struct LegacyAdmissionTests {
             }
             guard fromAnotherCity else { continue }
 
-            // Only the cues the spec names, and only single sfx_/stinger_ files.
-            #expect(permitted.contains(id), "\(id) is not an admitted non-SF cue")
-            let file = source.split(separator: "/").last.map(String.init) ?? ""
             #expect(
-                file.hasPrefix("sfx_") || file.hasPrefix("stinger_"),
-                "\(id) sources \(file), which is not a single cue"
+                permittedCues.contains(id) || permittedBeds.contains(id),
+                "\(id) is not an admitted non-SF asset"
             )
-            #expect(!file.hasPrefix("music_"), "\(id) sources music from another city")
-            #expect(!file.hasPrefix("amb_"), "\(id) sources ambience from another city")
+            let file = source.split(separator: "/").last.map(String.init) ?? ""
+            if permittedCues.contains(id) {
+                // Cues are single sfx_/stinger_ files, never packs.
+                #expect(
+                    file.hasPrefix("sfx_") || file.hasPrefix("stinger_"),
+                    "\(id) sources \(file), which is not a single cue"
+                )
+            } else {
+                // The only city music permitted is a boss phase loop.
+                #expect(file.contains("boss_phase"), "\(id) sources \(file)")
+            }
+            // City ambience and run loops are never admitted.
+            #expect(!file.hasPrefix("amb_"), "\(id) sources city ambience")
+            #expect(!file.contains("run_loop"), "\(id) sources a city run loop")
         }
     }
 

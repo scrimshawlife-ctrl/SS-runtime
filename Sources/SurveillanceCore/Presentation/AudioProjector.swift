@@ -59,11 +59,20 @@ public struct ProjectedCue: Equatable, Sendable {
 public struct AudioProjection: Equatable, Sendable {
     public var cues: [ProjectedCue]
     public var musicState: MusicState
+    /// Which bed the current state plays. Distinct from `musicState` because
+    /// the boss state selects among four phase beds.
+    public var musicBedAssetId: String
     public var captions: [String]
 
-    public init(cues: [ProjectedCue], musicState: MusicState, captions: [String]) {
+    public init(
+        cues: [ProjectedCue],
+        musicState: MusicState,
+        musicBedAssetId: String? = nil,
+        captions: [String]
+    ) {
         self.cues = cues
         self.musicState = musicState
+        self.musicBedAssetId = musicBedAssetId ?? "music_\(musicState.rawValue)"
         self.captions = captions
     }
 
@@ -80,6 +89,9 @@ public struct AudioWorldQuery: Equatable, Sendable {
     public var hasAlgorithmicModerate: Bool
     public var lockdownEntered: Bool
     public var detectionState: DetectionState
+    /// The Captain's current phase, which selects the boss bed. Phase is
+    /// authoritative run state, so reading it introduces no new authority.
+    public var bossPhase: BossPhase?
     public var viewport: ViewportSpec
     public var positions: [EntityID: VecQ8]
 
@@ -91,6 +103,7 @@ public struct AudioWorldQuery: Equatable, Sendable {
         hasAlgorithmicModerate: Bool,
         lockdownEntered: Bool,
         detectionState: DetectionState,
+        bossPhase: BossPhase? = nil,
         viewport: ViewportSpec,
         positions: [EntityID: VecQ8] = [:]
     ) {
@@ -101,6 +114,7 @@ public struct AudioWorldQuery: Equatable, Sendable {
         self.hasAlgorithmicModerate = hasAlgorithmicModerate
         self.lockdownEntered = lockdownEntered
         self.detectionState = detectionState
+        self.bossPhase = bossPhase
         self.viewport = viewport
         self.positions = positions
     }
@@ -123,6 +137,7 @@ public struct AudioWorldQuery: Equatable, Sendable {
             },
             lockdownEntered: state.exposure.lockdownEntered,
             detectionState: state.exposure.detectionState,
+            bossPhase: state.bossRuntime?.phase,
             viewport: state.arena.viewport,
             positions: positions
         )
@@ -198,8 +213,20 @@ public struct AudioProjector: Equatable, Sendable {
         return AudioProjection(
             cues: settings.effectsEnabled ? voices : [],
             musicState: Self.musicState(world),
+            musicBedAssetId: Self.musicBedAssetId(world),
             captions: captionHistory
         )
+    }
+
+    /// The bed a music state plays. Every state maps to `music_<state>`, except
+    /// `boss`, whose bed is selected by the Captain's phase — the state machine
+    /// is unchanged, only which file that one state plays.
+    public static func musicBedAssetId(_ world: AudioWorldQuery) -> String {
+        let state = musicState(world)
+        guard state == .boss, let phase = world.bossPhase else {
+            return "music_\(state.rawValue)"
+        }
+        return "music_boss_\(phase.rawValue)"
     }
 
     public static func musicState(_ world: AudioWorldQuery) -> MusicState {

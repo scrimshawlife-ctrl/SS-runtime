@@ -164,6 +164,13 @@ MUSIC_MAP: dict[str, str] = {
     "music_lockdown": "Shared/amb_shared_retail_security_zone_loop.caf",
     "music_extraction": "Shared/amb_shared_smart_downtown_loop.caf",
     "music_terminal": "Shared/amb_shared_gated_serenity_loop.caf",
+    # legacy-admission.md §Boss phase beds. The Captain has four canonical
+    # phases and these four loops were written for exactly that structure,
+    # escalating in the same direction. No city name reaches the asset ID.
+    "music_boss_publicSafety": "Cities/atlanta/music_atlanta_boss_phase_1_loop.caf",
+    "music_boss_civilLiberties": "Cities/atlanta/music_atlanta_boss_phase_2_loop.caf",
+    "music_boss_temporarySafeguard": "Cities/atlanta/music_atlanta_boss_phase_3_loop.caf",
+    "music_boss_independentReview": "Cities/atlanta/music_atlanta_boss_phase_4_loop.caf",
 }
 
 DEFERRED_MUSIC: dict[str, str] = {}

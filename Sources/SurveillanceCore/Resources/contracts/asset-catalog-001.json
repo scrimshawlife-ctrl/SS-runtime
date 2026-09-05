@@ -23715,6 +23715,86 @@
       "admissionDecision": "adaptedAdmitted",
       "record": {
         "schemaVersion": "asset-record-001",
+        "assetId": "music_boss_civilLiberties",
+        "kind": "music",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Cities/atlanta/music_atlanta_boss_phase_2_loop.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "music_atlanta_boss_phase_2_loop.m4a",
+        "sha256": "6c83a1f649708ecee08f6ebae5e9c774c91c7c63bcdb2fcafdcd6f80cd250bc3",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as music_boss_civilLiberties. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "music_boss_independentReview",
+        "kind": "music",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Cities/atlanta/music_atlanta_boss_phase_4_loop.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "music_atlanta_boss_phase_4_loop.m4a",
+        "sha256": "147dc7ba4db4e66123119693f5c2966101b6266e91ccfe1ef6c48c8eae8572a3",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as music_boss_independentReview. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "music_boss_publicSafety",
+        "kind": "music",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Cities/atlanta/music_atlanta_boss_phase_1_loop.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "music_atlanta_boss_phase_1_loop.m4a",
+        "sha256": "b394e5058798c5b0a50f134e7ecea7f962a9b663664e6a9228a38827d1c46e48",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as music_boss_publicSafety. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "music_boss_temporarySafeguard",
+        "kind": "music",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Cities/atlanta/music_atlanta_boss_phase_3_loop.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "music_atlanta_boss_phase_3_loop.m4a",
+        "sha256": "06a1cb7cd37a24440b1f21942fd7449cc771d8105deab7a495c0fee4466cb384",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT. Same gameplay meaning as music_boss_temporarySafeguard. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
         "assetId": "music_explore",
         "kind": "music",
         "productionStatus": "accepted",
