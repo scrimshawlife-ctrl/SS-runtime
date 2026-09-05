@@ -39,6 +39,10 @@ public enum AssetAdmissionDecision: String, Equatable, Sendable {
     /// whose runtime role is unchanged, admitted through the asset-record
     /// process with a digest that matches the frozen commit.
     case adaptedAdmitted
+    /// An original work that has been produced and delivered. `plannedOriginal`
+    /// means the opposite — still to be made — so a delivered original needs its
+    /// own decision rather than overloading the plan.
+    case originalAccepted
 }
 
 public struct AssetDimensions: Equatable, Sendable {
@@ -102,6 +106,7 @@ public enum AssetCatalogError: Equatable, Sendable, Error {
     case missingRequiredPresentationId(String)
     case plannedOriginalMismatch(String)
     case adaptedAdmittedMismatch(String)
+    case originalAcceptedMismatch(String)
 }
 
 enum AssetCatalogLoader {
@@ -223,6 +228,15 @@ enum AssetCatalogLoader {
             if record.runtimeRequired {
                 throw AssetCatalogError.excludedRuntimeRequired(record.assetId)
             }
+        case .originalAccepted:
+            guard record.productionStatus == .accepted,
+                  record.provenance == .projectOriginal,
+                  record.runtimeRequired,
+                  record.runtimePath?.isEmpty == false,
+                  record.sha256?.isEmpty == false
+            else {
+                throw AssetCatalogError.originalAcceptedMismatch(record.assetId)
+            }
         case .adaptedAdmitted:
             // Admission is only real with complete provenance: the accepted
             // status above already demands source, runtimePath, sha256, and
@@ -249,7 +263,8 @@ enum AssetCatalogLoader {
         // route, may be marked runtime-required.
         if record.runtimeRequired,
            record.provenance != .projectOriginal,
-           decision != .adaptedAdmitted
+           decision != .adaptedAdmitted,
+           decision != .originalAccepted
         {
             throw AssetCatalogError.excludedRuntimeRequired(record.assetId)
         }
@@ -274,6 +289,7 @@ enum AssetCatalogLoader {
                 .filter {
                     $0.admissionDecision == .plannedOriginal
                         || $0.admissionDecision == .adaptedAdmitted
+                        || $0.admissionDecision == .originalAccepted
                 }
                 .map(\.record.assetId)
         )

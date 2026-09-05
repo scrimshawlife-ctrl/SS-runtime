@@ -40,7 +40,9 @@ struct SilhouetteTests {
             y: 0,
             radius: 18,
             role: ArchetypeID.fogAnalyticsCloud.rawValue,
-            silhouette: silhouette
+            silhouette: silhouette,
+            clipId: nil,
+            direction: "s"
         )
         #expect(sprite.radius == 18)
         #expect(sprite.silhouette == .clusteredMass)

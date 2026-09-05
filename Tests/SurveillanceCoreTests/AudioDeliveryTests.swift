@@ -61,6 +61,15 @@ struct AudioDeliveryTests {
                 )
             case .plannedOriginal:
                 #expect(entry.record.runtimePath == nil, "\(id)")
+            case .originalAccepted:
+                // An original that has been produced and delivered.
+                let path = try #require(entry.record.runtimePath, "\(id)")
+                #expect(
+                    FileManager.default.fileExists(
+                        atPath: delivery.appendingPathComponent(path).path
+                    ),
+                    "\(id) claims \(path) but no file is delivered"
+                )
             case .excluded, .rejected, .sfCandidate:
                 Issue.record("audio id \(id) is not admissible")
             }
