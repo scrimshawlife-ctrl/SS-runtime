@@ -99,6 +99,28 @@ AUDIO_MAP: dict[str, str] = {
     "upgrade_selected_signalJammer": "Runtime/sfx_upgrade_selected.caf",
     "upgrade_selected_ricochetPulse": "Runtime/sfx_upgrade_selected.caf",
     "upgrade_selected_ghostStep": "Runtime/sfx_upgrade_selected.caf",
+    # Five more cues whose legacy sound-design intent is the same gameplay
+    # meaning, per the LC-010 admission test. The manifest prompt at the frozen
+    # commit is quoted in each record's notes so the match can be checked.
+    #
+    #   camera_critical       <- "infrastructure integrity shift ... municipal
+    #                            fault tone": a Camera at Integrity 1 is exactly
+    #                            that
+    #   camera_network_tamper <- "enemy coordination chain update ... cascade
+    #                            confirm": the surveillance network losing a node
+    #   lockdown_enter        <- "municipal PA power-up, security shutters,
+    #                            synchronized camera servos ... institutional
+    #                            authority": Lockdown is the city asserting itself
+    #   daemon_query          <- "bureaucratic relay click, budget stamp,
+    #                            institutional alert": an improper search is a
+    #                            determination being made
+    #   network_blackout      <- "lattice lock-in chirp, prepared-electronic
+    #                            confirm": completing the full set of eight
+    "camera_critical": "Runtime/sfx_city_state_changed.caf",
+    "camera_network_tamper": "Runtime/sfx_coordination_changed.caf",
+    "lockdown_enter": "Runtime/sfx_boss_activated.caf",
+    "daemon_query": "Runtime/sfx_director_decision.caf",
+    "network_blackout": "Runtime/sfx_build_synergy_changed.caf",
 }
 
 # Music beds, registered as `musicAssetIds` in presentation-assets-001. These
@@ -111,6 +133,17 @@ MUSIC_MAP: dict[str, str] = {
     "music_observed": "Cities/san_francisco/music_san_francisco_run_loop.caf",
     "music_boss": "Cities/san_francisco/music_san_francisco_boss_loop.caf",
     "ambience_civic_seam": "Cities/san_francisco/amb_san_francisco_city_identity_loop.caf",
+    # The remaining three states take Shared beds. `Shared/` is not a city pack,
+    # so T102's exclusion of non-San-Francisco packs does not reach it — the
+    # same route by which sfx_camera_scan_sweep and sfx_blind_spot_field_loop
+    # were already admitted. Each is matched to the state by what the zone it
+    # was written for is doing, not by its name:
+    #   lockdown   <- a security zone under active watch          (59s)
+    #   extraction <- an urgent downtown push                     (44s)
+    #   terminal   <- resolution after the pressure stops         (29s)
+    "music_lockdown": "Shared/amb_shared_retail_security_zone_loop.caf",
+    "music_extraction": "Shared/amb_shared_smart_downtown_loop.caf",
+    "music_terminal": "Shared/amb_shared_gated_serenity_loop.caf",
 }
 
 DEFERRED_MUSIC: dict[str, str] = {}

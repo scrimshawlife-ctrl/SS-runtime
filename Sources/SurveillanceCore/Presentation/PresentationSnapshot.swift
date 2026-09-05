@@ -7,6 +7,10 @@ public struct PresentationSnapshot: Equatable, Sendable {
         public var radius: Int
         public var role: String
         public var silhouette: ActorSilhouette
+        /// clip-metadata-001 clip this actor is presenting, or nil when its
+        /// authoritative state has no clip and it keeps its blockout.
+        public var clipId: String?
+        public var direction: String
     }
 
     public struct CameraSprite: Equatable, Sendable {
@@ -119,7 +123,9 @@ public struct PresentationSnapshot: Equatable, Sendable {
             y: state.player.position.y.unitsTruncated,
             radius: PlayerBody.radiusUnits,
             role: "player",
-            silhouette: .playerRing
+            silhouette: .playerRing,
+            clipId: nil,
+            direction: ClipFrameLibrary.direction(forFacing: state.player.facing)
         )
         playerIntegrity = state.player.integrity
         exposure = state.exposure.exposure
@@ -141,14 +147,16 @@ public struct PresentationSnapshot: Equatable, Sendable {
                 clipId: CameraPresentation.clipId(for: presentationState)
             )
         }
-        enemies = state.enemies.filter(\.alive).map {
+        enemies = state.enemies.filter(\.alive).map { enemy in
             CircleSprite(
-                id: $0.id,
-                x: $0.position.x.unitsTruncated,
-                y: $0.position.y.unitsTruncated,
-                radius: $0.radius,
-                role: $0.archetype.rawValue,
-                silhouette: ActorSilhouette.enemy($0.archetype)
+                id: enemy.id,
+                x: enemy.position.x.unitsTruncated,
+                y: enemy.position.y.unitsTruncated,
+                radius: enemy.radius,
+                role: enemy.archetype.rawValue,
+                silhouette: ActorSilhouette.enemy(enemy.archetype),
+                clipId: ActorClipProjection.clipId(for: enemy, bossRuntime: state.bossRuntime),
+                direction: ActorClipProjection.direction(for: enemy.velocity)
             )
         }
         extraction = state.arena.extraction.aabb
@@ -197,7 +205,9 @@ public struct PresentationSnapshot: Equatable, Sendable {
                     y: center.y.unitsTruncated,
                     radius: DaemonQuery.circleRadius,
                     role: "daemonQuery",
-                    silhouette: .queryApertures
+                    silhouette: .queryApertures,
+                    clipId: nil,
+                    direction: "s"
                 )
             }
         }

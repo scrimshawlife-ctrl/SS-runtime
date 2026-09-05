@@ -140,16 +140,24 @@ struct LegacyAdmissionTests {
         )
         let backed = Set(
             catalog.entries
-                .filter { $0.admissionDecision == .adaptedAdmitted && $0.record.kind == .sprite }
+                .filter {
+                    ($0.admissionDecision == .adaptedAdmitted
+                        || $0.admissionDecision == .originalAccepted)
+                        && $0.record.kind == .sprite
+                }
                 .map(\.record.assetId)
         )
-        #expect(frames.count == 408)
-        #expect(backed.count == 112)
+        // 588: 564 after the Daemon vocabulary, plus 24 from pinning the
+        // Captain attack clips to their telegraph windows.
+        #expect(frames.count == 588)
+        // 129 admitted legacy sprites plus delivered originals: every frame.
+        #expect(backed.count == 588)
         #expect(backed.isSubset(of: frames))
         // Every camera frame is backed; the cast roles are entirely unbacked.
         let cameraFrames = frames.filter { $0.hasPrefix("actor_camera_") }
         #expect(cameraFrames.allSatisfy { backed.contains($0) })
-        #expect(frames.filter { $0.contains("algorithmicModerate") }.allSatisfy { !backed.contains($0) })
+        // The Captain is fully backed, attacks included.
+        #expect(frames.filter { $0.contains("algorithmicModerate") }.allSatisfy { backed.contains($0) })
     }
 
     /// A record may not point back into the evidence tree.

@@ -72,7 +72,8 @@ public struct ClipFrameLibrary: Sendable {
         // Only an admitted, accepted sprite contributes a file.
         var delivered: [String: String] = [:]
         for entry in catalog.entries
-        where entry.admissionDecision == .adaptedAdmitted
+        where (entry.admissionDecision == .adaptedAdmitted
+            || entry.admissionDecision == .originalAccepted)
             && entry.record.productionStatus == .accepted
             && entry.record.kind == .sprite
         {

@@ -84,7 +84,10 @@ public enum RuntimeBundleFilter {
                 }
                 continue
             }
-            if entry.admissionDecision != .plannedOriginal, entry.admissionDecision != .adaptedAdmitted {
+            if entry.admissionDecision != .plannedOriginal,
+               entry.admissionDecision != .adaptedAdmitted,
+               entry.admissionDecision != .originalAccepted
+            {
                 if record.runtimePath != nil || record.runtimeRequired {
                     issues.append(.legacyEvidenceInBundle(id))
                 }
@@ -108,7 +111,9 @@ public enum RuntimeBundleFilter {
     }
 
     private static func isBundleEligible(_ entry: AssetCatalogEntry, reachable: Set<String>) -> Bool {
-        (entry.admissionDecision == .plannedOriginal || entry.admissionDecision == .adaptedAdmitted)
+        (entry.admissionDecision == .plannedOriginal
+            || entry.admissionDecision == .adaptedAdmitted
+            || entry.admissionDecision == .originalAccepted)
             && entry.record.runtimeRequired
             && reachable.contains(entry.record.assetId)
             && entry.record.runtimePath?.hasPrefix("ArtSources/") != true
