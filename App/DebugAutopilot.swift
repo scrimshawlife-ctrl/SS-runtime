@@ -48,9 +48,18 @@ struct DebugAutopilot {
     private var stuckTicks = 0
     private var detourTicksRemaining = 0
     private var detourSign = 1
+    /// Consecutive detours that failed to get the pilot closer to its target.
+    private var failedDetours = 0
+    /// Closest the pilot has been to the current target, so "did that detour
+    /// help?" is answerable rather than assumed.
+    private var bestDistanceToTarget = Int.max
     private static let stuckThresholdTicks = 20
     private static let detourTicks = 70
+    private static let maxDetourTicks = 420
     private static let stuckDistanceUnits = 3
+    /// Progress worth resetting the escalation for. Smaller than this is noise
+    /// from the pilot jittering against a solid.
+    private static let progressUnits = 24
 
     /// Standing still inside a fight is how the previous pilot died at a
     /// trigger. Below this range it backs away while the Civic Pulse works.
@@ -120,6 +129,11 @@ struct DebugAutopilot {
 
     var stalled: Bool { ticksOnObjective >= Self.objectiveTimeoutTicks }
 
+    /// Why the pilot did what it did last tick, for the autopilot log. A stall
+    /// is only diagnosable if the intent behind a frozen position is visible.
+    private(set) var lastDecision = "-"
+
+
     // MARK: - Command
 
     struct Command {
@@ -132,6 +146,8 @@ struct DebugAutopilot {
         if snapshot.objectiveNode != lastObjective {
             lastObjective = snapshot.objectiveNode
             ticksOnObjective = 0
+            failedDetours = 0
+            bestDistanceToTarget = Int.max
         } else {
             ticksOnObjective += 1
         }
@@ -146,11 +162,26 @@ struct DebugAutopilot {
             stuckTicks = 0
         }
         lastPosition = position
+        // Did the last detour actually help? Only real progress toward the
+        // target counts, so jitter against a solid cannot reset the escalation.
+        let distanceToTarget = distance(position, target)
+        if distanceToTarget + Self.progressUnits < bestDistanceToTarget {
+            bestDistanceToTarget = distanceToTarget
+            failedDetours = 0
+        }
+
         if stuckTicks >= Self.stuckThresholdTicks, detourTicksRemaining == 0 {
-            detourTicksRemaining = Self.detourTicks
-            // Alternate the side each time, so a dead end is escaped rather
-            // than re-entered from the same direction.
-            detourSign = -detourSign
+            // Flipping the side on every detour looks like it escapes dead
+            // ends, and does — but against a long wall it guarantees the pilot
+            // oscillates around one spot forever, which is how it wedged at
+            // M-A. Commit to a side for two attempts before trying the other,
+            // and lengthen each attempt so a wall can actually be traversed.
+            failedDetours += 1
+            if failedDetours % 2 == 0 { detourSign = -detourSign }
+            detourTicksRemaining = min(
+                Self.detourTicks * failedDetours,
+                Self.maxDetourTicks
+            )
             stuckTicks = 0
         }
         if detourTicksRemaining > 0 { detourTicksRemaining -= 1 }
@@ -165,27 +196,72 @@ struct DebugAutopilot {
             : Self.kiteRange
 
         var command = Command()
+        var reason: String
         if let nearest, !holdingExtraction, nearest.distance < kiteRange {
             // Back away along the enemy vector while the automatic weapon works.
             command = steer(from: position, away: nearest.point)
-            if detourTicksRemaining > 0 {
-                // Cornered while retreating: slide along the wall instead of
-                // pressing into it, which is how the pilot used to get pinned.
-                command = perpendicular(command, sign: detourSign)
-            }
             // Dodge is a rising edge, ignored when unavailable, so pressing it
             // whenever something is close costs nothing.
             command.dodge = nearest.distance < kiteRange / 2
+            reason = "kite"
         } else if distance(position, target) > Self.arrivalRadius {
             command = steer(from: position, toward: target)
-            if detourTicksRemaining > 0 {
-                command = perpendicular(command, sign: detourSign)
-            }
+            reason = "travel"
         } else if let nearest, nearest.distance > Self.engageRange {
             // Arrived, nothing in weapon range: close enough to fight.
             command = steer(from: position, toward: nearest.point)
+            reason = "close"
+        } else if let nearest {
+            // Arrived, and the contact already sits inside weapon range but
+            // outside kite range — between `kiteRange` and `engageRange`, a
+            // band wider than the kite range itself. Every branch above misses
+            // it, and the pilot used to hold a zero command here: standing at
+            // the trigger while enemies gathered and Integrity drained.
+            //
+            // The band is the right place to fight, so keep it and orbit
+            // instead of standing. Circling holds the range the Civic Pulse
+            // wants while making the pilot a moving target.
+            command = perpendicular(steer(from: position, away: nearest.point), sign: detourSign)
+            reason = "orbit"
+        } else {
+            reason = "idle"
         }
+
+        // Cornered: slide along the wall instead of pressing into it, which is
+        // how the pilot used to get pinned. Applied to whatever was chosen
+        // above — including an idle command, which a rotation alone cannot
+        // rescue, since `perpendicular` of zero is still zero.
+        if detourTicksRemaining > 0 {
+            command = sidestep(command, position: position, target: target)
+            reason += "+detour"
+        }
+        lastDecision = "\(reason) tgt=\(target.x),\(target.y) dTgt=\(distance(position, target))"
+            + " near=\(nearest.map { String($0.distance) } ?? "-")"
+            + " cmd=\(command.moveX),\(command.moveY) stuck=\(stuckTicks)"
+            + " detour=\(detourTicksRemaining)/\(failedDetours)"
         return command
+    }
+
+    /// Rotate a live command a quarter turn; give an idle one a real direction.
+    ///
+    /// An idle command reaches here when the pilot is wedged with nothing to
+    /// steer by — on top of its target, or held still by geometry. Rotating
+    /// zero returns zero, so the detour would spin without ever moving. Fall
+    /// back to a quarter turn off the target bearing, and to a cardinal when
+    /// even that is degenerate.
+    private func sidestep(_ command: Command, position: VecI, target: VecI) -> Command {
+        if command.moveX != 0 || command.moveY != 0 {
+            var turned = perpendicular(command, sign: detourSign)
+            turned.dodge = command.dodge
+            return turned
+        }
+        let toTarget = steer(from: position, toward: target)
+        if toTarget.moveX != 0 || toTarget.moveY != 0 {
+            var turned = perpendicular(toTarget, sign: detourSign)
+            turned.dodge = command.dodge
+            return turned
+        }
+        return Command(moveX: Int16(32_767 * detourSign), moveY: 0, dodge: command.dodge)
     }
 
     /// Where to tap when the protected upgrade overlay is open, in the same

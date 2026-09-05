@@ -273,7 +273,8 @@ final class GameScene: SKScene {
                     node=\(snapshot.objectiveNode.rawValue) upgrade=\(snapshot.upgrade?.rawValue ?? "-") \
                     armed=\(snapshot.extractionArmed) outcome=\(snapshot.outcome.rawValue) \
                     music=\(soundEngine.musicState.rawValue) \
-                    sprites=\(renderer.spriteCoverage.backed)/\(renderer.spriteCoverage.total)
+                    sprites=\(renderer.spriteCoverage.backed)/\(renderer.spriteCoverage.total) \
+                    pilot=[\(autopilot!.lastDecision)]
                     """
                 Self.autopilotLog.notice("\(line, privacy: .public)")
             }
