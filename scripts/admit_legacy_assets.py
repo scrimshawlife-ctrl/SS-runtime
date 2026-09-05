@@ -111,6 +111,17 @@ MUSIC_MAP: dict[str, str] = {
     "music_observed": "Cities/san_francisco/music_san_francisco_run_loop.caf",
     "music_boss": "Cities/san_francisco/music_san_francisco_boss_loop.caf",
     "ambience_civic_seam": "Cities/san_francisco/amb_san_francisco_city_identity_loop.caf",
+    # The remaining three states take Shared beds. `Shared/` is not a city pack,
+    # so T102's exclusion of non-San-Francisco packs does not reach it — the
+    # same route by which sfx_camera_scan_sweep and sfx_blind_spot_field_loop
+    # were already admitted. Each is matched to the state by what the zone it
+    # was written for is doing, not by its name:
+    #   lockdown   <- a security zone under active watch          (59s)
+    #   extraction <- an urgent downtown push                     (44s)
+    #   terminal   <- resolution after the pressure stops         (29s)
+    "music_lockdown": "Shared/amb_shared_retail_security_zone_loop.caf",
+    "music_extraction": "Shared/amb_shared_smart_downtown_loop.caf",
+    "music_terminal": "Shared/amb_shared_gated_serenity_loop.caf",
 }
 
 DEFERRED_MUSIC: dict[str, str] = {}
