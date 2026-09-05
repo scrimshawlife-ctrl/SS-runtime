@@ -97,3 +97,58 @@ struct DaemonClipTests {
         #expect(clip.anchor.y == box.height * 7 / 8)
     }
 }
+
+/// The Captain's attack clips are named for the attacks they present.
+///
+/// They were previously `commandPulse`, `sweep`, `targetedStrike`, and
+/// `reinforcementCall` — names matching no attack in `bosses.md`, with nothing
+/// recording which was which, so a renderer could not choose a clip for an
+/// attack at all.
+@Suite(.serialized)
+struct CaptainClipTests {
+    /// bosses.md §Attack vocabulary telegraph windows, plus the 45-tick phase
+    /// transition recovery.
+    private static let telegraphTicks: [String: Int] = [
+        "algorithmicModerate_safetyRationale": 45,
+        "algorithmicModerate_narrowTailoring": 30,
+        "algorithmicModerate_temporaryOrder": 48,
+        "algorithmicModerate_independentReview": 60,
+        "algorithmicModerate_phaseTransition": 45
+    ]
+
+    /// Every attack resolves to a clip that exists, by derivation.
+    @Test func everyAttackDerivesAnExistingClip() throws {
+        let library = try ClipFrameLibrary.bundled()
+        for attack in [
+            BossAttackID.safetyRationale, .narrowTailoring, .temporaryOrder, .independentReview
+        ] {
+            let clipId = ClipCatalog.clipId(for: attack)
+            #expect(library.clip(clipId) != nil, "\(attack.rawValue) has no clip \(clipId)")
+        }
+    }
+
+    /// A clip that runs the wind-up must last exactly as long as the window the
+    /// player gets to react in.
+    @Test func attackClipsMatchTheirTelegraphWindows() throws {
+        let library = try ClipFrameLibrary.bundled()
+        for (clipId, ticks) in Self.telegraphTicks {
+            let clip = try #require(library.clip(clipId), "\(clipId)")
+            let actual = clip.framesPerDirection * 1000 / clip.framesPerSecond
+            #expect(
+                actual == ticks * 1000 / 60,
+                "\(clipId): \(actual)ms for a \(ticks)-tick window"
+            )
+        }
+    }
+
+    /// No clip may keep a name that corresponds to no attack.
+    @Test func noOrphanedAttackClipNamesRemain() throws {
+        let ids = Set(try ClipFrameLibrary.bundled().clips.keys)
+        for orphan in [
+            "algorithmicModerate_commandPulse", "algorithmicModerate_sweep",
+            "algorithmicModerate_targetedStrike", "algorithmicModerate_reinforcementCall"
+        ] {
+            #expect(!ids.contains(orphan), "\(orphan) matches no attack in bosses.md")
+        }
+    }
+}

@@ -56,14 +56,22 @@ public struct ClipCatalog: Equatable, Sendable {
         "improperSearchDaemon_queryResolve", "improperSearchDaemon_dashTelegraph",
         "improperSearchDaemon_dash", "improperSearchDaemon_recover",
         "improperSearchDaemon_hurt", "improperSearchDaemon_defeat",
-        "algorithmicModerate_commandPulse", "algorithmicModerate_sweep",
-        "algorithmicModerate_targetedStrike", "algorithmicModerate_reinforcementCall",
+        // Named for the attacks they present, so a clip is chosen from the
+        // authoritative attackId with no mapping table.
+        "algorithmicModerate_safetyRationale", "algorithmicModerate_narrowTailoring",
+        "algorithmicModerate_temporaryOrder", "algorithmicModerate_independentReview",
         "algorithmicModerate_phaseTransition", "algorithmicModerate_stagger",
         "algorithmicModerate_defeat",
         "camera_operational_idle", "camera_hit", "camera_critical_enter",
         "camera_destroy", "camera_field_off", "camera_destroyed_idle"
     ]
 
+
+    /// Clip presenting a Captain attack. The rename to attack IDs is what makes
+    /// this a derivation rather than a lookup table that could fall out of date.
+    public static func clipId(for attack: BossAttackID) -> String {
+        "algorithmicModerate_\(attack.rawValue)"
+    }
     public static let fourDirections = ["n", "e", "s", "w"]
     public static let distinctEnemyAnticipateIds = [
         "fogAnalyticsCloud_anticipate",
