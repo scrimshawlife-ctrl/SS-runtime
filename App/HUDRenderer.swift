@@ -618,39 +618,6 @@ final class HUDRenderer {
             .map { CGPoint(x: $0.rect.midX, y: $0.rect.midY) }
     }
 
-    /// Card geometry in safe-rectangle point space — the single source the
-    /// drawing, the hit test, and any synthetic tap all read. Computing it
-    /// twice is how a card ends up drawn somewhere it cannot be pressed.
-    static let upgradeCardSize = CGSize(width: 200, height: 130)
-    static let upgradeCardGap: CGFloat = 24
-
-    func upgradeCardRects(projector: HUDProjector) -> [(upgrade: UpgradeID, rect: CGRect)] {
-        let cards = UpgradePresentation.selectionCards()
-        let width = Self.upgradeCardSize.width
-        let height = Self.upgradeCardSize.height
-        let gap = Self.upgradeCardGap
-        let total = width * CGFloat(cards.count) + gap * CGFloat(cards.count - 1)
-        let originX = CGFloat(projector.safeWidth) / 2 - total / 2
-        let centreY = CGFloat(projector.safeHeight) / 2
-        return cards.enumerated().map { index, card in
-            (
-                card.upgrade,
-                CGRect(
-                    x: originX + CGFloat(index) * (width + gap),
-                    y: centreY - height / 2,
-                    width: width,
-                    height: height
-                )
-            )
-        }
-    }
-
-    func upgradeCardCentre(for upgrade: UpgradeID, projector: HUDProjector) -> CGPoint? {
-        upgradeCardRects(projector: projector)
-            .first { $0.upgrade == upgrade }
-            .map { CGPoint(x: $0.rect.midX, y: $0.rect.midY) }
-    }
-
     /// Three equal cards in canonical order, no default and no timeout.
     private func drawUpgradeSelection(_ projector: HUDProjector) {
         let cards = UpgradePresentation.selectionCards()

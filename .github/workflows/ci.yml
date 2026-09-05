@@ -34,7 +34,15 @@ jobs:
         run: |
           set -euo pipefail
           sim="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); ds=[x for v in d["devices"].values() for x in v if "iPhone" in x["name"]]; print(ds[-1]["udid"])')"
+          # `| grep ... || true` cannot guard this build: under `pipefail` a
+          # failed xcodebuild makes the pipeline non-zero, `|| true` fires, and
+          # running `true` resets PIPESTATUS to [0] — so the guard below always
+          # read 0 and the job could never fail. Keep xcodebuild's own status.
+          set +e
           xcodebuild -project SSRuntime.xcodeproj -scheme SSRuntime -sdk iphonesimulator \
             -destination "platform=iOS Simulator,id=$sim" CODE_SIGNING_ALLOWED=NO build \
-            | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" || true
-          test "${PIPESTATUS[0]}" -eq 0
+            > /tmp/xcodebuild.log 2>&1
+          status=$?
+          set -e
+          grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)" /tmp/xcodebuild.log || true
+          exit "$status"
