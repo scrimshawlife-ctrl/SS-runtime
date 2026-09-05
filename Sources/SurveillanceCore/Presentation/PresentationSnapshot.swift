@@ -69,6 +69,10 @@ public struct PresentationSnapshot: Equatable, Sendable {
     public var extraction: AABB
     public var extractionArmed: Bool
     public var extractionRemaining: Int
+    /// Current node of the combat authority graph. The HUD renders its copy;
+    /// exposing the node itself lets a caller reason about progress without
+    /// parsing display text.
+    public var objectiveNode: CombatAuthorityNode
     public var combatObjectiveCopy: String
     public var camerasDestroyed: Int
     public var cameraObjectiveVisible: Bool
@@ -155,6 +159,7 @@ public struct PresentationSnapshot: Equatable, Sendable {
         extractionArmed = state.extraction.armed
         extractionRemaining = state.extraction.remaining
         let authority = CombatAuthoritySnapshot.project(state)
+        objectiveNode = authority.currentNode
         let playerPoint = VecI(
             x: state.player.position.x.unitsTruncated,
             y: state.player.position.y.unitsTruncated

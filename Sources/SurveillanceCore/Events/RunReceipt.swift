@@ -26,8 +26,13 @@ public struct RunReceipt: Equatable, Sendable {
     public var cameraPlacementVersion: String
     public var placementSeed: UInt64
     public var selectedSockets: [CameraPlacementReceiptEntry]
+    /// ER-007: the only part of a receipt a settings change may move. It is
+    /// supplied by the presentation layer, never read from authoritative state,
+    /// so no setting can reach the simulation by this route.
+    public var presentation: PresentationReceiptMetadata
 
-    public init(_ state: WorldState) {
+    public init(_ state: WorldState, presentation: PresentationReceiptMetadata = .default) {
+        self.presentation = presentation
         schemaVersion = "run-receipt-001"
         identity = state.identity
         seed = state.seed
@@ -144,6 +149,7 @@ public struct RunReceipt: Equatable, Sendable {
                 "defeated": .bool(combatAuthority.bossDefeated)
             ]),
             "diagnostics": .array(diagnostics.map { .string($0) }),
+            "presentation": presentation.canonical,
             "cameraPlacement": .object([
                 "version": .string(cameraPlacementVersion),
                 "placementSeed": .unsigned(placementSeed),

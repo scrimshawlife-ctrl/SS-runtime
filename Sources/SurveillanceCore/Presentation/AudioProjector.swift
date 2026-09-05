@@ -18,7 +18,7 @@ public enum HapticPattern: String, Equatable, Sendable {
     case success
 }
 
-public struct PresentationAudioSettings: Equatable, Sendable {
+public struct PresentationAudioSettings: Equatable, Sendable, Codable {
     public var effectsEnabled: Bool
     public var hapticsEnabled: Bool
     public var musicEnabled: Bool

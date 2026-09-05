@@ -58,7 +58,7 @@ public enum ProceduralVFXError: Equatable, Sendable, Error {
     case reducedShake(String)
 }
 
-public struct PresentationVFXSettings: Equatable, Sendable {
+public struct PresentationVFXSettings: Equatable, Sendable, Codable {
     public var reducedMotion: Bool
     public var reducedFlash: Bool
 

@@ -1,9 +1,9 @@
-public enum Handedness: String, Equatable, Sendable {
+public enum Handedness: String, Equatable, Sendable, Codable, CaseIterable {
     case right
     case left
 }
 
-public enum HUDScaleSetting: Int, Equatable, Sendable, CaseIterable {
+public enum HUDScaleSetting: Int, Equatable, Sendable, CaseIterable, Codable {
     case standard = 1000
     case large = 1150
     case extraLarge = 1300
