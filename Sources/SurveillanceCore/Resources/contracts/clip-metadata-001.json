@@ -744,6 +744,382 @@
       "vfxCue": "none"
     },
     {
+      "clipId": "improperSearchDaemon_pursuit",
+      "actorRole": "improperSearchDaemon",
+      "state": "pursuit",
+      "directions": [
+        "n",
+        "e",
+        "s",
+        "w"
+      ],
+      "frameIds": [
+        "actor_improperSearchDaemon_pursuit_n_01",
+        "actor_improperSearchDaemon_pursuit_n_02",
+        "actor_improperSearchDaemon_pursuit_n_03",
+        "actor_improperSearchDaemon_pursuit_n_04",
+        "actor_improperSearchDaemon_pursuit_n_05",
+        "actor_improperSearchDaemon_pursuit_n_06",
+        "actor_improperSearchDaemon_pursuit_e_01",
+        "actor_improperSearchDaemon_pursuit_e_02",
+        "actor_improperSearchDaemon_pursuit_e_03",
+        "actor_improperSearchDaemon_pursuit_e_04",
+        "actor_improperSearchDaemon_pursuit_e_05",
+        "actor_improperSearchDaemon_pursuit_e_06",
+        "actor_improperSearchDaemon_pursuit_s_01",
+        "actor_improperSearchDaemon_pursuit_s_02",
+        "actor_improperSearchDaemon_pursuit_s_03",
+        "actor_improperSearchDaemon_pursuit_s_04",
+        "actor_improperSearchDaemon_pursuit_s_05",
+        "actor_improperSearchDaemon_pursuit_s_06",
+        "actor_improperSearchDaemon_pursuit_w_01",
+        "actor_improperSearchDaemon_pursuit_w_02",
+        "actor_improperSearchDaemon_pursuit_w_03",
+        "actor_improperSearchDaemon_pursuit_w_04",
+        "actor_improperSearchDaemon_pursuit_w_05",
+        "actor_improperSearchDaemon_pursuit_w_06"
+      ],
+      "framesPerSecond": 14,
+      "loop": true,
+      "anchor": {
+        "x": 40,
+        "y": 70
+      },
+      "authoritativeEventMarker": "none",
+      "cancelWindows": [
+        "hurt",
+        "defeat"
+      ],
+      "blendOrTransition": "loop",
+      "reducedMotionClip": "improperSearchDaemon_pursuit",
+      "audioCue": "none",
+      "vfxCue": "none"
+    },
+    {
+      "clipId": "improperSearchDaemon_queryTelegraph",
+      "actorRole": "improperSearchDaemon",
+      "state": "queryTelegraph",
+      "directions": [
+        "n",
+        "e",
+        "s",
+        "w"
+      ],
+      "frameIds": [
+        "actor_improperSearchDaemon_queryTelegraph_n_01",
+        "actor_improperSearchDaemon_queryTelegraph_n_02",
+        "actor_improperSearchDaemon_queryTelegraph_n_03",
+        "actor_improperSearchDaemon_queryTelegraph_n_04",
+        "actor_improperSearchDaemon_queryTelegraph_n_05",
+        "actor_improperSearchDaemon_queryTelegraph_n_06",
+        "actor_improperSearchDaemon_queryTelegraph_e_01",
+        "actor_improperSearchDaemon_queryTelegraph_e_02",
+        "actor_improperSearchDaemon_queryTelegraph_e_03",
+        "actor_improperSearchDaemon_queryTelegraph_e_04",
+        "actor_improperSearchDaemon_queryTelegraph_e_05",
+        "actor_improperSearchDaemon_queryTelegraph_e_06",
+        "actor_improperSearchDaemon_queryTelegraph_s_01",
+        "actor_improperSearchDaemon_queryTelegraph_s_02",
+        "actor_improperSearchDaemon_queryTelegraph_s_03",
+        "actor_improperSearchDaemon_queryTelegraph_s_04",
+        "actor_improperSearchDaemon_queryTelegraph_s_05",
+        "actor_improperSearchDaemon_queryTelegraph_s_06",
+        "actor_improperSearchDaemon_queryTelegraph_w_01",
+        "actor_improperSearchDaemon_queryTelegraph_w_02",
+        "actor_improperSearchDaemon_queryTelegraph_w_03",
+        "actor_improperSearchDaemon_queryTelegraph_w_04",
+        "actor_improperSearchDaemon_queryTelegraph_w_05",
+        "actor_improperSearchDaemon_queryTelegraph_w_06"
+      ],
+      "framesPerSecond": 8,
+      "loop": false,
+      "anchor": {
+        "x": 40,
+        "y": 70
+      },
+      "authoritativeEventMarker": "none",
+      "cancelWindows": [
+        "hurt",
+        "defeat"
+      ],
+      "blendOrTransition": "telegraph",
+      "reducedMotionClip": "improperSearchDaemon_queryTelegraph",
+      "audioCue": "daemon_query",
+      "vfxCue": "none"
+    },
+    {
+      "clipId": "improperSearchDaemon_queryResolve",
+      "actorRole": "improperSearchDaemon",
+      "state": "queryResolve",
+      "directions": [
+        "n",
+        "e",
+        "s",
+        "w"
+      ],
+      "frameIds": [
+        "actor_improperSearchDaemon_queryResolve_n_01",
+        "actor_improperSearchDaemon_queryResolve_n_02",
+        "actor_improperSearchDaemon_queryResolve_e_01",
+        "actor_improperSearchDaemon_queryResolve_e_02",
+        "actor_improperSearchDaemon_queryResolve_s_01",
+        "actor_improperSearchDaemon_queryResolve_s_02",
+        "actor_improperSearchDaemon_queryResolve_w_01",
+        "actor_improperSearchDaemon_queryResolve_w_02"
+      ],
+      "framesPerSecond": 12,
+      "loop": false,
+      "anchor": {
+        "x": 40,
+        "y": 70
+      },
+      "authoritativeEventMarker": "playerDamaged",
+      "cancelWindows": [
+        "hurt",
+        "defeat"
+      ],
+      "blendOrTransition": "cutOnEvent",
+      "reducedMotionClip": "improperSearchDaemon_queryResolve",
+      "audioCue": "none",
+      "vfxCue": "none"
+    },
+    {
+      "clipId": "improperSearchDaemon_dashTelegraph",
+      "actorRole": "improperSearchDaemon",
+      "state": "dashTelegraph",
+      "directions": [
+        "n",
+        "e",
+        "s",
+        "w"
+      ],
+      "frameIds": [
+        "actor_improperSearchDaemon_dashTelegraph_n_01",
+        "actor_improperSearchDaemon_dashTelegraph_n_02",
+        "actor_improperSearchDaemon_dashTelegraph_n_03",
+        "actor_improperSearchDaemon_dashTelegraph_n_04",
+        "actor_improperSearchDaemon_dashTelegraph_n_05",
+        "actor_improperSearchDaemon_dashTelegraph_n_06",
+        "actor_improperSearchDaemon_dashTelegraph_e_01",
+        "actor_improperSearchDaemon_dashTelegraph_e_02",
+        "actor_improperSearchDaemon_dashTelegraph_e_03",
+        "actor_improperSearchDaemon_dashTelegraph_e_04",
+        "actor_improperSearchDaemon_dashTelegraph_e_05",
+        "actor_improperSearchDaemon_dashTelegraph_e_06",
+        "actor_improperSearchDaemon_dashTelegraph_s_01",
+        "actor_improperSearchDaemon_dashTelegraph_s_02",
+        "actor_improperSearchDaemon_dashTelegraph_s_03",
+        "actor_improperSearchDaemon_dashTelegraph_s_04",
+        "actor_improperSearchDaemon_dashTelegraph_s_05",
+        "actor_improperSearchDaemon_dashTelegraph_s_06",
+        "actor_improperSearchDaemon_dashTelegraph_w_01",
+        "actor_improperSearchDaemon_dashTelegraph_w_02",
+        "actor_improperSearchDaemon_dashTelegraph_w_03",
+        "actor_improperSearchDaemon_dashTelegraph_w_04",
+        "actor_improperSearchDaemon_dashTelegraph_w_05",
+        "actor_improperSearchDaemon_dashTelegraph_w_06"
+      ],
+      "framesPerSecond": 10,
+      "loop": false,
+      "anchor": {
+        "x": 40,
+        "y": 70
+      },
+      "authoritativeEventMarker": "none",
+      "cancelWindows": [
+        "hurt",
+        "defeat"
+      ],
+      "blendOrTransition": "telegraph",
+      "reducedMotionClip": "improperSearchDaemon_dashTelegraph",
+      "audioCue": "daemon_dash",
+      "vfxCue": "none"
+    },
+    {
+      "clipId": "improperSearchDaemon_dash",
+      "actorRole": "improperSearchDaemon",
+      "state": "dash",
+      "directions": [
+        "n",
+        "e",
+        "s",
+        "w"
+      ],
+      "frameIds": [
+        "actor_improperSearchDaemon_dash_n_01",
+        "actor_improperSearchDaemon_dash_n_02",
+        "actor_improperSearchDaemon_dash_n_03",
+        "actor_improperSearchDaemon_dash_n_04",
+        "actor_improperSearchDaemon_dash_n_05",
+        "actor_improperSearchDaemon_dash_n_06",
+        "actor_improperSearchDaemon_dash_e_01",
+        "actor_improperSearchDaemon_dash_e_02",
+        "actor_improperSearchDaemon_dash_e_03",
+        "actor_improperSearchDaemon_dash_e_04",
+        "actor_improperSearchDaemon_dash_e_05",
+        "actor_improperSearchDaemon_dash_e_06",
+        "actor_improperSearchDaemon_dash_s_01",
+        "actor_improperSearchDaemon_dash_s_02",
+        "actor_improperSearchDaemon_dash_s_03",
+        "actor_improperSearchDaemon_dash_s_04",
+        "actor_improperSearchDaemon_dash_s_05",
+        "actor_improperSearchDaemon_dash_s_06",
+        "actor_improperSearchDaemon_dash_w_01",
+        "actor_improperSearchDaemon_dash_w_02",
+        "actor_improperSearchDaemon_dash_w_03",
+        "actor_improperSearchDaemon_dash_w_04",
+        "actor_improperSearchDaemon_dash_w_05",
+        "actor_improperSearchDaemon_dash_w_06"
+      ],
+      "framesPerSecond": 12,
+      "loop": false,
+      "anchor": {
+        "x": 40,
+        "y": 70
+      },
+      "authoritativeEventMarker": "none",
+      "cancelWindows": [
+        "hurt",
+        "defeat"
+      ],
+      "blendOrTransition": "cutOnEvent",
+      "reducedMotionClip": "improperSearchDaemon_dash",
+      "audioCue": "none",
+      "vfxCue": "none"
+    },
+    {
+      "clipId": "improperSearchDaemon_recover",
+      "actorRole": "improperSearchDaemon",
+      "state": "recover",
+      "directions": [
+        "n",
+        "e",
+        "s",
+        "w"
+      ],
+      "frameIds": [
+        "actor_improperSearchDaemon_recover_n_01",
+        "actor_improperSearchDaemon_recover_n_02",
+        "actor_improperSearchDaemon_recover_n_03",
+        "actor_improperSearchDaemon_recover_n_04",
+        "actor_improperSearchDaemon_recover_e_01",
+        "actor_improperSearchDaemon_recover_e_02",
+        "actor_improperSearchDaemon_recover_e_03",
+        "actor_improperSearchDaemon_recover_e_04",
+        "actor_improperSearchDaemon_recover_s_01",
+        "actor_improperSearchDaemon_recover_s_02",
+        "actor_improperSearchDaemon_recover_s_03",
+        "actor_improperSearchDaemon_recover_s_04",
+        "actor_improperSearchDaemon_recover_w_01",
+        "actor_improperSearchDaemon_recover_w_02",
+        "actor_improperSearchDaemon_recover_w_03",
+        "actor_improperSearchDaemon_recover_w_04"
+      ],
+      "framesPerSecond": 4,
+      "loop": false,
+      "anchor": {
+        "x": 40,
+        "y": 70
+      },
+      "authoritativeEventMarker": "none",
+      "cancelWindows": [
+        "hurt",
+        "defeat"
+      ],
+      "blendOrTransition": "returnToLocomotion",
+      "reducedMotionClip": "improperSearchDaemon_recover",
+      "audioCue": "none",
+      "vfxCue": "none"
+    },
+    {
+      "clipId": "improperSearchDaemon_hurt",
+      "actorRole": "improperSearchDaemon",
+      "state": "hurt",
+      "directions": [
+        "n",
+        "e",
+        "s",
+        "w"
+      ],
+      "frameIds": [
+        "actor_improperSearchDaemon_hurt_n_01",
+        "actor_improperSearchDaemon_hurt_n_02",
+        "actor_improperSearchDaemon_hurt_n_03",
+        "actor_improperSearchDaemon_hurt_e_01",
+        "actor_improperSearchDaemon_hurt_e_02",
+        "actor_improperSearchDaemon_hurt_e_03",
+        "actor_improperSearchDaemon_hurt_s_01",
+        "actor_improperSearchDaemon_hurt_s_02",
+        "actor_improperSearchDaemon_hurt_s_03",
+        "actor_improperSearchDaemon_hurt_w_01",
+        "actor_improperSearchDaemon_hurt_w_02",
+        "actor_improperSearchDaemon_hurt_w_03"
+      ],
+      "framesPerSecond": 20,
+      "loop": false,
+      "anchor": {
+        "x": 40,
+        "y": 70
+      },
+      "authoritativeEventMarker": "entityDamaged",
+      "cancelWindows": [
+        "defeat"
+      ],
+      "blendOrTransition": "cutOnEvent",
+      "reducedMotionClip": "improperSearchDaemon_hurt",
+      "audioCue": "none",
+      "vfxCue": "none"
+    },
+    {
+      "clipId": "improperSearchDaemon_defeat",
+      "actorRole": "improperSearchDaemon",
+      "state": "defeat",
+      "directions": [
+        "n",
+        "e",
+        "s",
+        "w"
+      ],
+      "frameIds": [
+        "actor_improperSearchDaemon_defeat_n_01",
+        "actor_improperSearchDaemon_defeat_n_02",
+        "actor_improperSearchDaemon_defeat_n_03",
+        "actor_improperSearchDaemon_defeat_n_04",
+        "actor_improperSearchDaemon_defeat_n_05",
+        "actor_improperSearchDaemon_defeat_n_06",
+        "actor_improperSearchDaemon_defeat_e_01",
+        "actor_improperSearchDaemon_defeat_e_02",
+        "actor_improperSearchDaemon_defeat_e_03",
+        "actor_improperSearchDaemon_defeat_e_04",
+        "actor_improperSearchDaemon_defeat_e_05",
+        "actor_improperSearchDaemon_defeat_e_06",
+        "actor_improperSearchDaemon_defeat_s_01",
+        "actor_improperSearchDaemon_defeat_s_02",
+        "actor_improperSearchDaemon_defeat_s_03",
+        "actor_improperSearchDaemon_defeat_s_04",
+        "actor_improperSearchDaemon_defeat_s_05",
+        "actor_improperSearchDaemon_defeat_s_06",
+        "actor_improperSearchDaemon_defeat_w_01",
+        "actor_improperSearchDaemon_defeat_w_02",
+        "actor_improperSearchDaemon_defeat_w_03",
+        "actor_improperSearchDaemon_defeat_w_04",
+        "actor_improperSearchDaemon_defeat_w_05",
+        "actor_improperSearchDaemon_defeat_w_06"
+      ],
+      "framesPerSecond": 12,
+      "loop": false,
+      "anchor": {
+        "x": 40,
+        "y": 70
+      },
+      "authoritativeEventMarker": "eliteDefeated",
+      "cancelWindows": [],
+      "blendOrTransition": "terminal",
+      "reducedMotionClip": "improperSearchDaemon_defeat",
+      "audioCue": "none",
+      "vfxCue": "none"
+    },
+    {
       "clipId": "algorithmicModerate_commandPulse",
       "actorRole": "algorithmicModerate",
       "state": "commandPulse",

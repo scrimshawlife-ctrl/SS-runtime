@@ -50,6 +50,12 @@ public struct ClipCatalog: Equatable, Sendable {
         "sutroSignalWitch_anticipate", "sutroSignalWitch_commit",
         "autonomousInformant_anticipate", "autonomousInformant_commit",
         "victorianVendor_anticipate", "victorianVendor_commit",
+        // animation-civic-seam-001: the elite's clips map one-to-one onto the
+        // authoritative state sequence in bosses.md.
+        "improperSearchDaemon_pursuit", "improperSearchDaemon_queryTelegraph",
+        "improperSearchDaemon_queryResolve", "improperSearchDaemon_dashTelegraph",
+        "improperSearchDaemon_dash", "improperSearchDaemon_recover",
+        "improperSearchDaemon_hurt", "improperSearchDaemon_defeat",
         "algorithmicModerate_commandPulse", "algorithmicModerate_sweep",
         "algorithmicModerate_targetedStrike", "algorithmicModerate_reinforcementCall",
         "algorithmicModerate_phaseTransition", "algorithmicModerate_stagger",

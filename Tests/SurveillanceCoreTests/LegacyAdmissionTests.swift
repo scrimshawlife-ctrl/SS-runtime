@@ -143,7 +143,8 @@ struct LegacyAdmissionTests {
                 .filter { $0.admissionDecision == .adaptedAdmitted && $0.record.kind == .sprite }
                 .map(\.record.assetId)
         )
-        #expect(frames.count == 408)
+        // 564 after the Improper Search Daemon gained its clip vocabulary.
+        #expect(frames.count == 564)
         #expect(backed.count == 112)
         #expect(backed.isSubset(of: frames))
         // Every camera frame is backed; the cast roles are entirely unbacked.
