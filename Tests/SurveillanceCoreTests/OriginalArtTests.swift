@@ -105,24 +105,47 @@ struct OriginalArtTests {
         }
     }
 
-    /// Partial coverage stays honest: a short clip is not backed, and must not
-    /// borrow a frame to look complete.
-    @Test func shortClipsRemainUnbacked() throws {
+    /// Every clip is now backed, so no actor falls back to a blockout.
+    @Test func everyClipIsFullyBacked() throws {
         let library = try ClipFrameLibrary.bundled()
-        for clipId in [
-            "player_idle",
-            "algorithmicModerate_narrowTailoring",
-            "algorithmicModerate_temporaryOrder",
-            "algorithmicModerate_independentReview"
-        ] {
-            let clip = try #require(library.clip(clipId), "\(clipId)")
-            for direction in clip.directions {
+        for clip in library.clips.values {
+            let directions = clip.directions.isEmpty ? [nil] : clip.directions.map { Optional($0) }
+            for direction in directions {
                 #expect(
-                    !library.isBacked(clipId: clipId, direction: direction),
-                    "\(clipId) [\(direction)] reports backed while short"
+                    library.isBacked(clipId: clip.clipId, direction: direction),
+                    "\(clip.clipId) [\(direction ?? "-")] is not backed"
                 )
             }
         }
+    }
+
+    /// The all-or-nothing rule, tested as a rule rather than by relying on a
+    /// real gap — every real gap is now filled, and the guarantee still has to
+    /// hold for the next delivery that arrives incomplete.
+    @Test func oneMissingFrameLeavesADirectionUnbacked() throws {
+        let full = try ClipFrameLibrary.bundled()
+        let clip = try #require(full.clip("player_move"))
+        let ids = full.frameIds(clipId: "player_move", direction: "n")
+        #expect(ids.count > 1)
+
+        // Same clip, one frame of the north direction withheld.
+        var paths = full.deliveredPaths
+        paths.removeValue(forKey: ids[ids.count - 1])
+        let holed = ClipFrameLibrary(clips: ["player_move": clip], deliveredPaths: paths)
+
+        #expect(!holed.isBacked(clipId: "player_move", direction: "n"))
+        #expect(holed.deliveredFrames(clipId: "player_move", direction: "n") == nil)
+        // Only that direction is affected; the rest still render.
+        #expect(holed.isBacked(clipId: "player_move", direction: "e"))
+    }
+
+    /// A direction never borrows a frame from another direction to look whole.
+    @Test func aDirectionNeverBorrowsFromAnother() throws {
+        let library = try ClipFrameLibrary.bundled()
+        let north = library.frameIds(clipId: "player_move", direction: "n")
+        let east = library.frameIds(clipId: "player_move", direction: "e")
+        #expect(!north.isEmpty)
+        #expect(Set(north).isDisjoint(with: Set(east)))
     }
 
     /// Overall coverage, so a regression in the pipeline is visible as a number.
@@ -130,6 +153,6 @@ struct OriginalArtTests {
         let library = try ClipFrameLibrary.bundled()
         let coverage = library.coverage
         #expect(coverage.total == 588)
-        #expect(coverage.backed == 492)
+        #expect(coverage.backed == 588)
     }
 }
