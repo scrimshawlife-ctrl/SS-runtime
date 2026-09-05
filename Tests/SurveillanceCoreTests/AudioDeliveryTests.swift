@@ -76,7 +76,7 @@ struct AudioDeliveryTests {
         }
     }
 
-    /// Coverage is what the record says it is: 13 of 24 event IDs backed.
+    /// Coverage is what the record says it is: 18 of 24 event IDs backed.
     @Test func audioCoverageIsMeasurable() throws {
         let catalog = try AssetCatalog.bundled()
         let eventIds = Set(try presentation()["audioEventIds"] as! [String])
@@ -86,7 +86,7 @@ struct AudioDeliveryTests {
             .filter { eventIds.contains($0) }
 
         #expect(eventIds.count == 24)
-        #expect(backed.count == 13)
+        #expect(backed.count == 18)
     }
 
     /// One source may legitimately back several IDs — `sfx_upgrade_selected`
@@ -152,5 +152,62 @@ struct MusicBedCoverageTests {
                 #expect(!source.contains(city), "\(entry.record.assetId) sources \(city)")
             }
         }
+    }
+}
+
+/// The six cues with no admitted source are the ones whose gameplay meaning no
+/// legacy sound carries. LC-010 admits a clip only where the meaning matches,
+/// so these stay unbacked rather than borrowing a sound that means something
+/// else — a wrong cue is worse than silence, because it teaches the player the
+/// wrong thing.
+@Suite(.serialized)
+struct UnbackedCueTests {
+    @Test func theUnbackedCuesAreExactlyTheOnesWithNoLegacyMeaning() throws {
+        let catalog = try AssetCatalog.bundled()
+        let presentation = try JSONSerialization.jsonObject(
+            with: SpecBundle.contract("presentation-assets-001")
+        ) as! [String: Any]
+        let backed = Set(
+            catalog.entries
+                .filter {
+                    $0.admissionDecision == .adaptedAdmitted
+                        || $0.admissionDecision == .originalAccepted
+                }
+                .map(\.record.assetId)
+        )
+        let unbacked = Set((presentation["audioEventIds"] as! [String]).filter { !backed.contains($0) })
+
+        #expect(unbacked == [
+            "player_dodge",       // no legacy dodge; the mechanic did not exist
+            "camera_hit_02",      // must differ audibly from camera_hit_01
+            "daemon_dash",        // no legacy rush or charge cue
+            "boss_defeated",      // legacy has activation, which is the opposite
+            "extraction_tick",    // no legacy countdown metronome
+            "extraction_reset"    // no legacy failure-to-hold cue
+        ])
+    }
+
+    /// Every unbacked cue is still planned, so the contract is not silently
+    /// short of an ID.
+    @Test func unbackedCuesRemainPlanned() throws {
+        let catalog = try AssetCatalog.bundled()
+        for id in [
+            "player_dodge", "camera_hit_02", "daemon_dash",
+            "boss_defeated", "extraction_tick", "extraction_reset"
+        ] {
+            let entry = try #require(catalog.entries.first { $0.record.assetId == id }, "\(id)")
+            #expect(entry.admissionDecision == .plannedOriginal, "\(id)")
+        }
+    }
+
+    /// camera_hit_01 and camera_hit_02 alternate by hit count, so they must
+    /// never resolve to the same file.
+    @Test func alternatingCameraHitsNeverShareASource() throws {
+        let catalog = try AssetCatalog.bundled()
+        let first = catalog.entries.first { $0.record.assetId == "camera_hit_01" }?.record.runtimePath
+        let second = catalog.entries.first { $0.record.assetId == "camera_hit_02" }?.record.runtimePath
+        #expect(first != nil)
+        // Unbacked today; if it is ever backed it must not reuse _01's file.
+        if let second { #expect(second != first) }
     }
 }
