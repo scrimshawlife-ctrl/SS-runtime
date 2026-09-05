@@ -91,7 +91,13 @@ AUDIO_MAP: dict[str, str] = {
     "player_damage": "Runtime/sfx_player_damaged.caf",
     "player_death": "Runtime/sfx_player_defeated.caf",
     "camera_destroy": "Runtime/sfx_lpr_destroyed.caf",
-    "camera_hit_01": "Shared/sfx_camera_scan_sweep.caf",
+    # The manifest is explicit that sfx_countermeasure_hit is "Countermeasure
+    # impact on surveillance hardware" — that is a Camera hit, so it backs
+    # camera_hit_01 as well as impact_enemy. camera_hit_02 must sound different
+    # because the two alternate by hit count, so it takes the scan sweep: the
+    # Camera's own servo and optics reacting to being struck.
+    "camera_hit_01": "Runtime/sfx_countermeasure_hit.caf",
+    "camera_hit_02": "Shared/sfx_camera_scan_sweep.caf",
     "camera_field_off": "Shared/sfx_blind_spot_field_loop.caf",
     "exposure_state_up": "Runtime/sfx_suspicion_tier_up.caf",
     "extraction_armed": "Runtime/sfx_extraction_opened.caf",
@@ -121,6 +127,20 @@ AUDIO_MAP: dict[str, str] = {
     "lockdown_enter": "Runtime/sfx_boss_activated.caf",
     "daemon_query": "Runtime/sfx_director_decision.caf",
     "network_blackout": "Runtime/sfx_build_synergy_changed.caf",
+    # legacy-admission.md §Individually admissible non-San-Francisco cues.
+    # Single cues only, admitted on recorded meaning, with no city name in the
+    # asset ID. Music, ambience, and city packs stay excluded.
+    #
+    #   daemon_dash      <- "black paper strip slides across glass ... camera
+    #                       relay disappears behind an opaque mechanical
+    #                       shutter": the elite's attack is a Redaction Dash
+    #   boss_defeated    <- "network links snap and fall silent from the edges
+    #                       inward ... server cathedral powers down"
+    #   extraction_reset <- "municipal relay powers off, then nodes wake
+    #                       independently and reconnect"
+    "daemon_dash": "Cities/louisville/sfx_louisville_map_redaction.caf",
+    "boss_defeated": "Cities/atlanta/stinger_atlanta_final_blind_spot.caf",
+    "extraction_reset": "Cities/los_angeles/sfx_los_angeles_private_network_persist.caf",
 }
 
 # Music beds, registered as `musicAssetIds` in presentation-assets-001. These

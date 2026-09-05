@@ -66,13 +66,48 @@ struct LegacyAdmissionTests {
         }
     }
 
-    /// Only San Francisco content is in scope (T102).
-    @Test func noAdmittedAssetComesFromAnotherCity() throws {
+    /// T102 still excludes non-San-Francisco *packs*. The amendment admits
+    /// individual cues only, so the boundary is asserted in three parts: no
+    /// pack asset may come from another city, no admitted asset ID may carry a
+    /// city name, and the exception set is exactly what the spec names.
+    @Test func onlyNamedSingleCuesComeFromAnotherCity() throws {
         let otherCities = [
             "atlanta", "columbus", "dayton", "los_angeles", "louisville",
             "new_york", "oakland", "tulsa", "wichita"
         ]
+        let permitted: Set<String> = ["daemon_dash", "boss_defeated", "extraction_reset"]
+
         for entry in try admitted() {
+            let id = entry.record.assetId
+            let source = (entry.record.source ?? "").lowercased()
+            let fromAnotherCity = otherCities.contains { source.contains($0) }
+
+            // A city name never reaches an asset ID, so nothing on screen or in
+            // a receipt names another city.
+            for city in otherCities {
+                #expect(!id.lowercased().contains(city), "\(id) carries a city name")
+            }
+            guard fromAnotherCity else { continue }
+
+            // Only the cues the spec names, and only single sfx_/stinger_ files.
+            #expect(permitted.contains(id), "\(id) is not an admitted non-SF cue")
+            let file = source.split(separator: "/").last.map(String.init) ?? ""
+            #expect(
+                file.hasPrefix("sfx_") || file.hasPrefix("stinger_"),
+                "\(id) sources \(file), which is not a single cue"
+            )
+            #expect(!file.hasPrefix("music_"), "\(id) sources music from another city")
+            #expect(!file.hasPrefix("amb_"), "\(id) sources ambience from another city")
+        }
+    }
+
+    /// No environment or sprite asset may come from another city at all.
+    @Test func noVisualAssetComesFromAnotherCity() throws {
+        let otherCities = [
+            "atlanta", "columbus", "dayton", "los_angeles", "louisville",
+            "new_york", "oakland", "tulsa", "wichita"
+        ]
+        for entry in try admitted() where entry.record.kind == .sprite || entry.record.kind == .ui {
             let source = (entry.record.source ?? "").lowercased()
             for city in otherCities {
                 #expect(!source.contains(city), "\(entry.record.assetId) sources \(city)")
