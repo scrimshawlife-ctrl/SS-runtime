@@ -12,9 +12,19 @@ struct AssetCatalogTests {
         // exist. Every one must be an admitted legacy asset with complete
         // provenance — nothing may be accepted on any other footing.
         for entry in catalog.entries where entry.record.productionStatus == .accepted {
-            #expect(entry.admissionDecision == .adaptedAdmitted, "\(entry.record.assetId)")
-            #expect(entry.record.provenance == .adaptedLegacy, "\(entry.record.assetId)")
-            #expect(entry.record.source?.hasPrefix("legacy://") == true, "\(entry.record.assetId)")
+            // Accepted means admitted legacy or a delivered original; nothing
+            // else may be accepted.
+            #expect(
+                entry.admissionDecision == .adaptedAdmitted
+                    || entry.admissionDecision == .originalAccepted,
+                "\(entry.record.assetId)"
+            )
+            if entry.admissionDecision == .adaptedAdmitted {
+                #expect(entry.record.provenance == .adaptedLegacy, "\(entry.record.assetId)")
+                #expect(entry.record.source?.hasPrefix("legacy://") == true, "\(entry.record.assetId)")
+            } else {
+                #expect(entry.record.provenance == .projectOriginal, "\(entry.record.assetId)")
+            }
             #expect(entry.record.sha256?.count == 64, "\(entry.record.assetId)")
             #expect(entry.record.license?.isEmpty == false, "\(entry.record.assetId)")
             #expect(entry.record.runtimePath?.isEmpty == false, "\(entry.record.assetId)")
@@ -40,6 +50,10 @@ struct AssetCatalogTests {
             case .adaptedAdmitted:
                 #expect(entry.record.productionStatus == .accepted, "\(id)")
                 #expect(entry.record.provenance == .adaptedLegacy, "\(id)")
+                #expect(entry.record.sha256?.count == 64, "\(id)")
+            case .originalAccepted:
+                #expect(entry.record.productionStatus == .accepted, "\(id)")
+                #expect(entry.record.provenance == .projectOriginal, "\(id)")
                 #expect(entry.record.sha256?.count == 64, "\(id)")
             case .excluded, .rejected, .sfCandidate:
                 Issue.record("required presentation id \(id) is not admissible")

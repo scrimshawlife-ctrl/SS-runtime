@@ -18,7 +18,13 @@ struct AssetIntakeChecks {
         // A runtimePath now exists only on an admitted legacy asset, and never
         // points back into the evidence tree.
         for entry in catalog.entries where entry.record.runtimePath != nil {
-            #expect(entry.admissionDecision == .adaptedAdmitted, "\(entry.record.assetId)")
+            // A runtimePath belongs only to admitted legacy or a delivered
+            // original, and never points back into the evidence tree.
+            #expect(
+                entry.admissionDecision == .adaptedAdmitted
+                    || entry.admissionDecision == .originalAccepted,
+                "\(entry.record.assetId)"
+            )
             #expect(
                 entry.record.runtimePath?.hasPrefix("ArtSources/") == false,
                 "\(entry.record.assetId)"

@@ -11,6 +11,15 @@ import SurveillanceCore
 /// `PresentationSnapshot` to the renderer.
 @MainActor
 final class WorldRenderer {
+    /// visual-language-001 sprite boxes.
+    static func spriteBox(for role: String) -> CGSize {
+        switch role {
+        case "improperSearchDaemon": CGSize(width: 80, height: 80)
+        case "algorithmicModerate": CGSize(width: 96, height: 96)
+        default: CGSize(width: 64, height: 64)
+        }
+    }
+
     /// Draw order. Later layers sit on top.
     private enum Layer: Int, CaseIterable {
         case solids
@@ -337,14 +346,29 @@ final class WorldRenderer {
 
         for enemy in snap.enemies {
             let key = "enemy-\(enemy.id.raw)"
-            let body = node(.actors, key) {
-                let shape = SKShapeNode(path: Geometry.silhouettePath(enemy.silhouette))
-                shape.fillColor = Palette.enemyFill(enemy.role)
-                shape.strokeColor = Palette.enemyStroke
-                shape.lineWidth = 1
-                return shape
+            let position = CGPoint(x: enemy.x, y: enemy.y)
+            let box = Self.spriteBox(for: enemy.role)
+            let drawn = enemy.clipId.map {
+                playClip(
+                    $0,
+                    direction: enemy.direction,
+                    key: key,
+                    at: position,
+                    boxWidth: box.width,
+                    boxHeight: box.height,
+                    layer: .actors
+                )
+            } ?? false
+            if !drawn {
+                let body = node(.actors, key) {
+                    let shape = SKShapeNode(path: Geometry.silhouettePath(enemy.silhouette))
+                    shape.fillColor = Palette.enemyFill(enemy.role)
+                    shape.strokeColor = Palette.enemyStroke
+                    shape.lineWidth = 1
+                    return shape
+                }
+                body.position = position
             }
-            body.position = CGPoint(x: enemy.x, y: enemy.y)
         }
         endLayer(.actors)
     }
