@@ -113,3 +113,44 @@ struct AudioDeliveryTests {
         }
     }
 }
+
+/// Every music state now has a bed, so no state falls silent.
+@Suite(.serialized)
+struct MusicBedCoverageTests {
+    @Test func everyMusicStateHasADeliveredBed() throws {
+        let catalog = try AssetCatalog.bundled()
+        let backed = Set(
+            catalog.entries
+                .filter {
+                    $0.admissionDecision == .adaptedAdmitted
+                        || $0.admissionDecision == .originalAccepted
+                }
+                .map(\.record.assetId)
+        )
+        for state in [
+            MusicState.explore, .observed, .lockdown, .boss, .extraction, .terminal
+        ] {
+            let id = "music_\(state.rawValue)"
+            #expect(backed.contains(id), "\(state.rawValue) has no bed")
+        }
+        #expect(backed.contains("ambience_civic_seam"))
+    }
+
+    /// T102 excludes non-San-Francisco *city packs*. `Shared/` is not a city
+    /// pack, which is the route these beds took; a bed sourced from another
+    /// city would be a spec violation, so the boundary is asserted.
+    @Test func noBedComesFromAnotherCityPack() throws {
+        let catalog = try AssetCatalog.bundled()
+        let cities = [
+            "atlanta", "columbus", "dayton", "los_angeles", "louisville",
+            "new_york", "oakland", "tulsa", "wichita"
+        ]
+        for entry in catalog.entries
+        where entry.record.kind == .music && entry.admissionDecision == .adaptedAdmitted {
+            let source = (entry.record.source ?? "").lowercased()
+            for city in cities {
+                #expect(!source.contains(city), "\(entry.record.assetId) sources \(city)")
+            }
+        }
+    }
+}
