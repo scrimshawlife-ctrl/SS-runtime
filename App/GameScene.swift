@@ -164,7 +164,9 @@ final class GameScene: SKScene {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.instrumentation.noteMemoryWarning()
+            Task { @MainActor in
+                self?.instrumentation.noteMemoryWarning()
+            }
         }
 #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments

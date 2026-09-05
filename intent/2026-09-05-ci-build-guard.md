@@ -2,7 +2,7 @@
 
 Author: prabu-openclaw
 Date: 2026-09-05
-Status: draft
+Status: accepted
 Product: Surveillance Survivor Runtime (`scrimshawlife-ctrl/SS-runtime`)
 
 This file is a proto-spec. It comes **before** specify.
