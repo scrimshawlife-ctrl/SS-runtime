@@ -136,37 +136,119 @@ struct MusicBedCoverageTests {
         #expect(backed.contains("ambience_civic_seam"))
     }
 
-    /// T102 excludes non-San-Francisco *city packs*. `Shared/` is not a city
-    /// pack, which is the route these beds took; a bed sourced from another
-    /// city would be a spec violation, so the boundary is asserted.
-    @Test func noBedComesFromAnotherCityPack() throws {
+    /// T102 excludes non-San-Francisco *city packs*. `Shared/` is not one, which
+    /// is how the state beds were admitted. The only city music permitted is the
+    /// four boss phase beds the spec names.
+    @Test func onlyTheNamedBossPhaseBedsComeFromACityPack() throws {
         let catalog = try AssetCatalog.bundled()
         let cities = [
             "atlanta", "columbus", "dayton", "los_angeles", "louisville",
             "new_york", "oakland", "tulsa", "wichita"
         ]
+        let permitted: Set<String> = [
+            "music_boss_publicSafety", "music_boss_civilLiberties",
+            "music_boss_temporarySafeguard", "music_boss_independentReview"
+        ]
         for entry in catalog.entries
         where entry.record.kind == .music && entry.admissionDecision == .adaptedAdmitted {
             let source = (entry.record.source ?? "").lowercased()
+            guard cities.contains(where: { source.contains($0) }) else { continue }
+            #expect(
+                permitted.contains(entry.record.assetId),
+                "\(entry.record.assetId) takes city music it is not permitted"
+            )
+        }
+    }
+
+    /// The state beds themselves stay San Francisco or Shared.
+    @Test func stateBedsAreNeverCityMusic() throws {
+        let catalog = try AssetCatalog.bundled()
+        let cities = [
+            "atlanta", "columbus", "dayton", "los_angeles", "louisville",
+            "new_york", "oakland", "tulsa", "wichita"
+        ]
+        for id in [
+            "music_explore", "music_observed", "music_lockdown",
+            "music_boss", "music_extraction", "music_terminal", "ambience_civic_seam"
+        ] {
+            guard let entry = catalog.entries.first(where: { $0.record.assetId == id }) else { continue }
+            let source = (entry.record.source ?? "").lowercased()
             for city in cities {
-                #expect(!source.contains(city), "\(entry.record.assetId) sources \(city)")
+                #expect(!source.contains(city), "\(id) sources \(city)")
             }
         }
     }
 }
 
-/// The six cues with no admitted source are the ones whose gameplay meaning no
-/// legacy sound carries. LC-010 admits a clip only where the meaning matches,
-/// so these stay unbacked rather than borrowing a sound that means something
-/// else — a wrong cue is worse than silence, because it teaches the player the
-/// wrong thing.
+/// The Captain's four phases each get their own bed, without adding a music
+/// state. `audio-haptics-001` keeps one `boss` state; only the bed it plays
+/// changes, selected from authoritative phase.
 @Suite(.serialized)
-struct UnbackedCueTests {
-    @Test func theUnbackedCuesAreExactlyTheOnesWithNoLegacyMeaning() throws {
+struct BossPhaseMusicTests {
+    private func query(phase: BossPhase?) -> AudioWorldQuery {
+        AudioWorldQuery(
+            playerId: EntityID(1),
+            playerPosition: VecI(x: 0, y: 0).asQ8,
+            outcome: .playing,
+            extractionArmed: false,
+            hasAlgorithmicModerate: true,
+            lockdownEntered: false,
+            detectionState: .hidden,
+            bossPhase: phase,
+            viewport: ViewportSpec(
+                baselineWorldWidth: 896,
+                baselineWorldHeight: 414,
+                deadZoneWidth: 96,
+                deadZoneHeight: 64,
+                maximumLookAheadUnits: 96
+            ),
+            positions: [:]
+        )
+    }
+
+    /// The state stays `boss` in every phase — this adds no music state.
+    @Test func phaseNeverChangesTheMusicState() {
+        for phase in [
+            BossPhase.publicSafety, .civilLiberties, .temporarySafeguard, .independentReview
+        ] {
+            #expect(AudioProjector.musicState(query(phase: phase)) == .boss)
+        }
+        #expect(AudioProjector.musicState(query(phase: nil)) == .boss)
+    }
+
+    /// Each phase selects a distinct bed.
+    @Test func everyPhaseSelectsItsOwnBed() {
+        let beds = [
+            BossPhase.publicSafety, .civilLiberties, .temporarySafeguard, .independentReview
+        ].map { AudioProjector.musicBedAssetId(query(phase: $0)) }
+
+        #expect(beds == [
+            "music_boss_publicSafety",
+            "music_boss_civilLiberties",
+            "music_boss_temporarySafeguard",
+            "music_boss_independentReview"
+        ])
+        #expect(Set(beds).count == 4)
+    }
+
+    /// Without a phase the boss state plays the plain bed, so an encounter is
+    /// never silent for want of phase information.
+    @Test func noPhaseFallsBackToThePlainBossBed() {
+        #expect(AudioProjector.musicBedAssetId(query(phase: nil)) == "music_boss")
+    }
+
+    /// Every other state's bed is still its own name.
+    @Test func nonBossStatesAreUnaffected() {
+        var world = query(phase: .publicSafety)
+        world.hasAlgorithmicModerate = false
+        world.lockdownEntered = true
+        #expect(AudioProjector.musicState(world) == .lockdown)
+        #expect(AudioProjector.musicBedAssetId(world) == "music_lockdown")
+    }
+
+    /// All four beds are delivered, and no city name reaches an asset ID.
+    @Test func everyPhaseBedIsDeliveredAndCityFree() throws {
         let catalog = try AssetCatalog.bundled()
-        let presentation = try JSONSerialization.jsonObject(
-            with: SpecBundle.contract("presentation-assets-001")
-        ) as! [String: Any]
         let backed = Set(
             catalog.entries
                 .filter {
@@ -175,32 +257,25 @@ struct UnbackedCueTests {
                 }
                 .map(\.record.assetId)
         )
-        let unbacked = Set((presentation["audioEventIds"] as! [String]).filter { !backed.contains($0) })
-
-        #expect(unbacked == [
-            "player_dodge",     // the legacy build had no dodge mechanic
-            "extraction_tick"   // nothing in the library is a countdown metronome
-        ])
-    }
-
-    /// Every unbacked cue is still planned, so the contract is not silently
-    /// short of an ID.
-    @Test func unbackedCuesRemainPlanned() throws {
-        let catalog = try AssetCatalog.bundled()
-        for id in ["player_dodge", "extraction_tick"] {
-            let entry = try #require(catalog.entries.first { $0.record.assetId == id }, "\(id)")
-            #expect(entry.admissionDecision == .plannedOriginal, "\(id)")
+        for phase in [
+            BossPhase.publicSafety, .civilLiberties, .temporarySafeguard, .independentReview
+        ] {
+            let id = "music_boss_\(phase.rawValue)"
+            #expect(backed.contains(id), "\(id) is not delivered")
+            #expect(!id.lowercased().contains("atlanta"), "\(id) carries a city name")
         }
     }
 
-    /// camera_hit_01 and camera_hit_02 alternate by hit count, so they must
-    /// never resolve to the same file.
-    @Test func alternatingCameraHitsNeverShareASource() throws {
+    /// The beds escalate with the phases, so no two phases share one.
+    @Test func noTwoPhasesShareABed() throws {
         let catalog = try AssetCatalog.bundled()
-        let first = catalog.entries.first { $0.record.assetId == "camera_hit_01" }?.record.runtimePath
-        let second = catalog.entries.first { $0.record.assetId == "camera_hit_02" }?.record.runtimePath
-        #expect(first != nil)
-        #expect(second != nil)
-        #expect(second != first)
+        let paths = [
+            "music_boss_publicSafety", "music_boss_civilLiberties",
+            "music_boss_temporarySafeguard", "music_boss_independentReview"
+        ].compactMap { id in
+            catalog.entries.first { $0.record.assetId == id }?.record.runtimePath
+        }
+        #expect(paths.count == 4)
+        #expect(Set(paths).count == 4)
     }
 }

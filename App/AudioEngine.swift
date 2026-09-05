@@ -40,7 +40,10 @@ final class AudioEngine {
     private var voices: [AVAudioPlayer?] = Array(repeating: nil, count: effectVoiceCount)
     private var voiceCursor = 0
 
-    private var musicPlayers: [MusicState: AVAudioPlayer] = [:]
+    /// Beds by asset ID, not by state: the boss state selects among four phase
+    /// beds, so state alone is not enough to identify what is playing.
+    private var musicPlayers: [String: AVAudioPlayer] = [:]
+    private var currentBedId: String?
     private var ambience: AVAudioPlayer?
     private(set) var musicState: MusicState = .explore
     private var musicStarted = false
@@ -101,7 +104,7 @@ final class AudioEngine {
             play(cue)
             fire(cue.haptic)
         }
-        setMusic(projection.musicState)
+        setMusic(projection.musicState, bed: projection.musicBedAssetId)
     }
 
     func reset() {
@@ -115,6 +118,7 @@ final class AudioEngine {
         ambience = nil
         musicStarted = false
         musicState = .explore
+        currentBedId = nil
     }
 
     // MARK: - Effects
@@ -155,25 +159,28 @@ final class AudioEngine {
 
     /// `explore → observed → lockdown → boss → extraction → terminal`, crossfading
     /// over one second; terminal begins within 100 ms.
-    private func setMusic(_ state: MusicState) {
+    private func setMusic(_ state: MusicState, bed: String) {
         guard settings.musicEnabled, !settings.reducedSensory else {
             if musicStarted { fadeOutAll() }
             return
         }
         startAmbienceIfNeeded()
-        guard state != musicState || !musicStarted else { return }
+        // A boss phase change moves the bed without moving the state, so the
+        // bed is what decides whether anything needs to crossfade.
+        guard bed != currentBedId || !musicStarted else { return }
 
-        let previous = musicState
+        let previous = currentBedId
         musicState = state
+        currentBedId = bed
         musicStarted = true
         let duration = state == .terminal
             ? Self.terminalCrossfadeSeconds
             : Self.musicCrossfadeSeconds
 
-        if let outgoing = musicPlayers[previous], previous != state {
+        if let previous, previous != bed, let outgoing = musicPlayers[previous] {
             outgoing.setVolume(0, fadeDuration: duration)
         }
-        guard let incoming = musicPlayer(for: state) else { return }
+        guard let incoming = musicPlayer(for: bed) else { return }
         if !incoming.isPlaying {
             incoming.numberOfLoops = -1
             incoming.volume = 0
@@ -183,14 +190,16 @@ final class AudioEngine {
         incoming.setVolume(mix.master * mix.music, fadeDuration: duration)
     }
 
-    private func musicPlayer(for state: MusicState) -> AVAudioPlayer? {
-        if let existing = musicPlayers[state] { return existing }
-        let assetId = Self.musicAssetId(for: state)
-        guard let path = deliveredPaths[assetId],
+    private func musicPlayer(for assetId: String) -> AVAudioPlayer? {
+        if let existing = musicPlayers[assetId] { return existing }
+        // A phase bed that was never accepted falls back to the plain boss bed,
+        // so an incomplete set still scores the encounter.
+        let fallback = assetId.hasPrefix("music_boss_") ? "music_boss" : nil
+        guard let path = deliveredPaths[assetId] ?? fallback.flatMap({ deliveredPaths[$0] }),
               let url = RuntimeAssetBundle.url(forFile: path),
               let player = try? AVAudioPlayer(contentsOf: url)
         else { return nil }
-        musicPlayers[state] = player
+        musicPlayers[assetId] = player
         return player
     }
 

@@ -64,6 +64,10 @@
     "music_boss",
     "music_extraction",
     "music_terminal",
-    "ambience_civic_seam"
+    "ambience_civic_seam",
+    "music_boss_publicSafety",
+    "music_boss_civilLiberties",
+    "music_boss_temporarySafeguard",
+    "music_boss_independentReview"
   ]
 }
