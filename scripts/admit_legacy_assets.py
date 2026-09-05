@@ -141,6 +141,30 @@ AUDIO_MAP: dict[str, str] = {
     "daemon_dash": "Cities/louisville/sfx_louisville_map_redaction.caf",
     "boss_defeated": "Cities/atlanta/stinger_atlanta_final_blind_spot.caf",
     "extraction_reset": "Cities/los_angeles/sfx_los_angeles_private_network_persist.caf",
+    # legacy-admission.md §Approximate substitution. The legacy build had no
+    # Dodge and no countdown metronome, so neither event has a sound that
+    # carries its meaning. Silence is worse than an imperfect cue for both, so
+    # each takes the nearest applicable sound and its record says so plainly.
+    # These are the first two an original-audio pass should replace.
+    "player_dodge": "Cities/san_francisco/sfx_san_francisco_hidden_sensor_fog.caf",
+    "extraction_tick": "Runtime/sfx_interactable_activate.caf",
+}
+
+# Cues admitted as the nearest applicable sound rather than an exact meaning
+# match. Their records say so, so the catalog never overstates its provenance.
+APPROXIMATE = {
+    "player_dodge": (
+        "APPROXIMATE. The legacy build had no Dodge, so no sound carries the "
+        "event. This is the only moving-air sound in the library and becoming "
+        "unseen is what a Dodge does, but it is authored as a sensor "
+        "activating and is long for a 12-tick Dodge. Replace with an original."
+    ),
+    "extraction_tick": (
+        "APPROXIMATE. The legacy build had no countdown, so no sound carries "
+        "the event. This is the shortest unused discrete mechanical step, but "
+        "it is authored as an environmental activation rather than a "
+        "metronome. Replace with an original."
+    ),
 }
 
 # Music beds, registered as `musicAssetIds` in presentation-assets-001. These
@@ -345,10 +369,11 @@ def main() -> int:
                     "alpha": None,
                     "ownerContract": "audio-haptics-001",
                     "notes": (
-                        f"LC-010 bounded ADAPT. Same gameplay meaning as {asset_id}. "
-                        "Delivered as AAC; sha256 is the digest of the PCM source at the "
-                        "frozen commit. Priority, coalescence, and captions remain with "
-                        "AudioProjector."
+                        APPROXIMATE.get(asset_id)
+                        or f"LC-010 bounded ADAPT. Same gameplay meaning as {asset_id}. "
+                        + " Delivered as AAC; sha256 is the digest of the PCM source at "
+                        "the frozen commit. Priority, coalescence, and captions remain "
+                        "with AudioProjector."
                     ),
                 },
             }

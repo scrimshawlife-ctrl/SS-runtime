@@ -76,7 +76,7 @@ struct AudioDeliveryTests {
         }
     }
 
-    /// Coverage is what the record says it is: 22 of 24 event IDs backed.
+    /// Every one of the 24 event IDs is backed.
     @Test func audioCoverageIsMeasurable() throws {
         let catalog = try AssetCatalog.bundled()
         let eventIds = Set(try presentation()["audioEventIds"] as! [String])
@@ -86,7 +86,7 @@ struct AudioDeliveryTests {
             .filter { eventIds.contains($0) }
 
         #expect(eventIds.count == 24)
-        #expect(backed.count == 22)
+        #expect(backed.count == 24)
     }
 
     /// One source may legitimately back several IDs — `sfx_upgrade_selected`
@@ -277,5 +277,76 @@ struct BossPhaseMusicTests {
         }
         #expect(paths.count == 4)
         #expect(Set(paths).count == 4)
+    }
+}
+
+
+/// Two cues took the nearest applicable sound rather than an exact meaning
+/// match, and their records say so.
+///
+/// `legacy-admission.md` §Approximate substitution permits that only where
+/// nothing carries the meaning, and requires the record to admit it. A catalog
+/// that quietly claimed an exact match would make these two invisible to
+/// whoever produces originals later.
+@Suite(.serialized)
+struct ApproximateCueTests {
+    private func audioEntries() throws -> [AssetCatalogEntry] {
+        let presentation = try JSONSerialization.jsonObject(
+            with: SpecBundle.contract("presentation-assets-001")
+        ) as! [String: Any]
+        let ids = Set(presentation["audioEventIds"] as! [String])
+        return try AssetCatalog.bundled().entries.filter { ids.contains($0.record.assetId) }
+    }
+
+    /// Exactly two cues are approximate, and they are the two the spec names.
+    @Test func exactlyTheNamedCuesAreApproximate() throws {
+        let approximate = try audioEntries()
+            .filter { ($0.record.notes ?? "").contains("APPROXIMATE") }
+            .map(\.record.assetId)
+            .sorted()
+
+        #expect(approximate == ["extraction_tick", "player_dodge"])
+    }
+
+    /// An approximate record has to say what is imperfect and that it should be
+    /// replaced, or the note is decoration rather than a record.
+    @Test func anApproximateRecordExplainsItself() throws {
+        for entry in try audioEntries()
+        where (entry.record.notes ?? "").contains("APPROXIMATE") {
+            let notes = entry.record.notes ?? ""
+            #expect(notes.contains("Replace with an original"), "\(entry.record.assetId)")
+            #expect(notes.count > 120, "\(entry.record.assetId) note is too thin to be useful")
+        }
+    }
+
+    /// An approximate substitution may not reuse a sound already carrying a
+    /// different event, or the player learns a confused vocabulary.
+    @Test func approximateCuesDoNotCollideWithOtherEvents() throws {
+        let entries = try audioEntries()
+        for entry in entries where (entry.record.notes ?? "").contains("APPROXIMATE") {
+            let path = entry.record.runtimePath
+            let sharers = entries.filter {
+                $0.record.runtimePath == path && $0.record.assetId != entry.record.assetId
+            }
+            #expect(
+                sharers.isEmpty,
+                "\(entry.record.assetId) shares a sound with \(sharers.map(\.record.assetId))"
+            )
+        }
+    }
+
+    /// Neither approximate substitution widened the city boundary.
+    @Test func approximateCuesStayWithinTheCityBoundary() throws {
+        let cities = [
+            "atlanta", "columbus", "dayton", "los_angeles", "louisville",
+            "new_york", "oakland", "tulsa", "wichita"
+        ]
+        for entry in try audioEntries()
+        where (entry.record.notes ?? "").contains("APPROXIMATE") {
+            let source = (entry.record.source ?? "").lowercased()
+            for city in cities {
+                #expect(!source.contains(city), "\(entry.record.assetId) sources \(city)")
+            }
+        }
     }
 }
