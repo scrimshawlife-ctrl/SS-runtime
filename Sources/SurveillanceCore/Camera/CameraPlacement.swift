@@ -20,6 +20,17 @@ public struct SelectedCamera: Equatable, Sendable {
     public var isDestroyed: Bool { integrity <= 0 }
     public var isDamageable: Bool { integrity > 0 }
 
+    /// Prefix of the solid ID standing for this Camera's mount footprint.
+    ///
+    /// The mount collides — T411 keeps the footprint after destruction — but it
+    /// is never drawn as a blockout, because the housing and head art already
+    /// occupy that spot and a rectangle over them is an artifact rather than a
+    /// fallback. One constant, so the producer in `WorldState.liveSolids` and
+    /// the renderer that skips it cannot drift apart silently.
+    public static let mountSolidPrefix = "mount-"
+
+    public var mountSolidId: String { Self.mountSolidPrefix + socketId }
+
     func incompatible(with other: SelectedCamera) -> Bool {
         incompatibleSocketIds.contains(other.socketId) || other.incompatibleSocketIds.contains(socketId)
     }

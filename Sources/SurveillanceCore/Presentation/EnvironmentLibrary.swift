@@ -66,6 +66,27 @@ public struct EnvironmentLibrary: Equatable, Sendable {
         "env_" + id.replacingOccurrences(of: "-", with: "_")
     }
 
+    /// Asset ID for a Camera housing family.
+    ///
+    /// Deliberately a `switch` rather than a name transform: the contract IDs
+    /// are not a mechanical case conversion of the enum (`storefrontCamera` is
+    /// `env_camera_storefront`, `temporarySensorMast` is
+    /// `env_camera_temporary_mast`), and an exhaustive switch means a new
+    /// family fails to build until someone decides what its art is called.
+    ///
+    /// These are the five *standard* families. The sixth in
+    /// `civic-seam-visual-direction.md` §6 is the Captain Camera, which belongs
+    /// to the boss rather than to the eight standard mounts.
+    public static func cameraAssetId(for family: HousingFamily) -> String {
+        switch family {
+        case .municipalDome: "env_camera_municipal_dome"
+        case .storefrontCamera: "env_camera_storefront"
+        case .trafficReader: "env_camera_traffic_reader"
+        case .ornamentalCivicCamera: "env_camera_ornamental_civic"
+        case .temporarySensorMast: "env_camera_temporary_mast"
+        }
+    }
+
     // MARK: - Loading
 
     public static func bundled() throws -> EnvironmentLibrary {

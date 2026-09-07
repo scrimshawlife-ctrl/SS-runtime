@@ -27,6 +27,9 @@ final class WorldRenderer {
         /// Non-collidable dressing, above the ground and below the solids.
         case decorations
         case solids
+        /// Camera poles. Below the fields and the heads, because the housing is
+        /// the structure the head is mounted on.
+        case cameraHousings
         case extraction
         case cameraFields
         case telegraphs
@@ -201,10 +204,12 @@ final class WorldRenderer {
                     node.color = Self.groundVariation(atCellX: Int(x), cellY: Int(y))
                     layer.addChild(node)
 
-                    // A kerb where the surface changes. Real paving changes at a
-                    // kerb, so the zone boundary reads as a civic detail rather
-                    // than as an artifact of rectangular zones.
-                    addKerbs(around: centre, assetId: assetId, tile: tile, snap: snap, layer: layer)
+                    // Real paving changes at a kerb, so the zone boundary reads
+                    // as a civic detail rather than as an artifact of
+                    // rectangular zones.
+                    addSurfaceTransition(
+                        around: centre, assetId: assetId, tile: tile, snap: snap, layer: layer
+                    )
                 }
                 x += tile
             }
@@ -240,8 +245,19 @@ final class WorldRenderer {
         "Z-07": "env_ground_steps"       // Phoenix Steps
     ]
 
-    /// Edges drawn where two ground surfaces meet.
-    private func addKerbs(
+    /// Where two ground surfaces meet.
+    ///
+    /// Zones are axis-aligned rectangles, so a surface change lands on a single
+    /// column and reads as a cut through the level rather than as a street —
+    /// worst where Z-01 sidewalk meets Z-02 railbed, which are far apart in
+    /// value. Three things fix that without touching the arena contract:
+    ///
+    /// 1. each surface bleeds a short way into the other, so paving changes
+    ///    over several units instead of on one pixel column;
+    /// 2. the kerb is a light stone band, not the near-black line it was;
+    /// 3. a shadow under it gives the kerb height, so the boundary reads as a
+    ///    step rather than as paint.
+    private func addSurfaceTransition(
         around centre: CGPoint,
         assetId: String,
         tile: CGFloat,
@@ -257,19 +273,86 @@ final class WorldRenderer {
             let point = CGPoint(x: centre.x + neighbour.dx, y: centre.y + neighbour.dy)
             let other = groundAssetId(at: point, zones: snap.zones)
             guard other != assetId else { continue }
+            let edge = CGPoint(
+                x: centre.x + neighbour.dx / 2,
+                y: centre.y + neighbour.dy / 2
+            )
+
+            // The lip, both ways: the neighbour encroaches on us and we
+            // encroach on it, so neither side looks like it is winning.
+            //
+            // Stepped rather than a true gradient — at play scale three bands
+            // of the other paving read as one worn transition, and it costs
+            // three sprites instead of a shader. Both neighbours were drawn
+            // before this tile (the loop ascends), so drawing into them now
+            // lands on top rather than under.
+            addLip(texture: environment.texture(assetId: other),
+                   from: edge, into: 1, neighbour: neighbour, tile: tile, layer: layer)
+            addLip(texture: environment.texture(assetId: assetId),
+                   from: edge, into: -1, neighbour: neighbour, tile: tile, layer: layer)
+
             let kerb = SKShapeNode(
                 rectOf: neighbour.horizontal
                     ? CGSize(width: tile, height: Self.kerbThickness)
                     : CGSize(width: Self.kerbThickness, height: tile)
             )
-            kerb.position = CGPoint(
-                x: centre.x + neighbour.dx / 2,
-                y: centre.y + neighbour.dy / 2
-            )
+            kerb.position = edge
             kerb.fillColor = Palette.kerb
             kerb.strokeColor = .clear
             layer.addChild(kerb)
+
+            // The shadow falls away from this tile, on the neighbour's side.
+            let drop = (Self.kerbThickness + Self.kerbShadowThickness) / 2
+            let shadow = SKShapeNode(
+                rectOf: neighbour.horizontal
+                    ? CGSize(width: tile, height: Self.kerbShadowThickness)
+                    : CGSize(width: Self.kerbShadowThickness, height: tile)
+            )
+            shadow.position = neighbour.horizontal
+                ? CGPoint(x: edge.x, y: edge.y - drop)
+                : CGPoint(x: edge.x - drop, y: edge.y)
+            shadow.fillColor = Palette.kerbShadow
+            shadow.strokeColor = .clear
+            layer.addChild(shadow)
         }
+    }
+
+    /// One side of a surface transition. `direction` is +1 to bleed into this
+    /// tile, -1 to bleed into the neighbour.
+    private func addLip(
+        texture: SKTexture?,
+        from edge: CGPoint,
+        into direction: CGFloat,
+        neighbour: (dx: CGFloat, dy: CGFloat, horizontal: Bool),
+        tile: CGFloat,
+        layer: SKNode
+    ) {
+        guard let texture else { return }
+        let strip = Self.edgeStrip(of: texture, horizontal: neighbour.horizontal)
+        for (step, alpha) in Self.lipAlphas.enumerated() {
+            let offset = direction * Self.lipStep * (CGFloat(step) + 0.5)
+            let band = SKSpriteNode(
+                texture: strip,
+                size: neighbour.horizontal
+                    ? CGSize(width: tile, height: Self.lipStep)
+                    : CGSize(width: Self.lipStep, height: tile)
+            )
+            band.alpha = alpha
+            band.position = neighbour.horizontal
+                ? CGPoint(x: edge.x, y: edge.y + offset)
+                : CGPoint(x: edge.x + offset, y: edge.y)
+            layer.addChild(band)
+        }
+    }
+
+    /// The strip of a tile along the shared edge, so the character of the
+    /// paving carries across rather than a stretched average of the whole tile.
+    private static func edgeStrip(of texture: SKTexture, horizontal: Bool) -> SKTexture {
+        let fraction: CGFloat = 0.25
+        let rect = horizontal
+            ? CGRect(x: 0, y: 1 - fraction, width: 1, height: fraction)
+            : CGRect(x: 1 - fraction, y: 0, width: fraction, height: 1)
+        return SKTexture(rect: rect, in: texture)
     }
 
     /// Deterministic per-cell tint. Position in, colour out; no state.
@@ -287,6 +370,10 @@ final class WorldRenderer {
 
     private static let groundVariationStrength: CGFloat = 0.10
     private static let kerbThickness: CGFloat = 3
+    private static let kerbShadowThickness: CGFloat = 2
+    /// Depth of one lip band. Three of them grade the change over 15 units.
+    private static let lipStep: CGFloat = 5
+    private static let lipAlphas: [CGFloat] = [0.55, 0.32, 0.14]
 
     /// One ground tile spans 2 x 2 authoring cells.
     private static let groundTileUnits = 128
@@ -343,6 +430,15 @@ final class WorldRenderer {
         layer?.removeAllChildren()
         nodes[.solids] = [:]
         for (index, solid) in snap.solids.enumerated() {
+            let id = snap.solidIds.indices.contains(index) ? snap.solidIds[index] : nil
+
+            // A Camera mount collides but is never drawn here. The housing and
+            // the head already stand at that position, so the blockout is not a
+            // fallback for missing art — it is a black rectangle on top of art
+            // that exists. Skipping it cannot leave an invisible collider:
+            // renderCameras always draws something, clip or circle.
+            if let id, id.hasPrefix(SelectedCamera.mountSolidPrefix) { continue }
+
             let size = CGSize(
                 width: CGFloat(solid.halfSize.x * 2),
                 height: CGFloat(solid.halfSize.y * 2)
@@ -353,9 +449,7 @@ final class WorldRenderer {
             // keeps its authored blockout. The art is sized to the collision
             // box exactly, so a player is never blocked by something that looks
             // passable or walks through something that looks solid.
-            if let id = snap.solidIds.indices.contains(index) ? snap.solidIds[index] : nil,
-               let texture = environment.solidTexture(solidId: id)
-            {
+            if let id, let texture = environment.solidTexture(solidId: id) {
                 let node = SKSpriteNode(texture: texture, size: size)
                 node.position = position
                 layer?.addChild(node)
@@ -390,11 +484,32 @@ final class WorldRenderer {
 
     private func renderCameras(_ snap: PresentationSnapshot) {
         beginLayer(.cameraFields)
+        beginLayer(.cameraHousings)
         beginLayer(.actors)
 
         for camera in snap.cameras {
             let key = "camera-\(camera.id.raw)"
             let position = CGPoint(x: camera.x, y: camera.y)
+
+            // The housing family, drawn under the head.
+            //
+            // The two compose rather than fight: the housing art is a pole
+            // filling the box top to bottom, and the legacy head clip occupies
+            // only the middle band, so the pole reads behind and around it.
+            // The head keeps every Integrity state (camera-destruction.md §16),
+            // which is why this is an underlay and not a replacement.
+            //
+            // A destroyed Camera keeps its housing, matching T411 keeping the
+            // mount footprint: the pole is still standing, the head is wrecked.
+            if let family = camera.housingFamily,
+               let texture = environment.cameraTexture(for: family)
+            {
+                let housing = node(.cameraHousings, "housing-\(camera.id.raw)") {
+                    SKSpriteNode(texture: texture, size: CGSize(width: 64, height: 96))
+                }
+                housing.position = position
+            }
+
             // clip-metadata-001 names the clip; CameraPresentation picked it.
             let drawn = playClip(
                 camera.clipId,
@@ -444,6 +559,7 @@ final class WorldRenderer {
             }
         }
         endLayer(.cameraFields)
+        endLayer(.cameraHousings)
         // .actors is closed in renderActors, which also emits into it.
     }
 
@@ -613,7 +729,10 @@ final class WorldRenderer {
 enum Palette {
     /// The edge where two ground surfaces meet. Dark and thin: a joint, not a
     /// line drawn on top of the city.
-    static let kerb = SKColor(white: 0.13, alpha: 0.85)
+    /// Kerbstone, not a drawn line. It was `white: 0.13` — near black, which is
+    /// what made a zone boundary read as a cut rather than as a street edge.
+    static let kerb = SKColor(white: 0.62, alpha: 0.55)
+    static let kerbShadow = SKColor(white: 0.10, alpha: 0.35)
     static let solidFill = SKColor(white: 0.18, alpha: 1)
     static let solidStroke = SKColor(white: 0.32, alpha: 1)
     static let playerFill = SKColor(white: 0.92, alpha: 1)

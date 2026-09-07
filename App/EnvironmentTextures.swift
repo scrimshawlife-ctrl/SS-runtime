@@ -30,6 +30,12 @@ final class EnvironmentTextures {
         texture(assetId: EnvironmentLibrary.solidAssetId(forSolidId: solidId))
     }
 
+    /// Housing art for a Camera, or nil when the camera group is not fully
+    /// backed — in which case no Camera gets a housing, rather than some.
+    func cameraTexture(for family: HousingFamily) -> SKTexture? {
+        texture(assetId: EnvironmentLibrary.cameraAssetId(for: family))
+    }
+
     func texture(assetId: String) -> SKTexture? {
         if let cached = textures[assetId] { return cached }
         guard let path = library.path(for: assetId),
