@@ -2,82 +2,1136 @@
   "schemaVersion": "arena-manifest-001",
   "arenaVersion": "civic-seam-arena-001",
   "cellSizeUnits": 64,
-  "gridSizeCells": {"width": 36, "height": 24},
-  "boundsUnits": {"minX": 0, "minY": 0, "maxX": 2304, "maxY": 1536},
-  "standardCameraGeometry": {"mountCollisionRadiusUnits":12,"hitRadiusUnits":16,"fieldOriginOffset":{"x":0,"y":18},"targetAnchorOffset":{"x":0,"y":16}},
-  "playerSpawn": {"x": 160, "y": 192, "headingMilliDegrees": 0},
+  "gridSizeCells": {
+    "width": 36,
+    "height": 24
+  },
+  "boundsUnits": {
+    "minX": 0,
+    "minY": 0,
+    "maxX": 2304,
+    "maxY": 1536
+  },
+  "standardCameraGeometry": {
+    "mountCollisionRadiusUnits": 12,
+    "hitRadiusUnits": 16,
+    "fieldOriginOffset": {
+      "x": 0,
+      "y": 18
+    },
+    "targetAnchorOffset": {
+      "x": 0,
+      "y": 16
+    }
+  },
+  "playerSpawn": {
+    "x": 160,
+    "y": 192,
+    "headingMilliDegrees": 0
+  },
   "zones": [
-    {"id":"Z-01","name":"Residential Wedge","center":{"x":224,"y":256},"halfSize":{"x":160,"y":192}},
-    {"id":"Z-02","name":"Transit Cut","center":{"x":576,"y":448},"halfSize":{"x":256,"y":256}},
-    {"id":"Z-03","name":"Civic Plaza","center":{"x":1024,"y":640},"halfSize":{"x":256,"y":256}},
-    {"id":"Z-04","name":"Service Seam","center":{"x":1376,"y":1088},"halfSize":{"x":288,"y":320}},
-    {"id":"Z-05","name":"Grid Junction","center":{"x":1728,"y":832},"halfSize":{"x":256,"y":256}},
-    {"id":"Z-06","name":"Authority Court","center":{"x":2048,"y":640},"halfSize":{"x":192,"y":256}},
-    {"id":"Z-07","name":"Phoenix Steps","center":{"x":2048,"y":224},"halfSize":{"x":192,"y":128}}
+    {
+      "id": "Z-01",
+      "name": "Residential Wedge",
+      "center": {
+        "x": 224,
+        "y": 256
+      },
+      "halfSize": {
+        "x": 160,
+        "y": 192
+      }
+    },
+    {
+      "id": "Z-02",
+      "name": "Transit Cut",
+      "center": {
+        "x": 576,
+        "y": 448
+      },
+      "halfSize": {
+        "x": 256,
+        "y": 256
+      }
+    },
+    {
+      "id": "Z-03",
+      "name": "Civic Plaza",
+      "center": {
+        "x": 1024,
+        "y": 640
+      },
+      "halfSize": {
+        "x": 256,
+        "y": 256
+      }
+    },
+    {
+      "id": "Z-04",
+      "name": "Service Seam",
+      "center": {
+        "x": 1376,
+        "y": 1088
+      },
+      "halfSize": {
+        "x": 288,
+        "y": 320
+      }
+    },
+    {
+      "id": "Z-05",
+      "name": "Grid Junction",
+      "center": {
+        "x": 1728,
+        "y": 832
+      },
+      "halfSize": {
+        "x": 256,
+        "y": 256
+      }
+    },
+    {
+      "id": "Z-06",
+      "name": "Authority Court",
+      "center": {
+        "x": 2048,
+        "y": 640
+      },
+      "halfSize": {
+        "x": 192,
+        "y": 256
+      }
+    },
+    {
+      "id": "Z-07",
+      "name": "Phoenix Steps",
+      "center": {
+        "x": 2048,
+        "y": 224
+      },
+      "halfSize": {
+        "x": 192,
+        "y": 128
+      }
+    }
   ],
   "permanentSolids": [
-    {"id":"solid-01-residential-west","center":{"x":64,"y":640},"halfSize":{"x":64,"y":256}},
-    {"id":"solid-02-residential-north","center":{"x":320,"y":864},"halfSize":{"x":192,"y":96}},
-    {"id":"solid-03-transit-kiosk","center":{"x":576,"y":704},"halfSize":{"x":64,"y":64}},
-    {"id":"solid-04-civic-west","center":{"x":832,"y":960},"halfSize":{"x":96,"y":192}},
-    {"id":"solid-05-civic-dais","center":{"x":1088,"y":704},"halfSize":{"x":80,"y":48}},
-    {"id":"solid-06-service-yard-a","center":{"x":1152,"y":1248},"halfSize":{"x":96,"y":160}},
-    {"id":"solid-07-service-yard-b","center":{"x":1536,"y":1344},"halfSize":{"x":128,"y":96}},
-    {"id":"solid-08-service-divider","center":{"x":1408,"y":960},"halfSize":{"x":48,"y":112}},
-    {"id":"solid-09-grid-island-a","center":{"x":1600,"y":704},"halfSize":{"x":64,"y":64}},
-    {"id":"solid-10-grid-island-b","center":{"x":1792,"y":960},"halfSize":{"x":64,"y":64}},
-    {"id":"solid-11-court-column-a","center":{"x":1920,"y":704},"halfSize":{"x":32,"y":72}},
-    {"id":"solid-12-court-column-b","center":{"x":2176,"y":704},"halfSize":{"x":32,"y":72}},
-    {"id":"solid-13-phoenix-west","center":{"x":1856,"y":192},"halfSize":{"x":32,"y":128}},
-    {"id":"solid-14-phoenix-east","center":{"x":2240,"y":192},"halfSize":{"x":32,"y":128}}
+    {
+      "id": "solid-01-residential-west",
+      "center": {
+        "x": 64,
+        "y": 640
+      },
+      "halfSize": {
+        "x": 64,
+        "y": 256
+      }
+    },
+    {
+      "id": "solid-02-residential-north",
+      "center": {
+        "x": 320,
+        "y": 864
+      },
+      "halfSize": {
+        "x": 192,
+        "y": 96
+      }
+    },
+    {
+      "id": "solid-03-transit-kiosk",
+      "center": {
+        "x": 576,
+        "y": 704
+      },
+      "halfSize": {
+        "x": 64,
+        "y": 64
+      }
+    },
+    {
+      "id": "solid-04-civic-west",
+      "center": {
+        "x": 832,
+        "y": 960
+      },
+      "halfSize": {
+        "x": 96,
+        "y": 192
+      }
+    },
+    {
+      "id": "solid-05-civic-dais",
+      "center": {
+        "x": 1088,
+        "y": 704
+      },
+      "halfSize": {
+        "x": 80,
+        "y": 48
+      }
+    },
+    {
+      "id": "solid-06-service-yard-a",
+      "center": {
+        "x": 1152,
+        "y": 1248
+      },
+      "halfSize": {
+        "x": 96,
+        "y": 160
+      }
+    },
+    {
+      "id": "solid-07-service-yard-b",
+      "center": {
+        "x": 1536,
+        "y": 1344
+      },
+      "halfSize": {
+        "x": 128,
+        "y": 96
+      }
+    },
+    {
+      "id": "solid-08-service-divider",
+      "center": {
+        "x": 1408,
+        "y": 960
+      },
+      "halfSize": {
+        "x": 48,
+        "y": 112
+      }
+    },
+    {
+      "id": "solid-09-grid-island-a",
+      "center": {
+        "x": 1600,
+        "y": 704
+      },
+      "halfSize": {
+        "x": 64,
+        "y": 64
+      }
+    },
+    {
+      "id": "solid-10-grid-island-b",
+      "center": {
+        "x": 1792,
+        "y": 960
+      },
+      "halfSize": {
+        "x": 64,
+        "y": 64
+      }
+    },
+    {
+      "id": "solid-11-court-column-a",
+      "center": {
+        "x": 1920,
+        "y": 704
+      },
+      "halfSize": {
+        "x": 32,
+        "y": 72
+      }
+    },
+    {
+      "id": "solid-12-court-column-b",
+      "center": {
+        "x": 2176,
+        "y": 704
+      },
+      "halfSize": {
+        "x": 32,
+        "y": 72
+      }
+    },
+    {
+      "id": "solid-13-phoenix-west",
+      "center": {
+        "x": 1856,
+        "y": 192
+      },
+      "halfSize": {
+        "x": 32,
+        "y": 128
+      }
+    },
+    {
+      "id": "solid-14-phoenix-east",
+      "center": {
+        "x": 2240,
+        "y": 192
+      },
+      "halfSize": {
+        "x": 32,
+        "y": 128
+      }
+    }
   ],
   "gates": [
-    {"id":"gate-ma-forward","owner":"M-A","center":{"x":1264,"y":608},"halfSize":{"x":16,"y":96},"initiallyClosed":false},
-    {"id":"gate-mb-forward","owner":"M-B","center":{"x":1600,"y":1088},"halfSize":{"x":16,"y":96},"initiallyClosed":false},
-    {"id":"gate-mc-forward","owner":"M-C","center":{"x":1888,"y":832},"halfSize":{"x":16,"y":96},"initiallyClosed":false},
-    {"id":"gate-elite-forward","owner":"improperSearchDaemon","center":{"x":1904,"y":576},"halfSize":{"x":16,"y":80},"initiallyClosed":true},
-    {"id":"gate-boss-extraction","owner":"algorithmicModerate","center":{"x":2048,"y":384},"halfSize":{"x":96,"y":16},"initiallyClosed":true}
+    {
+      "id": "gate-ma-forward",
+      "owner": "M-A",
+      "center": {
+        "x": 1264,
+        "y": 608
+      },
+      "halfSize": {
+        "x": 16,
+        "y": 96
+      },
+      "initiallyClosed": false
+    },
+    {
+      "id": "gate-mb-forward",
+      "owner": "M-B",
+      "center": {
+        "x": 1600,
+        "y": 1088
+      },
+      "halfSize": {
+        "x": 16,
+        "y": 96
+      },
+      "initiallyClosed": false
+    },
+    {
+      "id": "gate-mc-forward",
+      "owner": "M-C",
+      "center": {
+        "x": 1888,
+        "y": 832
+      },
+      "halfSize": {
+        "x": 16,
+        "y": 96
+      },
+      "initiallyClosed": false
+    },
+    {
+      "id": "gate-elite-forward",
+      "owner": "improperSearchDaemon",
+      "center": {
+        "x": 1904,
+        "y": 576
+      },
+      "halfSize": {
+        "x": 16,
+        "y": 80
+      },
+      "initiallyClosed": true
+    },
+    {
+      "id": "gate-boss-extraction",
+      "owner": "algorithmicModerate",
+      "center": {
+        "x": 2048,
+        "y": 384
+      },
+      "halfSize": {
+        "x": 96,
+        "y": 16
+      },
+      "initiallyClosed": true
+    }
   ],
   "encounterTriggers": [
-    {"id":"trigger-M-A","encounterId":"M-A","center":{"x":960,"y":576},"halfSize":{"x":96,"y":96}},
-    {"id":"trigger-M-B","encounterId":"M-B","center":{"x":1280,"y":1088},"halfSize":{"x":96,"y":96}},
-    {"id":"trigger-M-C","encounterId":"M-C","center":{"x":1664,"y":832},"halfSize":{"x":96,"y":96}},
-    {"id":"trigger-elite","encounterId":"improperSearchDaemon","center":{"x":1792,"y":768},"halfSize":{"x":80,"y":80}},
-    {"id":"trigger-boss","encounterId":"algorithmicModerate","center":{"x":1984,"y":640},"halfSize":{"x":96,"y":96}}
+    {
+      "id": "trigger-M-A",
+      "encounterId": "M-A",
+      "center": {
+        "x": 960,
+        "y": 576
+      },
+      "halfSize": {
+        "x": 96,
+        "y": 96
+      }
+    },
+    {
+      "id": "trigger-M-B",
+      "encounterId": "M-B",
+      "center": {
+        "x": 1280,
+        "y": 1088
+      },
+      "halfSize": {
+        "x": 96,
+        "y": 96
+      }
+    },
+    {
+      "id": "trigger-M-C",
+      "encounterId": "M-C",
+      "center": {
+        "x": 1664,
+        "y": 832
+      },
+      "halfSize": {
+        "x": 96,
+        "y": 96
+      }
+    },
+    {
+      "id": "trigger-elite",
+      "encounterId": "improperSearchDaemon",
+      "center": {
+        "x": 1792,
+        "y": 768
+      },
+      "halfSize": {
+        "x": 80,
+        "y": 80
+      }
+    },
+    {
+      "id": "trigger-boss",
+      "encounterId": "algorithmicModerate",
+      "center": {
+        "x": 1984,
+        "y": 640
+      },
+      "halfSize": {
+        "x": 96,
+        "y": 96
+      }
+    }
   ],
   "enemySpawnSockets": {
-    "M-A":[{"id":"ma-01","x":832,"y":512},{"id":"ma-02","x":896,"y":768},{"id":"ma-03","x":1088,"y":832},{"id":"ma-04","x":1216,"y":576},{"id":"ma-05","x":960,"y":448},{"id":"ma-06","x":1152,"y":448}],
-    "M-B":[{"id":"mb-01","x":1024,"y":1088},{"id":"mb-02","x":1088,"y":1408},{"id":"mb-03","x":1280,"y":1344},{"id":"mb-04","x":1472,"y":1216},{"id":"mb-05","x":1600,"y":1152},{"id":"mb-06","x":1536,"y":896},{"id":"mb-07","x":1280,"y":832},{"id":"mb-08","x":1152,"y":896}],
-    "M-C":[{"id":"mc-01","x":1472,"y":768},{"id":"mc-02","x":1536,"y":1088},{"id":"mc-03","x":1664,"y":1024},{"id":"mc-04","x":1856,"y":1088},{"id":"mc-05","x":1920,"y":960},{"id":"mc-06","x":1856,"y":704},{"id":"mc-07","x":1728,"y":640},{"id":"mc-08","x":1536,"y":640}]
+    "M-A": [
+      {
+        "id": "ma-01",
+        "x": 832,
+        "y": 512
+      },
+      {
+        "id": "ma-02",
+        "x": 896,
+        "y": 768
+      },
+      {
+        "id": "ma-03",
+        "x": 1088,
+        "y": 832
+      },
+      {
+        "id": "ma-04",
+        "x": 1216,
+        "y": 576
+      },
+      {
+        "id": "ma-05",
+        "x": 960,
+        "y": 448
+      },
+      {
+        "id": "ma-06",
+        "x": 1152,
+        "y": 448
+      }
+    ],
+    "M-B": [
+      {
+        "id": "mb-01",
+        "x": 1024,
+        "y": 1088
+      },
+      {
+        "id": "mb-02",
+        "x": 1088,
+        "y": 1408
+      },
+      {
+        "id": "mb-03",
+        "x": 1280,
+        "y": 1344
+      },
+      {
+        "id": "mb-04",
+        "x": 1472,
+        "y": 1216
+      },
+      {
+        "id": "mb-05",
+        "x": 1600,
+        "y": 1152
+      },
+      {
+        "id": "mb-06",
+        "x": 1536,
+        "y": 896
+      },
+      {
+        "id": "mb-07",
+        "x": 1280,
+        "y": 832
+      },
+      {
+        "id": "mb-08",
+        "x": 1152,
+        "y": 896
+      }
+    ],
+    "M-C": [
+      {
+        "id": "mc-01",
+        "x": 1472,
+        "y": 768
+      },
+      {
+        "id": "mc-02",
+        "x": 1536,
+        "y": 1088
+      },
+      {
+        "id": "mc-03",
+        "x": 1664,
+        "y": 1024
+      },
+      {
+        "id": "mc-04",
+        "x": 1856,
+        "y": 1088
+      },
+      {
+        "id": "mc-05",
+        "x": 1920,
+        "y": 960
+      },
+      {
+        "id": "mc-06",
+        "x": 1856,
+        "y": 704
+      },
+      {
+        "id": "mc-07",
+        "x": 1728,
+        "y": 640
+      },
+      {
+        "id": "mc-08",
+        "x": 1536,
+        "y": 640
+      }
+    ]
   },
-  "eliteSpawn":{"id":"elite-01","x":1792,"y":832},
-  "bossSpawn":{"id":"boss-01","x":2048,"y":768},
-  "extractionPressureSockets":[{"id":"xp-01","x":1920,"y":320},{"id":"xp-02","x":2176,"y":320},{"id":"xp-03","x":1920,"y":96},{"id":"xp-04","x":2176,"y":96}],
-  "captainCameraEmitters":[
-    {"id":"captain-emitter-01","x":1888,"y":832,"headingMilliDegrees":315000,"rangeUnits":320,"fieldAngleMilliDegrees":70000},
-    {"id":"captain-emitter-02","x":2208,"y":832,"headingMilliDegrees":225000,"rangeUnits":320,"fieldAngleMilliDegrees":70000},
-    {"id":"captain-emitter-03","x":2048,"y":448,"headingMilliDegrees":90000,"rangeUnits":320,"fieldAngleMilliDegrees":70000}
+  "eliteSpawn": {
+    "id": "elite-01",
+    "x": 1792,
+    "y": 832
+  },
+  "bossSpawn": {
+    "id": "boss-01",
+    "x": 2048,
+    "y": 768
+  },
+  "extractionPressureSockets": [
+    {
+      "id": "xp-01",
+      "x": 1920,
+      "y": 320
+    },
+    {
+      "id": "xp-02",
+      "x": 2176,
+      "y": 320
+    },
+    {
+      "id": "xp-03",
+      "x": 1920,
+      "y": 96
+    },
+    {
+      "id": "xp-04",
+      "x": 2176,
+      "y": 96
+    }
+  ],
+  "captainCameraEmitters": [
+    {
+      "id": "captain-emitter-01",
+      "x": 1888,
+      "y": 832,
+      "headingMilliDegrees": 315000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 70000
+    },
+    {
+      "id": "captain-emitter-02",
+      "x": 2208,
+      "y": 832,
+      "headingMilliDegrees": 225000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 70000
+    },
+    {
+      "id": "captain-emitter-03",
+      "x": 2048,
+      "y": 448,
+      "headingMilliDegrees": 90000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 70000
+    }
   ],
   "cameraSockets": [
-    {"socketId":"cam-z02-a","zoneId":"Z-02","position":{"x":448,"y":320},"headingMilliDegrees":45000,"rangeUnits":300,"fieldAngleMilliDegrees":60000,"allowedHousingFamilies":["trafficReader","temporarySensorMast"],"tutorialEligible":true,"returnVisible":true,"enabled":true,"incompatibleSocketIds":["cam-z02-d"]},
-    {"socketId":"cam-z02-b","zoneId":"Z-02","position":{"x":640,"y":256},"headingMilliDegrees":135000,"rangeUnits":320,"fieldAngleMilliDegrees":65000,"allowedHousingFamilies":["storefrontCamera","trafficReader"],"tutorialEligible":true,"returnVisible":true,"enabled":true,"incompatibleSocketIds":["cam-z02-c"]},
-    {"socketId":"cam-z02-c","zoneId":"Z-02","position":{"x":768,"y":512},"headingMilliDegrees":200000,"rangeUnits":300,"fieldAngleMilliDegrees":60000,"allowedHousingFamilies":["municipalDome","ornamentalCivicCamera"],"tutorialEligible":false,"returnVisible":false,"enabled":true,"incompatibleSocketIds":["cam-z02-b"]},
-    {"socketId":"cam-z02-d","zoneId":"Z-02","position":{"x":512,"y":640},"headingMilliDegrees":315000,"rangeUnits":280,"fieldAngleMilliDegrees":55000,"allowedHousingFamilies":["temporarySensorMast","municipalDome"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":["cam-z02-a"]},
-    {"socketId":"cam-z03-a","zoneId":"Z-03","position":{"x":960,"y":864},"headingMilliDegrees":330000,"rangeUnits":340,"fieldAngleMilliDegrees":70000,"allowedHousingFamilies":["ornamentalCivicCamera","municipalDome"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":[]},
-    {"socketId":"cam-z03-b","zoneId":"Z-03","position":{"x":1152,"y":864},"headingMilliDegrees":225000,"rangeUnits":320,"fieldAngleMilliDegrees":65000,"allowedHousingFamilies":["municipalDome","trafficReader"],"tutorialEligible":false,"returnVisible":false,"enabled":true,"incompatibleSocketIds":[]},
-    {"socketId":"cam-z03-c","zoneId":"Z-03","position":{"x":1216,"y":448},"headingMilliDegrees":150000,"rangeUnits":300,"fieldAngleMilliDegrees":60000,"allowedHousingFamilies":["storefrontCamera","ornamentalCivicCamera"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":[]},
-    {"socketId":"cam-z04-a","zoneId":"Z-04","position":{"x":1024,"y":1280},"headingMilliDegrees":20000,"rangeUnits":320,"fieldAngleMilliDegrees":60000,"allowedHousingFamilies":["temporarySensorMast","trafficReader"],"tutorialEligible":false,"returnVisible":false,"enabled":true,"incompatibleSocketIds":["cam-z04-d"]},
-    {"socketId":"cam-z04-b","zoneId":"Z-04","position":{"x":1280,"y":1472},"headingMilliDegrees":290000,"rangeUnits":340,"fieldAngleMilliDegrees":65000,"allowedHousingFamilies":["storefrontCamera","temporarySensorMast"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":[]},
-    {"socketId":"cam-z04-c","zoneId":"Z-04","position":{"x":1664,"y":1216},"headingMilliDegrees":220000,"rangeUnits":320,"fieldAngleMilliDegrees":60000,"allowedHousingFamilies":["trafficReader","municipalDome"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":[]},
-    {"socketId":"cam-z04-d","zoneId":"Z-04","position":{"x":1472,"y":832},"headingMilliDegrees":110000,"rangeUnits":300,"fieldAngleMilliDegrees":55000,"allowedHousingFamilies":["temporarySensorMast","ornamentalCivicCamera"],"tutorialEligible":false,"returnVisible":false,"enabled":true,"incompatibleSocketIds":["cam-z04-a"]},
-    {"socketId":"cam-z05-a","zoneId":"Z-05","position":{"x":1472,"y":1024},"headingMilliDegrees":330000,"rangeUnits":320,"fieldAngleMilliDegrees":60000,"allowedHousingFamilies":["trafficReader","temporarySensorMast"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":["cam-z05-d"]},
-    {"socketId":"cam-z05-b","zoneId":"Z-05","position":{"x":1664,"y":576},"headingMilliDegrees":60000,"rangeUnits":300,"fieldAngleMilliDegrees":55000,"allowedHousingFamilies":["storefrontCamera","municipalDome"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":[]},
-    {"socketId":"cam-z05-c","zoneId":"Z-05","position":{"x":1984,"y":1024},"headingMilliDegrees":210000,"rangeUnits":340,"fieldAngleMilliDegrees":65000,"allowedHousingFamilies":["municipalDome","ornamentalCivicCamera"],"tutorialEligible":false,"returnVisible":false,"enabled":true,"incompatibleSocketIds":[]},
-    {"socketId":"cam-z05-d","zoneId":"Z-05","position":{"x":1984,"y":640},"headingMilliDegrees":150000,"rangeUnits":300,"fieldAngleMilliDegrees":55000,"allowedHousingFamilies":["temporarySensorMast","trafficReader"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":["cam-z05-a"]},
-    {"socketId":"cam-z06-a","zoneId":"Z-06","position":{"x":1888,"y":512},"headingMilliDegrees":30000,"rangeUnits":280,"fieldAngleMilliDegrees":55000,"allowedHousingFamilies":["ornamentalCivicCamera","municipalDome"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":[]},
-    {"socketId":"cam-z06-b","zoneId":"Z-06","position":{"x":2208,"y":512},"headingMilliDegrees":150000,"rangeUnits":280,"fieldAngleMilliDegrees":55000,"allowedHousingFamilies":["municipalDome","storefrontCamera"],"tutorialEligible":false,"returnVisible":true,"enabled":true,"incompatibleSocketIds":[]},
-    {"socketId":"cam-z06-c","zoneId":"Z-06","position":{"x":2048,"y":896},"headingMilliDegrees":270000,"rangeUnits":300,"fieldAngleMilliDegrees":60000,"allowedHousingFamilies":["trafficReader","ornamentalCivicCamera"],"tutorialEligible":false,"returnVisible":false,"enabled":true,"incompatibleSocketIds":[]}
+    {
+      "socketId": "cam-z02-a",
+      "zoneId": "Z-02",
+      "position": {
+        "x": 448,
+        "y": 320
+      },
+      "headingMilliDegrees": 45000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "trafficReader",
+        "temporarySensorMast"
+      ],
+      "tutorialEligible": true,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z02-d"
+      ]
+    },
+    {
+      "socketId": "cam-z02-b",
+      "zoneId": "Z-02",
+      "position": {
+        "x": 640,
+        "y": 256
+      },
+      "headingMilliDegrees": 135000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 65000,
+      "allowedHousingFamilies": [
+        "storefrontCamera",
+        "trafficReader"
+      ],
+      "tutorialEligible": true,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z02-c"
+      ]
+    },
+    {
+      "socketId": "cam-z02-c",
+      "zoneId": "Z-02",
+      "position": {
+        "x": 768,
+        "y": 512
+      },
+      "headingMilliDegrees": 200000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "municipalDome",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z02-b"
+      ]
+    },
+    {
+      "socketId": "cam-z02-d",
+      "zoneId": "Z-02",
+      "position": {
+        "x": 512,
+        "y": 640
+      },
+      "headingMilliDegrees": 315000,
+      "rangeUnits": 280,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "temporarySensorMast",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z02-a"
+      ]
+    },
+    {
+      "socketId": "cam-z03-a",
+      "zoneId": "Z-03",
+      "position": {
+        "x": 960,
+        "y": 864
+      },
+      "headingMilliDegrees": 330000,
+      "rangeUnits": 340,
+      "fieldAngleMilliDegrees": 70000,
+      "allowedHousingFamilies": [
+        "ornamentalCivicCamera",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z03-b",
+      "zoneId": "Z-03",
+      "position": {
+        "x": 1152,
+        "y": 864
+      },
+      "headingMilliDegrees": 225000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 65000,
+      "allowedHousingFamilies": [
+        "municipalDome",
+        "trafficReader"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z03-c",
+      "zoneId": "Z-03",
+      "position": {
+        "x": 1216,
+        "y": 448
+      },
+      "headingMilliDegrees": 150000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "storefrontCamera",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z04-a",
+      "zoneId": "Z-04",
+      "position": {
+        "x": 1024,
+        "y": 1280
+      },
+      "headingMilliDegrees": 20000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "temporarySensorMast",
+        "trafficReader"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z04-d"
+      ]
+    },
+    {
+      "socketId": "cam-z04-b",
+      "zoneId": "Z-04",
+      "position": {
+        "x": 1280,
+        "y": 1472
+      },
+      "headingMilliDegrees": 290000,
+      "rangeUnits": 340,
+      "fieldAngleMilliDegrees": 65000,
+      "allowedHousingFamilies": [
+        "storefrontCamera",
+        "temporarySensorMast"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z04-c",
+      "zoneId": "Z-04",
+      "position": {
+        "x": 1664,
+        "y": 1216
+      },
+      "headingMilliDegrees": 220000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "trafficReader",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z04-d",
+      "zoneId": "Z-04",
+      "position": {
+        "x": 1472,
+        "y": 832
+      },
+      "headingMilliDegrees": 110000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "temporarySensorMast",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z04-a"
+      ]
+    },
+    {
+      "socketId": "cam-z05-a",
+      "zoneId": "Z-05",
+      "position": {
+        "x": 1472,
+        "y": 1024
+      },
+      "headingMilliDegrees": 330000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "trafficReader",
+        "temporarySensorMast"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z05-d"
+      ]
+    },
+    {
+      "socketId": "cam-z05-b",
+      "zoneId": "Z-05",
+      "position": {
+        "x": 1664,
+        "y": 576
+      },
+      "headingMilliDegrees": 60000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "storefrontCamera",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z05-c",
+      "zoneId": "Z-05",
+      "position": {
+        "x": 1984,
+        "y": 1024
+      },
+      "headingMilliDegrees": 210000,
+      "rangeUnits": 340,
+      "fieldAngleMilliDegrees": 65000,
+      "allowedHousingFamilies": [
+        "municipalDome",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z05-d",
+      "zoneId": "Z-05",
+      "position": {
+        "x": 1984,
+        "y": 640
+      },
+      "headingMilliDegrees": 150000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "temporarySensorMast",
+        "trafficReader"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z05-a"
+      ]
+    },
+    {
+      "socketId": "cam-z06-a",
+      "zoneId": "Z-06",
+      "position": {
+        "x": 1888,
+        "y": 512
+      },
+      "headingMilliDegrees": 30000,
+      "rangeUnits": 280,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "ornamentalCivicCamera",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z06-b",
+      "zoneId": "Z-06",
+      "position": {
+        "x": 2208,
+        "y": 512
+      },
+      "headingMilliDegrees": 150000,
+      "rangeUnits": 280,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "municipalDome",
+        "storefrontCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z06-c",
+      "zoneId": "Z-06",
+      "position": {
+        "x": 2048,
+        "y": 896
+      },
+      "headingMilliDegrees": 270000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "trafficReader",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    }
   ],
-  "extraction":{"center":{"x":2048,"y":192},"halfSize":{"x":96,"y":64},"countdownTicks":300,"leaveRule":"reset"},
-  "viewport":{"baselineWorldWidth":896,"baselineWorldHeight":414,"deadZoneWidth":96,"deadZoneHeight":64,"maximumLookAheadUnits":96}
+  "extraction": {
+    "center": {
+      "x": 2048,
+      "y": 192
+    },
+    "halfSize": {
+      "x": 96,
+      "y": 64
+    },
+    "countdownTicks": 300,
+    "leaveRule": "reset"
+  },
+  "viewport": {
+    "baselineWorldWidth": 896,
+    "baselineWorldHeight": 414,
+    "deadZoneWidth": 96,
+    "deadZoneHeight": 64,
+    "maximumLookAheadUnits": 96
+  },
+  "decorations": [
+    {
+      "id": "dec-01",
+      "assetId": "env_prop_street_tree",
+      "center": {
+        "x": 300,
+        "y": 200
+      }
+    },
+    {
+      "id": "dec-02",
+      "assetId": "env_prop_newsbox",
+      "center": {
+        "x": 392,
+        "y": 320
+      }
+    },
+    {
+      "id": "dec-03",
+      "assetId": "env_prop_hydrant_meters",
+      "center": {
+        "x": 176,
+        "y": 420
+      }
+    },
+    {
+      "id": "dec-05",
+      "assetId": "env_prop_trolley_pole",
+      "center": {
+        "x": 452,
+        "y": 300
+      }
+    },
+    {
+      "id": "dec-06",
+      "assetId": "env_prop_bus_shelter",
+      "center": {
+        "x": 660,
+        "y": 300
+      }
+    },
+    {
+      "id": "dec-07",
+      "assetId": "env_prop_signal_mast",
+      "center": {
+        "x": 700,
+        "y": 560
+      }
+    },
+    {
+      "id": "dec-08",
+      "assetId": "env_prop_bike_rack",
+      "center": {
+        "x": 472,
+        "y": 600
+      }
+    },
+    {
+      "id": "dec-09",
+      "assetId": "env_prop_parklet",
+      "center": {
+        "x": 900,
+        "y": 500
+      }
+    },
+    {
+      "id": "dec-10",
+      "assetId": "env_prop_utility_covers",
+      "center": {
+        "x": 1120,
+        "y": 560
+      }
+    },
+    {
+      "id": "dec-11",
+      "assetId": "env_prop_vent_grate",
+      "center": {
+        "x": 980,
+        "y": 600
+      }
+    },
+    {
+      "id": "dec-12",
+      "assetId": "env_prop_barricade",
+      "center": {
+        "x": 1280,
+        "y": 900
+      }
+    },
+    {
+      "id": "dec-13",
+      "assetId": "env_prop_vent_grate",
+      "center": {
+        "x": 1560,
+        "y": 1180
+      }
+    },
+    {
+      "id": "dec-14",
+      "assetId": "env_prop_seismic_brace",
+      "center": {
+        "x": 1300,
+        "y": 1420
+      }
+    },
+    {
+      "id": "dec-16",
+      "assetId": "env_prop_barricade",
+      "center": {
+        "x": 1770,
+        "y": 590
+      }
+    },
+    {
+      "id": "dec-17",
+      "assetId": "env_prop_signal_mast",
+      "center": {
+        "x": 1880,
+        "y": 880
+      }
+    },
+    {
+      "id": "dec-18",
+      "assetId": "env_prop_hydrant_meters",
+      "center": {
+        "x": 1620,
+        "y": 1020
+      }
+    },
+    {
+      "id": "dec-19",
+      "assetId": "env_prop_utility_covers",
+      "center": {
+        "x": 2048,
+        "y": 840
+      }
+    },
+    {
+      "id": "dec-20",
+      "assetId": "env_motif_phoenix",
+      "center": {
+        "x": 2048,
+        "y": 300
+      },
+      "scalePermille": 300
+    },
+    {
+      "id": "dec-21",
+      "assetId": "env_prop_street_tree",
+      "center": {
+        "x": 1990,
+        "y": 110
+      }
+    },
+    {
+      "id": "dec-22",
+      "assetId": "env_prop_rail_strip",
+      "center": {
+        "x": 448,
+        "y": 500
+      }
+    },
+    {
+      "id": "dec-23",
+      "assetId": "env_prop_rail_strip",
+      "center": {
+        "x": 960,
+        "y": 500
+      }
+    },
+    {
+      "id": "dec-24",
+      "assetId": "env_prop_rail_strip",
+      "center": {
+        "x": 1472,
+        "y": 500
+      }
+    }
+  ]
 }

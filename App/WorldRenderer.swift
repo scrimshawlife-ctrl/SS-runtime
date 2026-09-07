@@ -24,6 +24,8 @@ final class WorldRenderer {
     private enum Layer: Int, CaseIterable {
         /// Beneath everything. The street plane was a bare background colour.
         case ground
+        /// Non-collidable dressing, above the ground and below the solids.
+        case decorations
         case solids
         case extraction
         case cameraFields
@@ -42,6 +44,7 @@ final class WorldRenderer {
     private let environment = EnvironmentTextures()
     /// The arena does not move, so the ground is tiled once.
     private var groundBuilt = false
+    private var decorationsBuilt = false
     /// Clip currently playing per actor key, so an animation is not restarted
     /// on every frame.
     private var activeClips: [String: String] = [:]
@@ -71,6 +74,7 @@ final class WorldRenderer {
         }
         solidSignature = nil
         activeClips = [:]
+        decorationsBuilt = false
         // reset() empties every layer, ground included, so the build flag has to
         // clear with it — otherwise a restarted run keeps a blank plane forever.
         groundBuilt = false
@@ -148,6 +152,7 @@ final class WorldRenderer {
 
     func render(_ snap: PresentationSnapshot) {
         renderGround(snap)
+        renderDecorations(snap)
         renderSolids(snap)
         renderExtraction(snap)
         renderCameras(snap)
@@ -187,7 +192,19 @@ final class WorldRenderer {
                 if let texture = environment.texture(assetId: assetId) {
                     let node = SKSpriteNode(texture: texture, size: CGSize(width: tile, height: tile))
                     node.position = centre
+                    // civic-seam-001 §5b: identical tiles read as an identical
+                    // lattice. A small deterministic brightness offset breaks
+                    // that without shifting a pixel, so a continuous feature
+                    // stays continuous. Derived from position, never from an RNG
+                    // stream, so it cannot reach the digest.
+                    node.colorBlendFactor = Self.groundVariationStrength
+                    node.color = Self.groundVariation(atCellX: Int(x), cellY: Int(y))
                     layer.addChild(node)
+
+                    // A kerb where the surface changes. Real paving changes at a
+                    // kerb, so the zone boundary reads as a civic detail rather
+                    // than as an artifact of rectangular zones.
+                    addKerbs(around: centre, assetId: assetId, tile: tile, snap: snap, layer: layer)
                 }
                 x += tile
             }
@@ -223,8 +240,83 @@ final class WorldRenderer {
         "Z-07": "env_ground_steps"       // Phoenix Steps
     ]
 
+    /// Edges drawn where two ground surfaces meet.
+    private func addKerbs(
+        around centre: CGPoint,
+        assetId: String,
+        tile: CGFloat,
+        snap: PresentationSnapshot,
+        layer: SKNode
+    ) {
+        // Only the south and west edges, so a shared boundary is drawn once
+        // rather than twice by both neighbours.
+        let neighbours: [(dx: CGFloat, dy: CGFloat, horizontal: Bool)] = [
+            (0, -tile, true), (-tile, 0, false)
+        ]
+        for neighbour in neighbours {
+            let point = CGPoint(x: centre.x + neighbour.dx, y: centre.y + neighbour.dy)
+            let other = groundAssetId(at: point, zones: snap.zones)
+            guard other != assetId else { continue }
+            let kerb = SKShapeNode(
+                rectOf: neighbour.horizontal
+                    ? CGSize(width: tile, height: Self.kerbThickness)
+                    : CGSize(width: Self.kerbThickness, height: tile)
+            )
+            kerb.position = CGPoint(
+                x: centre.x + neighbour.dx / 2,
+                y: centre.y + neighbour.dy / 2
+            )
+            kerb.fillColor = Palette.kerb
+            kerb.strokeColor = .clear
+            layer.addChild(kerb)
+        }
+    }
+
+    /// Deterministic per-cell tint. Position in, colour out; no state.
+    private static func groundVariation(atCellX x: Int, cellY y: Int) -> SKColor {
+        var hash = UInt64(bitPattern: Int64(x &* 73_856_093 ^ y &* 19_349_663))
+        hash ^= hash >> 33
+        hash = hash &* 0xff51_afd7_ed55_8ccd
+        hash ^= hash >> 33
+        // A narrow band around neutral: enough to break the lattice, not enough
+        // to read as patchwork.
+        let step = CGFloat(hash % 5) / 4
+        let level = 0.42 + step * 0.16
+        return SKColor(white: level, alpha: 1)
+    }
+
+    private static let groundVariationStrength: CGFloat = 0.10
+    private static let kerbThickness: CGFloat = 3
+
     /// One ground tile spans 2 x 2 authoring cells.
     private static let groundTileUnits = 128
+
+    /// Authored dressing, built once alongside the ground.
+    ///
+    /// `civic-seam-001` §5a: presentation only, non-collidable, and never
+    /// overlapping a solid — the arena contract guarantees the last part, so
+    /// this only has to draw what it is told.
+    private func renderDecorations(_ snap: PresentationSnapshot) {
+        guard !decorationsBuilt, let layer = layers[.decorations] else { return }
+        var drew = false
+        for decoration in snap.decorations {
+            guard let texture = environment.texture(assetId: decoration.assetId) else { continue }
+            let scale = CGFloat(decoration.scale) / 1000
+            let node = SKSpriteNode(
+                texture: texture,
+                size: CGSize(
+                    width: texture.size().width * scale,
+                    height: texture.size().height * scale
+                )
+            )
+            node.position = CGPoint(x: decoration.center.x, y: decoration.center.y)
+            layer.addChild(node)
+            drew = true
+        }
+        // Only latch once something was actually drawn, so a run that starts
+        // before textures resolve is not left permanently undressed.
+        if drew || snap.decorations.isEmpty { decorationsBuilt = true }
+    }
 
     private func renderSolids(_ snap: PresentationSnapshot) {
         // Cheap change detector: solids are authored, so position and count
@@ -513,6 +605,9 @@ final class WorldRenderer {
 /// Grayscale role palette. visual-language-001 owns the authored values; these
 /// are the blockout stand-ins used until asset intake accepts final art.
 enum Palette {
+    /// The edge where two ground surfaces meet. Dark and thin: a joint, not a
+    /// line drawn on top of the city.
+    static let kerb = SKColor(white: 0.13, alpha: 0.85)
     static let solidFill = SKColor(white: 0.18, alpha: 1)
     static let solidStroke = SKColor(white: 0.32, alpha: 1)
     static let playerFill = SKColor(white: 0.92, alpha: 1)

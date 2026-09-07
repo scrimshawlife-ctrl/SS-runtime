@@ -76,6 +76,24 @@ public struct CaptainEmitter: Equatable, Sendable, Codable {
     public var position: VecI { VecI(x: x, y: y) }
 }
 
+public struct Decoration: Equatable, Sendable, Codable {
+    public var id: String
+    public var assetId: String
+    public var center: VecI
+    /// 1000 = native size. Motifs are landmarks and are placed scaled down.
+    /// Absent in the contract means native, so it decodes as optional.
+    public var scalePermille: Int?
+
+    public var scale: Int { scalePermille ?? 1000 }
+
+    public init(id: String, assetId: String, center: VecI, scalePermille: Int? = nil) {
+        self.id = id
+        self.assetId = assetId
+        self.center = center
+        self.scalePermille = scalePermille
+    }
+}
+
 public struct ArenaManifest: Equatable, Sendable, Codable {
     public var schemaVersion: String
     public var arenaVersion: String
@@ -85,6 +103,15 @@ public struct ArenaManifest: Equatable, Sendable, Codable {
     public var standardCameraGeometry: StandardCameraGeometry
     public var playerSpawn: ArenaPoint
     public var zones: [NamedRect]
+    /// Non-collidable authored dressing. `civic-seam-001` §5a: presentation
+    /// only, and a decoration may never overlap a permanent solid — it would
+    /// suggest cover where none exists.
+    ///
+    /// Optional so a spec baseline predating the field still decodes; absent
+    /// simply means an undressed arena. Read through `placedDecorations`.
+    public var decorations: [Decoration]?
+
+    public var placedDecorations: [Decoration] { decorations ?? [] }
     public var permanentSolids: [NamedRect]
     public var gates: [NamedRect]
     public var encounterTriggers: [NamedRect]
