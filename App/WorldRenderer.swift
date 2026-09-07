@@ -310,6 +310,12 @@ final class WorldRenderer {
                 )
             )
             node.position = CGPoint(x: decoration.center.x, y: decoration.center.y)
+            // Counter-clockwise positive, applied directly — a decoration is not
+            // a heading, so it does not go through radians(milliDegrees:), which
+            // negates for the clockwise-positive facing convention.
+            if decoration.rotation != 0 {
+                node.zRotation = CGFloat(decoration.rotation) / 1000 * .pi / 180
+            }
             layer.addChild(node)
             drew = true
         }

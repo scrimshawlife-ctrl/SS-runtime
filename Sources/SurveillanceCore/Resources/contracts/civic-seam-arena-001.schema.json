@@ -3,31 +3,274 @@
   "$id": "https://github.com/scrimshawlife-ctrl/SS-specs/contracts/civic-seam-arena-001.schema.json",
   "title": "Civic Seam Arena Manifest",
   "type": "object",
-  "required": ["schemaVersion","arenaVersion","cellSizeUnits","gridSizeCells","boundsUnits","standardCameraGeometry","playerSpawn","zones","permanentSolids","gates","encounterTriggers","enemySpawnSockets","eliteSpawn","bossSpawn","extractionPressureSockets","captainCameraEmitters","cameraSockets","extraction","viewport"],
+  "required": [
+    "schemaVersion",
+    "arenaVersion",
+    "cellSizeUnits",
+    "gridSizeCells",
+    "boundsUnits",
+    "standardCameraGeometry",
+    "playerSpawn",
+    "zones",
+    "permanentSolids",
+    "gates",
+    "encounterTriggers",
+    "enemySpawnSockets",
+    "eliteSpawn",
+    "bossSpawn",
+    "extractionPressureSockets",
+    "captainCameraEmitters",
+    "cameraSockets",
+    "extraction",
+    "viewport"
+  ],
   "properties": {
-    "schemaVersion": {"const":"arena-manifest-001"},
-    "arenaVersion": {"const":"civic-seam-arena-001"},
-    "cellSizeUnits": {"const":64},
-    "gridSizeCells": {"type":"object","required":["width","height"],"properties":{"width":{"const":36},"height":{"const":24}}},
-    "boundsUnits": {"type":"object","required":["minX","minY","maxX","maxY"],"properties":{"minX":{"const":0},"minY":{"const":0},"maxX":{"const":2304},"maxY":{"const":1536}}},
-    "standardCameraGeometry": {"type":"object"},
-    "playerSpawn": {"$ref":"#/$defs/point"},
-    "zones": {"type":"array","minItems":7,"maxItems":7,"items":{"$ref":"#/$defs/namedRect"}},
-    "permanentSolids": {"type":"array","minItems":14,"maxItems":14,"items":{"$ref":"#/$defs/namedRect"}},
-    "gates": {"type":"array","minItems":5,"maxItems":5,"items":{"$ref":"#/$defs/namedRect"}},
-    "encounterTriggers": {"type":"array","minItems":5,"maxItems":5,"items":{"$ref":"#/$defs/namedRect"}},
-    "enemySpawnSockets": {"type":"object","required":["M-A","M-B","M-C"]},
-    "eliteSpawn": {"$ref":"#/$defs/point"},
-    "bossSpawn": {"$ref":"#/$defs/point"},
-    "extractionPressureSockets": {"type":"array","minItems":4,"maxItems":4,"items":{"$ref":"#/$defs/point"}},
-    "captainCameraEmitters": {"type":"array","minItems":3,"maxItems":3,"items":{"$ref":"#/$defs/point"}},
-    "cameraSockets": {"type":"array","minItems":18,"maxItems":18},
-    "extraction": {"type":"object","required":["center","halfSize","countdownTicks","leaveRule"],"properties":{"center":{"$ref":"#/$defs/vector"},"halfSize":{"$ref":"#/$defs/vector"},"countdownTicks":{"const":300},"leaveRule":{"const":"reset"}}},
-    "viewport": {"type":"object"}
+    "schemaVersion": {
+      "const": "arena-manifest-001"
+    },
+    "arenaVersion": {
+      "const": "civic-seam-arena-001"
+    },
+    "cellSizeUnits": {
+      "const": 64
+    },
+    "gridSizeCells": {
+      "type": "object",
+      "required": [
+        "width",
+        "height"
+      ],
+      "properties": {
+        "width": {
+          "const": 36
+        },
+        "height": {
+          "const": 24
+        }
+      }
+    },
+    "boundsUnits": {
+      "type": "object",
+      "required": [
+        "minX",
+        "minY",
+        "maxX",
+        "maxY"
+      ],
+      "properties": {
+        "minX": {
+          "const": 0
+        },
+        "minY": {
+          "const": 0
+        },
+        "maxX": {
+          "const": 2304
+        },
+        "maxY": {
+          "const": 1536
+        }
+      }
+    },
+    "standardCameraGeometry": {
+      "type": "object"
+    },
+    "playerSpawn": {
+      "$ref": "#/$defs/point"
+    },
+    "zones": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "$ref": "#/$defs/namedRect"
+      }
+    },
+    "permanentSolids": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "$ref": "#/$defs/namedRect"
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/namedRect"
+      }
+    },
+    "encounterTriggers": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/namedRect"
+      }
+    },
+    "enemySpawnSockets": {
+      "type": "object",
+      "required": [
+        "M-A",
+        "M-B",
+        "M-C"
+      ]
+    },
+    "eliteSpawn": {
+      "$ref": "#/$defs/point"
+    },
+    "bossSpawn": {
+      "$ref": "#/$defs/point"
+    },
+    "extractionPressureSockets": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/point"
+      }
+    },
+    "captainCameraEmitters": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "$ref": "#/$defs/point"
+      }
+    },
+    "cameraSockets": {
+      "type": "array",
+      "minItems": 18,
+      "maxItems": 18
+    },
+    "extraction": {
+      "type": "object",
+      "required": [
+        "center",
+        "halfSize",
+        "countdownTicks",
+        "leaveRule"
+      ],
+      "properties": {
+        "center": {
+          "$ref": "#/$defs/vector"
+        },
+        "halfSize": {
+          "$ref": "#/$defs/vector"
+        },
+        "countdownTicks": {
+          "const": 300
+        },
+        "leaveRule": {
+          "const": "reset"
+        }
+      }
+    },
+    "viewport": {
+      "type": "object"
+    },
+    "decorations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "assetId",
+          "center"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "assetId": {
+            "type": "string",
+            "pattern": "^env_(prop|motif)_[a-z_]+$"
+          },
+          "center": {
+            "type": "object",
+            "required": [
+              "x",
+              "y"
+            ],
+            "properties": {
+              "x": {
+                "type": "integer"
+              },
+              "y": {
+                "type": "integer"
+              }
+            }
+          },
+          "scalePermille": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "rotationMilliDegrees": {
+            "type": "integer",
+            "minimum": -360000,
+            "maximum": 360000
+          }
+        }
+      }
+    }
   },
   "$defs": {
-    "vector": {"type":"object","required":["x","y"],"properties":{"x":{"type":"integer"},"y":{"type":"integer"}}},
-    "point": {"type":"object","required":["x","y"],"properties":{"x":{"type":"integer","minimum":0,"maximum":2304},"y":{"type":"integer","minimum":0,"maximum":1536}}},
-    "namedRect": {"type":"object","required":["id","center","halfSize"],"properties":{"id":{"type":"string","minLength":1},"center":{"$ref":"#/$defs/vector"},"halfSize":{"$ref":"#/$defs/vector"}}}
+    "vector": {
+      "type": "object",
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      }
+    },
+    "point": {
+      "type": "object",
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2304
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1536
+        }
+      }
+    },
+    "namedRect": {
+      "type": "object",
+      "required": [
+        "id",
+        "center",
+        "halfSize"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "center": {
+          "$ref": "#/$defs/vector"
+        },
+        "halfSize": {
+          "$ref": "#/$defs/vector"
+        }
+      }
+    }
   }
 }

@@ -957,6 +957,24 @@
   },
   "decorations": [
     {
+      "id": "dec-22",
+      "assetId": "env_prop_rail_strip",
+      "center": {
+        "x": 766,
+        "y": 328
+      },
+      "rotationMilliDegrees": 30000
+    },
+    {
+      "id": "dec-23",
+      "assetId": "env_prop_rail_strip",
+      "center": {
+        "x": 1210,
+        "y": 584
+      },
+      "rotationMilliDegrees": 30000
+    },
+    {
       "id": "dec-01",
       "assetId": "env_prop_street_tree",
       "center": {
@@ -992,8 +1010,8 @@
       "id": "dec-06",
       "assetId": "env_prop_bus_shelter",
       "center": {
-        "x": 660,
-        "y": 300
+        "x": 629,
+        "y": 415
       }
     },
     {
@@ -1016,24 +1034,24 @@
       "id": "dec-09",
       "assetId": "env_prop_parklet",
       "center": {
-        "x": 900,
-        "y": 500
+        "x": 869,
+        "y": 555
       }
     },
     {
       "id": "dec-10",
       "assetId": "env_prop_utility_covers",
       "center": {
-        "x": 1120,
-        "y": 560
+        "x": 1085,
+        "y": 622
       }
     },
     {
       "id": "dec-11",
       "assetId": "env_prop_vent_grate",
       "center": {
-        "x": 980,
-        "y": 600
+        "x": 957,
+        "y": 641
       }
     },
     {
@@ -1107,30 +1125,6 @@
       "center": {
         "x": 1990,
         "y": 110
-      }
-    },
-    {
-      "id": "dec-22",
-      "assetId": "env_prop_rail_strip",
-      "center": {
-        "x": 448,
-        "y": 500
-      }
-    },
-    {
-      "id": "dec-23",
-      "assetId": "env_prop_rail_strip",
-      "center": {
-        "x": 960,
-        "y": 500
-      }
-    },
-    {
-      "id": "dec-24",
-      "assetId": "env_prop_rail_strip",
-      "center": {
-        "x": 1472,
-        "y": 500
       }
     }
   ]

@@ -83,14 +83,29 @@ public struct Decoration: Equatable, Sendable, Codable {
     /// 1000 = native size. Motifs are landmarks and are placed scaled down.
     /// Absent in the contract means native, so it decodes as optional.
     public var scalePermille: Int?
+    /// Presentation rotation, **counter-clockwise positive**.
+    ///
+    /// Deliberately not a heading. The clockwise-positive milli-degree
+    /// convention describes facing and targeting, and a decoration faces
+    /// nothing — so this is applied directly rather than through
+    /// `radians(milliDegrees:)`, which negates for that convention.
+    public var rotationMilliDegrees: Int?
 
     public var scale: Int { scalePermille ?? 1000 }
+    public var rotation: Int { rotationMilliDegrees ?? 0 }
 
-    public init(id: String, assetId: String, center: VecI, scalePermille: Int? = nil) {
+    public init(
+        id: String,
+        assetId: String,
+        center: VecI,
+        scalePermille: Int? = nil,
+        rotationMilliDegrees: Int? = nil
+    ) {
         self.id = id
         self.assetId = assetId
         self.center = center
         self.scalePermille = scalePermille
+        self.rotationMilliDegrees = rotationMilliDegrees
     }
 }
 
