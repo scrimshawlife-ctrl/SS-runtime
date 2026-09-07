@@ -81,10 +81,25 @@ def main() -> int:
     missing: list[str] = []
     rejected: list[str] = []
 
+    # Re-delivery: an asset already admitted is replaced when its source digest
+    # has changed, rather than skipped. Regeneration is normal here, and silently
+    # keeping the old art would be the worst outcome — the catalog would claim a
+    # provenance the shipped file no longer has.
+    existing_digest = {
+        e["record"]["assetId"]: e["record"].get("sha256")
+        for e in catalog["entries"]
+    }
+    replaced: list[str] = []
+
     for asset_id in declared:
-        if asset_id in already:
-            continue
         src = source / f"{asset_id}.png"
+        if asset_id in already:
+            if not src.exists() or existing_digest.get(asset_id) == sha256_of(src):
+                continue
+            catalog["entries"] = [
+                e for e in catalog["entries"] if e["record"]["assetId"] != asset_id
+            ]
+            replaced.append(asset_id)
         if not src.exists():
             missing.append(asset_id)
             continue
@@ -161,6 +176,10 @@ def main() -> int:
         catalog_path.write_text(json.dumps(catalog, indent=2) + "\n")
 
     print(f"admitted {len(records)} of {len(declared)} declared environment assets")
+    if replaced:
+        print(f"replaced {len(replaced)} re-delivered:")
+        for r in replaced:
+            print(f"  {r}")
     if missing:
         print(f"still missing {len(missing)}:")
         for m in missing[:10]:

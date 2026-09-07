@@ -80,6 +80,8 @@ public struct PresentationSnapshot: Equatable, Sendable {
     /// zone — `civic-seam-001` §3 gives each one an identity, and paving is
     /// the cheapest way to make that identity legible from the ground up.
     public var zones: [ZoneRect]
+    /// Authored non-collidable dressing, projected for the renderer.
+    public var decorations: [Decoration]
 
     /// An authored zone and its rectangle.
     public struct ZoneRect: Equatable, Sendable {
@@ -165,6 +167,7 @@ public struct PresentationSnapshot: Equatable, Sendable {
         solidIds = live.map(\.id)
         arenaBounds = state.arena.boundsUnits.aabb
         zones = state.arena.zones.map { ZoneRect(id: $0.id, box: $0.aabb) }
+        decorations = state.arena.placedDecorations
         cameras = state.cameras.map {
             let presentationState = CameraPresentation.persistentState(integrity: $0.integrity)
             return CameraSprite(
