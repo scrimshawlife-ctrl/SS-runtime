@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SurveillanceCore
 
@@ -112,6 +113,144 @@ struct EnvironmentContractTests {
         #expect(!library.declaredIds.isEmpty)
         for id in library.declaredIds {
             #expect(reachable.contains(id), "\(id) is not runtime-reachable")
+        }
+    }
+}
+
+/// Camera housings: `camera-placement-001` assigns a family per mount, and the
+/// renderer draws that family's art beneath the head clip.
+@Suite(.serialized)
+struct CameraHousingArtTests {
+    /// The mapping is hand-written because the IDs are not a case conversion of
+    /// the enum. A typo here would not fail anything loudly — the group would
+    /// simply never be backed and every Camera would silently lose its housing,
+    /// which is exactly the failure this asserts against.
+    @Test func everyHousingFamilyNamesADeclaredAsset() throws {
+        let presentation = try SpecBundle.contract("presentation-assets-001")
+        let root = try #require(
+            try JSONSerialization.jsonObject(with: presentation) as? [String: Any]
+        )
+        let declared = Set(root["environmentAssetIds"] as? [String] ?? [])
+        #expect(!declared.isEmpty)
+
+        for family in HousingFamily.allCases {
+            let assetId = EnvironmentLibrary.cameraAssetId(for: family)
+            #expect(
+                declared.contains(assetId),
+                "\(family.rawValue) maps to \(assetId), which the contract does not declare"
+            )
+        }
+    }
+
+    /// Distinct art per family is the whole point: placement varies the housing
+    /// so mounts read as different institutions.
+    @Test func familiesMapToDistinctAssets() {
+        let ids = HousingFamily.allCases.map(EnvironmentLibrary.cameraAssetId(for:))
+        #expect(Set(ids).count == ids.count)
+    }
+
+    /// Every declared `env_camera_` asset belongs to a family, so the bundle
+    /// never carries a housing nothing can draw.
+    @Test func noDeclaredHousingIsUnreachable() throws {
+        let library = try EnvironmentLibrary.bundled()
+        let reachable = Set(HousingFamily.allCases.map(EnvironmentLibrary.cameraAssetId(for:)))
+        for id in library.ids(in: .camera) {
+            #expect(reachable.contains(id), "\(id) is declared but no family maps to it")
+        }
+    }
+}
+
+/// The Camera mount collides but is never drawn as a blockout.
+@Suite(.serialized)
+struct CameraMountSolidTests {
+    /// The renderer skips mount solids by prefix. If `liveSolids` ever stopped
+    /// using the shared constant, the renderer would go back to drawing a black
+    /// rectangle over every Camera and nothing else would complain.
+    @Test func everyMountSolidCarriesTheSharedPrefix() throws {
+        let sim = try Simulation.make(seed: 42)
+        let state = sim.state
+        #expect(!state.cameras.isEmpty)
+
+        let ids = state.liveSolids.map(\.id)
+        for camera in state.cameras {
+            #expect(ids.contains(camera.mountSolidId))
+            #expect(camera.mountSolidId.hasPrefix(SelectedCamera.mountSolidPrefix))
+        }
+
+        // Authored arena solids must not be caught by that prefix, or skipping
+        // mounts would silently stop drawing real buildings.
+        for solid in state.arena.solidsForCollision {
+            #expect(!solid.id.hasPrefix(SelectedCamera.mountSolidPrefix))
+        }
+    }
+
+    /// The snapshot carries the family, so the renderer can pick the art.
+    @Test func snapshotCamerasCarryTheirHousingFamily() throws {
+        let sim = try Simulation.make(seed: 42)
+        let snap = PresentationSnapshot(sim.state)
+        #expect(!snap.cameras.isEmpty)
+        for camera in snap.cameras {
+            #expect(camera.housingFamily != nil)
+        }
+        // The Captain emitter borrows the struct for cone geometry only.
+        #expect(snap.captainField?.housingFamily == nil)
+    }
+}
+
+/// Declared and shipped is not the same as drawn.
+///
+/// `RuntimeBundleFilter` unions the ID lists the contracts name, so anything
+/// `presentation-assets-001` declares is "reachable" *by construction* — the
+/// filter cannot tell the difference between art the renderer draws and art
+/// nobody wired up. `env_camera_*` sat in the bundle unused for exactly that
+/// reason and no test noticed.
+///
+/// This closes the gap one level up: every declared environment asset must have
+/// a route to the screen, and the ones deliberately staged ahead of the work
+/// that will use them have to be named here rather than merely absent.
+@Suite(.serialized)
+struct EnvironmentAssetsAreDrawnTests {
+    /// Motif sheets produced under T509 that no surface exists for yet.
+    ///
+    /// They are frontal elevations for building façades, which arrive with T508
+    /// and T802. Placing them flat on the ground is what the decoration pass
+    /// already tried and backed out. They ship because T509 required them
+    /// produced and the bundle filter ships what the contract declares; this
+    /// list is the record that it is a decision and not an oversight.
+    static let stagedForFacadeWork: Set<String> = [
+        "env_motif_repair",
+        "env_motif_counter_signal",
+        "env_motif_broadcast_glyph"
+    ]
+
+    @Test func everyDeclaredEnvironmentAssetHasARouteToTheScreen() throws {
+        let library = try EnvironmentLibrary.bundled()
+        let arena = try ArenaManifest.bundled()
+
+        let placed = Set(arena.placedDecorations.map(\.assetId))
+        let solids = Set(arena.permanentSolids.map { EnvironmentLibrary.solidAssetId(forSolidId: $0.id) })
+        let housings = Set(HousingFamily.allCases.map(EnvironmentLibrary.cameraAssetId(for:)))
+
+        for id in library.declaredIds {
+            if Self.stagedForFacadeWork.contains(id) { continue }
+            // Ground tiles are chosen per zone by the renderer, so the group
+            // itself is the route rather than any one placement.
+            if id.hasPrefix(EnvironmentLibrary.Group.ground.rawValue) { continue }
+
+            #expect(
+                placed.contains(id) || solids.contains(id) || housings.contains(id),
+                "\(id) ships but nothing draws it: place it, map it, or stage it explicitly"
+            )
+        }
+    }
+
+    /// The staged list must not rot. If one of these is placed later, this fails
+    /// and whoever placed it removes it from the list deliberately.
+    @Test func stagedAssetsAreStillUnplaced() throws {
+        let arena = try ArenaManifest.bundled()
+        let placed = Set(arena.placedDecorations.map(\.assetId))
+        for id in Self.stagedForFacadeWork {
+            #expect(!placed.contains(id), "\(id) is placed now — drop it from stagedForFacadeWork")
         }
     }
 }

@@ -25,6 +25,15 @@ public struct PresentationSnapshot: Equatable, Sendable {
         public var presentationState: CameraPresentationState
         public var fieldVisible: Bool
         public var clipId: String
+        /// Which housing this mount carries. Placement assigns it per
+        /// `camera-placement-001`; until it reached the snapshot it had no
+        /// visible consequence, because every Camera drew the same clip.
+        ///
+        /// Optional because `captainField` borrows this struct for its cone
+        /// geometry alone. The Captain Camera is the sixth family in
+        /// `civic-seam-visual-direction.md` §6, but it is the boss rather than
+        /// one of the eight standard mounts, and it has no `HousingFamily`.
+        public var housingFamily: HousingFamily?
     }
 
     /// combat-001 projectile, projected so the renderer never infers combat
@@ -181,7 +190,8 @@ public struct PresentationSnapshot: Equatable, Sendable {
                 detecting: $0.wasDetecting,
                 presentationState: presentationState,
                 fieldVisible: $0.integrity > 0,
-                clipId: CameraPresentation.clipId(for: presentationState)
+                clipId: CameraPresentation.clipId(for: presentationState),
+                housingFamily: $0.housingFamily
             )
         }
         enemies = state.enemies.filter(\.alive).map { enemy in
@@ -262,7 +272,8 @@ public struct PresentationSnapshot: Equatable, Sendable {
                 detecting: true,
                 presentationState: .critical,
                 fieldVisible: true,
-                clipId: CameraPresentation.clipId(for: .critical)
+                clipId: CameraPresentation.clipId(for: .critical),
+                housingFamily: nil
             )
         } else {
             captainField = nil

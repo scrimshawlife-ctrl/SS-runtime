@@ -43,7 +43,7 @@ public struct WorldState: Equatable, Sendable {
         for camera in cameras {
             solids.append(
                 (
-                    "mount-\(camera.socketId)",
+                    camera.mountSolidId,
                     AABB(
                         center: camera.position,
                         halfSize: VecI(x: camera.mountCollisionRadius, y: camera.mountCollisionRadius)
