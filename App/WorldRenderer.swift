@@ -21,15 +21,30 @@ final class WorldRenderer {
     }
 
     /// Draw order. Later layers sit on top.
-    private enum Layer: Int, CaseIterable {
+    ///
+    /// Not private, because the order is a safety contract rather than a style
+    /// choice: `civic-seam-visual-direction.md` §7 forbids fog concealing
+    /// collision, lethal telegraphs or Camera boundaries, and the only thing
+    /// enforcing that is where the fog layers sit in this list. `AppTests`
+    /// asserts it, so a reordering cannot quietly put haze over a telegraph.
+    enum Layer: Int, CaseIterable {
         /// Beneath everything. The street plane was a bare background colour.
         case ground
         /// Non-collidable dressing, above the ground and below the solids.
         case decorations
+        /// Ground haze. Above the street and its dressing, below anything a
+        /// player stands on or collides with — `civic-seam-visual-direction.md`
+        /// §7, "reveals beams and tires/feet".
+        case fogLow
         case solids
         /// Camera poles. Below the fields and the heads, because the housing is
         /// the structure the head is mounted on.
         case cameraHousings
+        /// Upper haze. Softens architecture, and stops there: every layer below
+        /// this line is scenery, every layer above it carries information a
+        /// player needs. §7 forbids fog concealing collision, lethal telegraphs
+        /// or Camera boundaries, and this ordering is what enforces it.
+        case fogHigh
         case extraction
         case cameraFields
         case telegraphs
@@ -48,6 +63,7 @@ final class WorldRenderer {
     /// The arena does not move, so the ground is tiled once.
     private var groundBuilt = false
     private var decorationsBuilt = false
+    var fogBuilt = false
     /// Clip currently playing per actor key, so an animation is not restarted
     /// on every frame.
     private var activeClips: [String: String] = [:]
@@ -78,6 +94,7 @@ final class WorldRenderer {
         solidSignature = nil
         activeClips = [:]
         decorationsBuilt = false
+        fogBuilt = false
         // reset() empties every layer, ground included, so the build flag has to
         // clear with it — otherwise a restarted run keeps a blank plane forever.
         groundBuilt = false
@@ -153,9 +170,10 @@ final class WorldRenderer {
 
     // MARK: - Frame
 
-    func render(_ snap: PresentationSnapshot) {
+    func render(_ snap: PresentationSnapshot, reducedMotion: Bool = false) {
         renderGround(snap)
         renderDecorations(snap)
+        renderFog(snap, reducedMotion: reducedMotion)
         renderSolids(snap)
         renderExtraction(snap)
         renderCameras(snap)
@@ -726,6 +744,88 @@ final class WorldRenderer {
 
 /// Grayscale role palette. visual-language-001 owns the authored values; these
 /// are the blockout stand-ins used until asset intake accepts final art.
+
+extension WorldRenderer {
+    /// Two drifting haze layers.
+    ///
+    /// `civic-seam-visual-direction.md` §7: fog is layered presentation with
+    /// bounded effects. Bounded is the operative word — this is cosmetic only.
+    /// It reads `snap.tick` and never writes anything, so it cannot reach the
+    /// state digest, and the layer ordering keeps it below every cue a player
+    /// needs to survive.
+    ///
+    /// The grid is built once and then *moved*. A tiling texture repeats every
+    /// `fogTileUnits`, so translating the layer by an offset taken modulo that
+    /// size scrolls forever with no seam and no per-frame allocation. The grid
+    /// runs one tile past the arena on each side, so the wrap never exposes an
+    /// edge.
+    func renderFog(_ snap: PresentationSnapshot, reducedMotion: Bool) {
+        guard environment.hasFog else { return }
+        buildFogIfNeeded(snap)
+
+        for (layer, speed) in [
+            (Layer.fogLow, Self.fogLowDriftMilli),
+            (Layer.fogHigh, Self.fogHighDriftMilli)
+        ] {
+            // Derived from the authoritative tick, so the drift is identical on
+            // every device and freezes with the simulation rather than running
+            // on while the game is paused.
+            let offset = reducedMotion ? 0 : Self.fogOffset(tick: snap.tick, speedMilli: speed)
+            layers[layer]?.position = CGPoint(x: offset, y: offset / 2)
+        }
+    }
+
+    /// Offset for one layer, wrapped to the tile so it never runs away.
+    ///
+    /// `nonisolated` because it is arithmetic on a tick and touches no UI state;
+    /// that also lets the App tests exercise it without hopping to the main actor.
+    nonisolated static func fogOffset(tick: UInt64, speedMilli: Int) -> CGFloat {
+        let travelled = Int64(tick % 1_000_000) * Int64(speedMilli) / 1000
+        let tile = Int64(fogTileUnits)
+        return CGFloat(travelled % tile)
+    }
+
+    private func buildFogIfNeeded(_ snap: PresentationSnapshot) {
+        guard !fogBuilt else { return }
+        let tile = CGFloat(Self.fogTileUnits)
+        let bounds = snap.arenaBounds
+        // One tile of margin on every side, so a wrapped layer still covers the
+        // arena at its furthest offset.
+        let minX = CGFloat(bounds.center.x - bounds.halfSize.x) - tile
+        let minY = CGFloat(bounds.center.y - bounds.halfSize.y) - tile
+        let maxX = CGFloat(bounds.center.x + bounds.halfSize.x) + tile
+        let maxY = CGFloat(bounds.center.y + bounds.halfSize.y) + tile
+
+        for (layer, assetId) in [
+            (Layer.fogLow, "env_fog_low"),
+            (Layer.fogHigh, "env_fog_high")
+        ] {
+            guard let node = layers[layer],
+                  let texture = environment.texture(assetId: assetId)
+            else { continue }
+            var y = minY
+            while y < maxY {
+                var x = minX
+                while x < maxX {
+                    let sprite = SKSpriteNode(texture: texture, size: CGSize(width: tile, height: tile))
+                    sprite.position = CGPoint(x: x + tile / 2, y: y + tile / 2)
+                    node.addChild(sprite)
+                    x += tile
+                }
+                y += tile
+            }
+        }
+        fogBuilt = true
+    }
+
+    /// One fog tile, in world units. The art is authored square and tiling.
+    nonisolated static let fogTileUnits = 512
+    /// Milli-units per tick. The upper layer moves faster: wind is stronger off
+    /// the ground, and the difference is what gives the two layers depth.
+    nonisolated static let fogLowDriftMilli = 120
+    nonisolated static let fogHighDriftMilli = 300
+}
+
 enum Palette {
     /// The edge where two ground surfaces meet. Dark and thin: a joint, not a
     /// line drawn on top of the city.

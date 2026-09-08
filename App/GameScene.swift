@@ -437,7 +437,7 @@ final class GameScene: SKScene {
     private func redraw() {
         let snap = session.snapshot
         cameraNode.position = CGPoint(x: snap.camera.center.x, y: snap.camera.center.y)
-        renderer.render(snap)
+        renderer.render(snap, reducedMotion: settings.vfx.reducedMotion)
         hud.knobOffsetPoints = controller.knobOffset
         hud.dodgePressed = controller.dodgeTouch != nil
         hud.captions = session.audio.captions
