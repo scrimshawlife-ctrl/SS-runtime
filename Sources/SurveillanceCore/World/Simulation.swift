@@ -413,15 +413,11 @@ public struct Simulation: Equatable, Sendable {
     }
 
     private mutating func resolveDamage(tick: UInt64) -> Set<EntityID> {
-        struct Hit: Equatable {
-            var t: Int64
-            var target: EntityID
-            var projectile: EntityID
-            var isCamera: Bool
-            var isWall: Bool
-            var index: Int
-        }
-        var hits: [Hit] = []
+        // Ordering lives in `DamageHit` so CB-005 through CB-007 can be tested
+        // as the rule. `isCamera` was carried on every hit and read by nothing —
+        // the loop below dispatches by looking the target up in `enemies` and
+        // then `cameras` — so it is gone rather than left to mislead.
+        var hits: [DamageHit] = []
         for (pIndex, projectile) in state.projectiles.enumerated() where projectile.alive {
             var wallT: Int64?
             for solid in state.liveSolids {
@@ -430,7 +426,7 @@ public struct Simulation: Equatable, Sendable {
                 }
             }
             if let wallT {
-                hits.append(Hit(t: wallT, target: EntityID(0), projectile: projectile.id, isCamera: false, isWall: true, index: pIndex))
+                hits.append(DamageHit(t: wallT, target: EntityID(0), projectile: projectile.id, isWall: true, index: pIndex))
             }
             if projectile.kind == .civicPulse || projectile.kind == .ricochet {
                 for enemy in state.enemies where enemy.alive && !projectile.hitEntityIds.contains(enemy.id) {
@@ -441,7 +437,7 @@ public struct Simulation: Equatable, Sendable {
                         target: enemy.position,
                         targetRadius: enemy.radius
                     ) {
-                        hits.append(Hit(t: t, target: enemy.id, projectile: projectile.id, isCamera: false, isWall: false, index: pIndex))
+                        hits.append(DamageHit(t: t, target: enemy.id, projectile: projectile.id, isWall: false, index: pIndex))
                     }
                 }
                 for camera in state.cameras where camera.isDamageable && !projectile.hitEntityIds.contains(camera.entityId) {
@@ -452,7 +448,7 @@ public struct Simulation: Equatable, Sendable {
                         target: camera.targetAnchor,
                         targetRadius: camera.hitRadius
                     ) {
-                        hits.append(Hit(t: t, target: camera.entityId, projectile: projectile.id, isCamera: true, isWall: false, index: pIndex))
+                        hits.append(DamageHit(t: t, target: camera.entityId, projectile: projectile.id, isWall: false, index: pIndex))
                     }
                 }
             } else if projectile.kind == .sutroBolt || projectile.kind == .bossBolt {
@@ -463,17 +459,12 @@ public struct Simulation: Equatable, Sendable {
                     target: state.player.position,
                     targetRadius: PlayerBody.radiusUnits
                 ) {
-                    hits.append(Hit(t: t, target: state.player.id, projectile: projectile.id, isCamera: false, isWall: false, index: pIndex))
+                    hits.append(DamageHit(t: t, target: state.player.id, projectile: projectile.id, isWall: false, index: pIndex))
                 }
             }
         }
 
-        hits.sort {
-            if $0.t != $1.t { return $0.t < $1.t }
-            if $0.isWall != $1.isWall { return $0.isWall && !$1.isWall }
-            if $0.target != $1.target { return $0.target < $1.target }
-            return $0.projectile < $1.projectile
-        }
+        hits = DamageHit.ordered(hits)
 
         var consumed = Set<EntityID>()
         var destroyed = Set<EntityID>()
