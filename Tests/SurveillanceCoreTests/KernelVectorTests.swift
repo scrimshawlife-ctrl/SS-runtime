@@ -34,9 +34,44 @@ struct KernelVectorTests {
     }
 
     @Test func upgradeUP004SignalJammerContactDeltas() {
+        // The un-jammed baseline, asserted first on purpose: 1/2/4 could equally
+        // be produced by a wrong aggregation and a wrong modifier cancelling
+        // each other out, and the vector alone would not notice.
+        //
+        // `exposure.md`: contactDelta = n == 0 ? 0 : min(5, 2 + n - 1). The cap
+        // is why the third case is +4 rather than +8 — eight Cameras and five
+        // Cameras are the same fight before the Jammer touches it.
+        #expect(ExposureState.contactDelta(cameraCount: 1, signalJammer: false) == 2)
+        #expect(ExposureState.contactDelta(cameraCount: 2, signalJammer: false) == 3)
+        #expect(ExposureState.contactDelta(cameraCount: 8, signalJammer: false) == 5)
+
         #expect(ExposureState.contactDelta(cameraCount: 1, signalJammer: true) == 1)
         #expect(ExposureState.contactDelta(cameraCount: 2, signalJammer: true) == 2)
         #expect(ExposureState.contactDelta(cameraCount: 8, signalJammer: true) == 4)
+
+        // No contact is no delta, jammed or not. The "minimum 1" floor applies
+        // to a positive delta; it is not a licence to invent one.
+        #expect(ExposureState.contactDelta(cameraCount: 0, signalJammer: true) == 0)
+    }
+
+    /// The aggregation being right is only half of UP-004: a tick has to apply
+    /// it. `upgrades.md` puts the modifier after aggregation and before Tamper,
+    /// so this pins that `resolveTick` reads the flag rather than merely
+    /// offering a correct static to nobody.
+    @Test func upgradeUP004JammedDeltaIsWhatATickApplies() {
+        var jammed = ExposureState(exposure: 100, detectionState: .hidden)
+        let withJammer = jammed.resolveTick(
+            survivingContactCount: 1, tamperAmounts: [], signalJammer: true
+        )
+        #expect(withJammer.contactDelta == 1)
+        #expect(jammed.exposure == 101)
+
+        var plain = ExposureState(exposure: 100, detectionState: .hidden)
+        let without = plain.resolveTick(
+            survivingContactCount: 1, tamperAmounts: [], signalJammer: false
+        )
+        #expect(without.contactDelta == 2)
+        #expect(plain.exposure == 102)
     }
 
     @Test func playerPC001FullRightSixtyTicks() {
