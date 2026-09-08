@@ -30,6 +30,11 @@ final class EnvironmentTextures {
         texture(assetId: EnvironmentLibrary.solidAssetId(forSolidId: solidId))
     }
 
+    /// Whether both fog layers are delivered. False leaves the air clear,
+    /// which is the honest fallback: half a fog system is a rendering fault the
+    /// player would read as one.
+    var hasFog: Bool { library.isBacked(.fog) }
+
     /// Housing art for a Camera, or nil when the camera group is not fully
     /// backed — in which case no Camera gets a housing, rather than some.
     func cameraTexture(for family: HousingFamily) -> SKTexture? {

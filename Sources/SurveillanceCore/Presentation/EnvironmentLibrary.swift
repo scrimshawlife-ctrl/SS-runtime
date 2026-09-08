@@ -29,6 +29,10 @@ public struct EnvironmentLibrary: Equatable, Sendable {
         case camera = "env_camera_"
         case prop = "env_prop_"
         case motif = "env_motif_"
+        /// `civic-seam-visual-direction.md` §7. Two layers, and the pair is
+        /// the unit: a ground haze with nothing above it reads as a bug
+        /// rather than as weather.
+        case fog = "env_fog_"
     }
 
     public func ids(in group: Group) -> [String] {
