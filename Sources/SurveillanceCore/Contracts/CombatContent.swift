@@ -103,6 +103,38 @@ public struct EncounterSpec: Equatable, Sendable {
     public var waves: [WaveSpec]
 }
 
+/// Fail-closed combat content decoding (S3). Every malformed field throws a
+/// `CombatContentError` that names the field path, so bad data can never be
+/// force-cast into the kernel.
+public enum CombatContentError: Equatable, Sendable, Error {
+    /// The payload is not valid JSON, or does not decode to a JSON object.
+    case invalidJSON
+    /// A required field is absent at the given path, e.g. `"boss"`,
+    /// `"standardEnemies.fogAnalyticsCloud.hp"`.
+    case missingField(String)
+    /// The value at the given path has the wrong shape or type, e.g.
+    /// `"encounters.M-A.waves[0].members.autonomousInformant"`.
+    case wrongType(String)
+    /// A `standardEnemies` key or wave `members` entry names an archetype the
+    /// kernel does not know, e.g. `"phantomCritic"`.
+    case unknownArchetype(String)
+}
+
+extension CombatContentError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .invalidJSON:
+            "combat content is not a JSON object"
+        case let .missingField(path):
+            "combat content is missing required field \"\(path)\""
+        case let .wrongType(path):
+            "combat content field \"\(path)\" has the wrong type"
+        case let .unknownArchetype(key):
+            "combat content references unknown archetype \"\(key)\""
+        }
+    }
+}
+
 public struct CombatContent: Equatable, Sendable {
     public var standardEnemies: [ArchetypeID: StandardEnemyStats]
     public var encounters: [String: EncounterSpec]
@@ -123,87 +155,257 @@ public struct CombatContent: Equatable, Sendable {
     }
 
     public static func decode(_ data: Data) throws -> CombatContent {
-        let raw = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        let enemiesRaw = raw["standardEnemies"] as! [String: [String: Any]]
-        var enemies: [ArchetypeID: StandardEnemyStats] = [:]
-        for (key, value) in enemiesRaw {
-            let id = ArchetypeID(rawValue: key)!
-            enemies[id] = parseEnemy(value)
-        }
-        let encountersRaw = raw["encounters"] as! [String: [String: Any]]
-        var encounters: [String: EncounterSpec] = [:]
-        for (key, value) in encountersRaw {
-            encounters[key] = parseEncounter(value)
-        }
-        let elite = raw["elite"] as! [String: Any]
-        let boss = raw["boss"] as! [String: Any]
-        return CombatContent(
-            standardEnemies: enemies,
-            encounters: encounters,
-            eliteHP: elite["hp"] as! Int,
-            eliteRadius: elite["radius"] as! Int,
-            eliteSpeed: elite["speed"] as! Int,
-            eliteContactDps: elite["contactDps"] as! Int,
-            eliteSpawnDelay: elite["spawnDelay"] as! Int,
-            bossHP: boss["hp"] as! Int,
-            bossRadius: boss["radius"] as! Int,
-            bossSpeed: boss["baseSpeed"] as! Int,
-            bossContactDps: boss["baseContactDps"] as! Int,
-            bossInitialDelay: boss["initialDelay"] as! Int
-        )
-    }
-
-    private static func parseEnemy(_ value: [String: Any]) -> StandardEnemyStats {
-        var pulse: StandardEnemyStats.Pulse?
-        if let p = value["pulse"] as? [String: Int] {
-            pulse = .init(first: p["first"]!, cooldown: p["cooldown"]!, telegraph: p["telegraph"]!, range: p["range"]!, exposure: p["exposure"]!)
-        }
-        var charge: StandardEnemyStats.Charge?
-        if let c = value["charge"] as? [String: Int] {
-            charge = .init(first: c["first"]!, cooldown: c["cooldown"]!, telegraph: c["telegraph"]!, ticks: c["ticks"]!, speed: c["speed"]!, recover: c["recover"]!)
-        }
-        var shot: StandardEnemyStats.Shot?
-        if let s = value["shot"] as? [String: Int] {
-            shot = .init(first: s["first"]!, cooldown: s["cooldown"]!, telegraph: s["telegraph"]!, speed: s["speed"]!, radius: s["radius"]!, lifetime: s["lifetime"]!, damage: s["damage"]!)
-        }
-        var mine: StandardEnemyStats.Mine?
-        if let m = value["mine"] as? [String: Int] {
-            mine = .init(first: m["first"]!, cooldown: m["cooldown"]!, telegraph: m["telegraph"]!, maximum: m["maximum"]!, arm: m["arm"]!, lifetime: m["lifetime"]!, radius: m["radius"]!, damage: m["damage"]!)
-        }
-        return StandardEnemyStats(
-            hp: value["hp"] as! Int,
-            radius: value["radius"] as! Int,
-            speed: value["speed"] as! Int,
-            contactDps: value["contactDps"] as! Int,
-            pulse: pulse,
-            charge: charge,
-            shot: shot,
-            range: value["range"] as? [Int],
-            mine: mine
-        )
-    }
-
-    private static func parseEncounter(_ value: [String: Any]) -> EncounterSpec {
-        let wavesRaw = value["waves"] as! [[String: Any]]
-        let waves: [WaveSpec] = wavesRaw.map { wave in
-            let membersRaw = wave["members"] as! [String: Int]
-            let members = membersRaw.keys.sorted().compactMap { key -> WaveMember? in
-                guard let id = ArchetypeID(rawValue: key) else { return nil }
-                return WaveMember(archetype: id, count: membersRaw[key]!)
+        let root: [String: Any]
+        do {
+            guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                throw CombatContentError.invalidJSON
             }
-            return WaveSpec(
-                id: wave["id"] as! String,
-                interval: wave["interval"] as! Int,
-                delay: wave["delay"] as? Int ?? 0,
+            root = object
+        } catch let error as CombatContentError {
+            throw error
+        } catch {
+            throw CombatContentError.invalidJSON
+        }
+        let elite = try decodeObject(root["elite"], path: "elite")
+        let boss = try decodeObject(root["boss"], path: "boss")
+
+        return CombatContent(
+            standardEnemies: try parseEnemies(root["standardEnemies"]),
+            encounters: try parseEncounters(root["encounters"]),
+            eliteHP: try elite.int("hp", within: "elite"),
+            eliteRadius: try elite.int("radius", within: "elite"),
+            eliteSpeed: try elite.int("speed", within: "elite"),
+            eliteContactDps: try elite.int("contactDps", within: "elite"),
+            eliteSpawnDelay: try elite.int("spawnDelay", within: "elite"),
+            bossHP: try boss.int("hp", within: "boss"),
+            bossRadius: try boss.int("radius", within: "boss"),
+            bossSpeed: try boss.int("baseSpeed", within: "boss"),
+            bossContactDps: try boss.int("baseContactDps", within: "boss"),
+            bossInitialDelay: try boss.int("initialDelay", within: "boss")
+        )
+    }
+
+    private static func parseEnemies(_ raw: Any?) throws -> [ArchetypeID: StandardEnemyStats] {
+        let enemies = try decodeDictionary(raw, path: "standardEnemies")
+        var stats: [ArchetypeID: StandardEnemyStats] = [:]
+        for key in enemies.keys.sorted() {
+            guard let archetype = ArchetypeID(rawValue: key) else {
+                throw CombatContentError.unknownArchetype(key)
+            }
+            stats[archetype] = try parseEnemy(enemies[key], path: "standardEnemies.\(key)")
+        }
+        return stats
+    }
+
+    private static func parseEncounters(_ raw: Any?) throws -> [String: EncounterSpec] {
+        let encounters = try decodeDictionary(raw, path: "encounters")
+        var specs: [String: EncounterSpec] = [:]
+        for key in encounters.keys.sorted() {
+            specs[key] = try parseEncounter(encounters[key], path: "encounters.\(key)")
+        }
+        return specs
+    }
+
+    private static func parseEnemy(_ raw: Any?, path: String) throws -> StandardEnemyStats {
+        let enemy = try decodeObject(raw, path: path)
+        return StandardEnemyStats(
+            hp: try enemy.int("hp", within: path),
+            radius: try enemy.int("radius", within: path),
+            speed: try enemy.int("speed", within: path),
+            contactDps: try enemy.int("contactDps", within: path),
+            pulse: try enemy.pulse(within: path),
+            charge: try enemy.charge(within: path),
+            shot: try enemy.shot(within: path),
+            range: try enemy.optionalInts("range", within: path),
+            mine: try enemy.mine(within: path)
+        )
+    }
+
+    private static func parseEncounter(_ raw: Any?, path: String) throws -> EncounterSpec {
+        let encounter = try decodeObject(raw, path: path)
+        let waveObjects = try decodeArray(encounter["waves"], path: "\(path).waves")
+        var waves: [WaveSpec] = []
+        for (index, waveRaw) in waveObjects.enumerated() {
+            let wavePath = "\(path).waves[\(index)]"
+            let wave = try decodeObject(waveRaw, path: wavePath)
+            let members = try parseMembers(wave["members"], path: wavePath)
+            waves.append(WaveSpec(
+                id: try wave.string("id", within: wavePath),
+                interval: try wave.int("interval", within: wavePath),
+                delay: try wave.optionalInt("delay", within: wavePath) ?? 0,
                 members: members
-            )
+            ))
         }
         return EncounterSpec(
-            zone: value["zone"] as! String,
-            totals: value["totals"] as! Int,
-            activationExposure: value["activationExposure"] as? Int,
-            initialDelay: value["initialDelay"] as? Int,
+            zone: try encounter.string("zone", within: path),
+            totals: try encounter.int("totals", within: path),
+            activationExposure: try encounter.optionalInt("activationExposure", within: path),
+            initialDelay: try encounter.optionalInt("initialDelay", within: path),
             waves: waves
         )
     }
+
+    private static func parseMembers(_ raw: Any?, path: String) throws -> [WaveMember] {
+        let members = try decodeDictionary(raw, path: "\(path).members")
+        var result: [WaveMember] = []
+        for key in members.keys.sorted() {
+            guard let archetype = ArchetypeID(rawValue: key) else {
+                throw CombatContentError.unknownArchetype(key)
+            }
+            result.append(WaveMember(archetype: archetype, count: try members.count(key, within: path)))
+        }
+        return result
+    }
+}
+
+private extension [String: Any] {
+    /// The value of `field` as a required `Int`, at `within.field`.
+    func int(_ field: String, within: String) throws -> Int {
+        guard let raw = self[field] else {
+            throw CombatContentError.missingField("\(within).\(field)")
+        }
+        guard let value = raw as? Int else {
+            throw CombatContentError.wrongType("\(within).\(field)")
+        }
+        return value
+    }
+
+    /// The value of `field` as a required `String`, at `within.field`.
+    func string(_ field: String, within: String) throws -> String {
+        guard let raw = self[field] else {
+            throw CombatContentError.missingField("\(within).\(field)")
+        }
+        guard let value = raw as? String else {
+            throw CombatContentError.wrongType("\(within).\(field)")
+        }
+        return value
+    }
+
+    /// The value of `field` as an `Int`, nil when the field is absent. A
+    /// present field of the wrong type throws.
+    func optionalInt(_ field: String, within: String) throws -> Int? {
+        guard let raw = self[field] else { return nil }
+        guard let value = raw as? Int else {
+            throw CombatContentError.wrongType("\(within).\(field)")
+        }
+        return value
+    }
+
+    /// The value of `field` as `[Int]`, nil when the field is absent. A
+    /// present field of the wrong type throws.
+    func optionalInts(_ field: String, within: String) throws -> [Int]? {
+        guard let raw = self[field] else { return nil }
+        guard let value = raw as? [Int] else {
+            throw CombatContentError.wrongType("\(within).\(field)")
+        }
+        return value
+    }
+
+    /// The value of `field` as a required nested object, at `within.field`.
+    func object(_ field: String, within: String) throws -> [String: Any] {
+        guard let raw = self[field] else {
+            throw CombatContentError.missingField("\(within).\(field)")
+        }
+        guard let value = raw as? [String: Any] else {
+            throw CombatContentError.wrongType("\(within).\(field)")
+        }
+        return value
+    }
+
+    /// The optional `pulse` block of a standard enemy.
+    func pulse(within path: String) throws -> StandardEnemyStats.Pulse? {
+        guard self["pulse"] != nil else { return nil }
+        let pulse = try object("pulse", within: path)
+        return StandardEnemyStats.Pulse(
+            first: try pulse.int("first", within: "\(path).pulse"),
+            cooldown: try pulse.int("cooldown", within: "\(path).pulse"),
+            telegraph: try pulse.int("telegraph", within: "\(path).pulse"),
+            range: try pulse.int("range", within: "\(path).pulse"),
+            exposure: try pulse.int("exposure", within: "\(path).pulse")
+        )
+    }
+
+    /// The optional `charge` block of a standard enemy.
+    func charge(within path: String) throws -> StandardEnemyStats.Charge? {
+        guard self["charge"] != nil else { return nil }
+        let charge = try object("charge", within: path)
+        return StandardEnemyStats.Charge(
+            first: try charge.int("first", within: "\(path).charge"),
+            cooldown: try charge.int("cooldown", within: "\(path).charge"),
+            telegraph: try charge.int("telegraph", within: "\(path).charge"),
+            ticks: try charge.int("ticks", within: "\(path).charge"),
+            speed: try charge.int("speed", within: "\(path).charge"),
+            recover: try charge.int("recover", within: "\(path).charge")
+        )
+    }
+
+    /// The optional `shot` block of a standard enemy.
+    func shot(within path: String) throws -> StandardEnemyStats.Shot? {
+        guard self["shot"] != nil else { return nil }
+        let shot = try object("shot", within: path)
+        return StandardEnemyStats.Shot(
+            first: try shot.int("first", within: "\(path).shot"),
+            cooldown: try shot.int("cooldown", within: "\(path).shot"),
+            telegraph: try shot.int("telegraph", within: "\(path).shot"),
+            speed: try shot.int("speed", within: "\(path).shot"),
+            radius: try shot.int("radius", within: "\(path).shot"),
+            lifetime: try shot.int("lifetime", within: "\(path).shot"),
+            damage: try shot.int("damage", within: "\(path).shot")
+        )
+    }
+
+    /// The optional `mine` block of a standard enemy.
+    func mine(within path: String) throws -> StandardEnemyStats.Mine? {
+        guard self["mine"] != nil else { return nil }
+        let mine = try object("mine", within: path)
+        return StandardEnemyStats.Mine(
+            first: try mine.int("first", within: "\(path).mine"),
+            cooldown: try mine.int("cooldown", within: "\(path).mine"),
+            telegraph: try mine.int("telegraph", within: "\(path).mine"),
+            maximum: try mine.int("maximum", within: "\(path).mine"),
+            arm: try mine.int("arm", within: "\(path).mine"),
+            lifetime: try mine.int("lifetime", within: "\(path).mine"),
+            radius: try mine.int("radius", within: "\(path).mine"),
+            damage: try mine.int("damage", within: "\(path).mine")
+        )
+    }
+
+    /// The value of `key` in a wave `members` map, at `path.members.key`.
+    func count(_ key: String, within path: String) throws -> Int {
+        let field = "members.\(key)"
+        guard let raw = self[key] else {
+            throw CombatContentError.missingField("\(path).\(field)")
+        }
+        guard let value = raw as? Int else {
+            throw CombatContentError.wrongType("\(path).\(field)")
+        }
+        return value
+    }
+}
+
+private func decodeDictionary(_ raw: Any?, path: String) throws -> [String: Any] {
+    guard let value = raw as? [String: Any] else {
+        throw raw == nil
+            ? CombatContentError.missingField(path)
+            : CombatContentError.wrongType(path)
+    }
+    return value
+}
+
+private func decodeObject(_ raw: Any?, path: String) throws -> [String: Any] {
+    guard let value = raw as? [String: Any] else {
+        throw raw == nil
+            ? CombatContentError.missingField(path)
+            : CombatContentError.wrongType(path)
+    }
+    return value
+}
+
+private func decodeArray(_ raw: Any?, path: String) throws -> [Any] {
+    guard let value = raw as? [Any] else {
+        throw raw == nil
+            ? CombatContentError.missingField(path)
+            : CombatContentError.wrongType(path)
+    }
+    return value
 }
