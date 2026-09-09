@@ -5,7 +5,7 @@ iPhone runtime for the one-level **Surveillance Survivor** reboot.
 ## Canonical specification
 
 - Repository: [scrimshawlife-ctrl/SS-specs](https://github.com/scrimshawlife-ctrl/SS-specs)
-- Baseline commit: `39b04bb00ca5d3799513efed4e7970ec42975c96`
+- Baseline commit: `86712f28d867d7a56de5cc19039c4dde7260dfc5`
 - Ruleset: `ss-rules-001`
 - Content: `civic-seam-content-001`
 - Arena: `civic-seam-arena-001`
