@@ -115,6 +115,33 @@ struct EnvironmentContractTests {
             #expect(reachable.contains(id), "\(id) is not runtime-reachable")
         }
     }
+
+    /// `civic-seam-visual-direction.md` §7 names two fog layers, and the fog
+    /// renderer (SS-runtime #78) draws them by asset ID. The presentation
+    /// contract must declare those IDs — otherwise the renderer draws layers
+    /// its own contract does not name, and the all-or-nothing fog group can
+    /// never be backed. This is the renderer/contract agreement, asserted at
+    /// the contract so a regression fails here rather than as missing fog.
+    @Test func fogIDsResolveThroughThePresentationContract() throws {
+        let presentation = try SpecBundle.contract("presentation-assets-001")
+        let root = try #require(
+            try JSONSerialization.jsonObject(with: presentation) as? [String: Any]
+        )
+        let environment = Set(root["environmentAssetIds"] as? [String] ?? [])
+        #expect(environment.contains("env_fog_low"),
+                "presentation-assets-001 does not declare env_fog_low")
+        #expect(environment.contains("env_fog_high"),
+                "presentation-assets-001 does not declare env_fog_high")
+
+        // The two runtime consumers of that array must see the fog pair:
+        // the library that decides whether the fog group is backed, and the
+        // bundle filter that ships it.
+        let library = try EnvironmentLibrary.bundled()
+        #expect(library.ids(in: .fog) == ["env_fog_low", "env_fog_high"])
+        let reachable = try RuntimeBundleFilter.reachableAssetIds()
+        #expect(reachable.contains("env_fog_low"))
+        #expect(reachable.contains("env_fog_high"))
+    }
 }
 
 /// Camera housings: `camera-placement-001` assigns a family per mount, and the
@@ -233,9 +260,13 @@ struct EnvironmentAssetsAreDrawnTests {
 
         for id in library.declaredIds {
             if Self.stagedForFacadeWork.contains(id) { continue }
-            // Ground tiles are chosen per zone by the renderer, so the group
-            // itself is the route rather than any one placement.
-            if id.hasPrefix(EnvironmentLibrary.Group.ground.rawValue) { continue }
+            // Ground tiles are chosen per zone by the renderer, and the fog
+            // layers are a whole-arena presentation pass (renderFog, gated by
+            // the all-or-nothing fog group) — for both, the group itself is the
+            // route rather than any one placement.
+            if id.hasPrefix(EnvironmentLibrary.Group.ground.rawValue)
+                || id.hasPrefix(EnvironmentLibrary.Group.fog.rawValue)
+            { continue }
 
             #expect(
                 placed.contains(id) || solids.contains(id) || housings.contains(id),

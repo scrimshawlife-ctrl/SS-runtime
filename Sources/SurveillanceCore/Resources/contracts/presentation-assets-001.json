@@ -112,6 +112,8 @@
     "env_motif_phoenix",
     "env_motif_repair",
     "env_motif_counter_signal",
-    "env_motif_broadcast_glyph"
+    "env_motif_broadcast_glyph",
+    "env_fog_low",
+    "env_fog_high"
   ]
 }
