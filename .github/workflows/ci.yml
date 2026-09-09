@@ -11,13 +11,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify pinned specification
-        run: grep -q "39b04bb00ca5d3799513efed4e7970ec42975c96" SPEC_BASELINE.md
+        run: grep -q "86712f28d867d7a56de5cc19039c4dde7260dfc5" SPEC_BASELINE.md
       - name: Test deterministic core
         run: swift test --skip CameraPlacementTests --skip CameraFairnessTests --parallel --num-workers 1
       - name: Test camera placement
         run: swift test --filter CameraPlacementTests --parallel --num-workers 1
       - name: Test camera fairness
         run: swift test --filter CameraFairnessTests --parallel --num-workers 1
+
+  spec-parity:
+    # D-061: from the adoption commit the runtime bundle must byte-match
+    # SS-specs contracts/ and fixtures/. This job checks out the spec at the
+    # pinned commit and byte-compares every bundled file, plus enforces that
+    # all identity sources agree on the pin. The one documented exception is
+    # the asset catalog's specificationCommit field (D-065), which the script
+    # asserts is the ONLY difference. A guard nobody has seen fail is not yet
+    # a guard: the negative proof (one-byte edit -> failure) is in the PR that
+    # introduced this job.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pinned specification
+        run: grep -q "86712f28d867d7a56de5cc19039c4dde7260dfc5" SPEC_BASELINE.md
+      - name: Byte-compare bundled contracts and fixtures against the pinned SS-specs
+        run: bash scripts/spec_parity.sh
 
   app:
     # The iOS app target had never been compiled by CI: Bundle.module was
