@@ -1,0 +1,364 @@
+{
+  "cameraPlacementVersion": "camera-placement-001",
+  "arenaVersion": "civic-seam-arena-001",
+  "sockets": [
+    {
+      "socketId": "cam-z02-a",
+      "zoneId": "Z-02",
+      "position": {
+        "x": 448,
+        "y": 320
+      },
+      "headingMilliDegrees": 45000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "trafficReader",
+        "temporarySensorMast"
+      ],
+      "tutorialEligible": true,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z02-d"
+      ]
+    },
+    {
+      "socketId": "cam-z02-b",
+      "zoneId": "Z-02",
+      "position": {
+        "x": 640,
+        "y": 256
+      },
+      "headingMilliDegrees": 135000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 65000,
+      "allowedHousingFamilies": [
+        "storefrontCamera",
+        "trafficReader"
+      ],
+      "tutorialEligible": true,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z02-c"
+      ]
+    },
+    {
+      "socketId": "cam-z02-c",
+      "zoneId": "Z-02",
+      "position": {
+        "x": 768,
+        "y": 512
+      },
+      "headingMilliDegrees": 200000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "municipalDome",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z02-b"
+      ]
+    },
+    {
+      "socketId": "cam-z02-d",
+      "zoneId": "Z-02",
+      "position": {
+        "x": 512,
+        "y": 640
+      },
+      "headingMilliDegrees": 315000,
+      "rangeUnits": 280,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "temporarySensorMast",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z02-a"
+      ]
+    },
+    {
+      "socketId": "cam-z03-a",
+      "zoneId": "Z-03",
+      "position": {
+        "x": 960,
+        "y": 864
+      },
+      "headingMilliDegrees": 330000,
+      "rangeUnits": 340,
+      "fieldAngleMilliDegrees": 70000,
+      "allowedHousingFamilies": [
+        "ornamentalCivicCamera",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z03-b",
+      "zoneId": "Z-03",
+      "position": {
+        "x": 1152,
+        "y": 864
+      },
+      "headingMilliDegrees": 225000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 65000,
+      "allowedHousingFamilies": [
+        "municipalDome",
+        "trafficReader"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z03-c",
+      "zoneId": "Z-03",
+      "position": {
+        "x": 1216,
+        "y": 448
+      },
+      "headingMilliDegrees": 150000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "storefrontCamera",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z04-a",
+      "zoneId": "Z-04",
+      "position": {
+        "x": 1024,
+        "y": 1280
+      },
+      "headingMilliDegrees": 20000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "temporarySensorMast",
+        "trafficReader"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z04-d"
+      ]
+    },
+    {
+      "socketId": "cam-z04-b",
+      "zoneId": "Z-04",
+      "position": {
+        "x": 1280,
+        "y": 1472
+      },
+      "headingMilliDegrees": 290000,
+      "rangeUnits": 340,
+      "fieldAngleMilliDegrees": 65000,
+      "allowedHousingFamilies": [
+        "storefrontCamera",
+        "temporarySensorMast"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z04-c",
+      "zoneId": "Z-04",
+      "position": {
+        "x": 1664,
+        "y": 1216
+      },
+      "headingMilliDegrees": 220000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "trafficReader",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z04-d",
+      "zoneId": "Z-04",
+      "position": {
+        "x": 1472,
+        "y": 832
+      },
+      "headingMilliDegrees": 110000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "temporarySensorMast",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z04-a"
+      ]
+    },
+    {
+      "socketId": "cam-z05-a",
+      "zoneId": "Z-05",
+      "position": {
+        "x": 1472,
+        "y": 1024
+      },
+      "headingMilliDegrees": 330000,
+      "rangeUnits": 320,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "trafficReader",
+        "temporarySensorMast"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z05-d"
+      ]
+    },
+    {
+      "socketId": "cam-z05-b",
+      "zoneId": "Z-05",
+      "position": {
+        "x": 1664,
+        "y": 576
+      },
+      "headingMilliDegrees": 60000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "storefrontCamera",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z05-c",
+      "zoneId": "Z-05",
+      "position": {
+        "x": 1984,
+        "y": 1024
+      },
+      "headingMilliDegrees": 210000,
+      "rangeUnits": 340,
+      "fieldAngleMilliDegrees": 65000,
+      "allowedHousingFamilies": [
+        "municipalDome",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z05-d",
+      "zoneId": "Z-05",
+      "position": {
+        "x": 1984,
+        "y": 640
+      },
+      "headingMilliDegrees": 150000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "temporarySensorMast",
+        "trafficReader"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": [
+        "cam-z05-a"
+      ]
+    },
+    {
+      "socketId": "cam-z06-a",
+      "zoneId": "Z-06",
+      "position": {
+        "x": 1888,
+        "y": 512
+      },
+      "headingMilliDegrees": 30000,
+      "rangeUnits": 280,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "ornamentalCivicCamera",
+        "municipalDome"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z06-b",
+      "zoneId": "Z-06",
+      "position": {
+        "x": 2208,
+        "y": 512
+      },
+      "headingMilliDegrees": 150000,
+      "rangeUnits": 280,
+      "fieldAngleMilliDegrees": 55000,
+      "allowedHousingFamilies": [
+        "municipalDome",
+        "storefrontCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": true,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    },
+    {
+      "socketId": "cam-z06-c",
+      "zoneId": "Z-06",
+      "position": {
+        "x": 2048,
+        "y": 896
+      },
+      "headingMilliDegrees": 270000,
+      "rangeUnits": 300,
+      "fieldAngleMilliDegrees": 60000,
+      "allowedHousingFamilies": [
+        "trafficReader",
+        "ornamentalCivicCamera"
+      ],
+      "tutorialEligible": false,
+      "returnVisible": false,
+      "enabled": true,
+      "incompatibleSocketIds": []
+    }
+  ]
+}
