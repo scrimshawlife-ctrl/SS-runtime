@@ -28,7 +28,7 @@ Fill only from this repo's README or CI. Do not invent commands.
 
 ## Invariants
 
-- Treat SS-specs commit `39b04bb00ca5d3799513efed4e7970ec42975c96` as product authority.
+- Treat the SS-specs commit pinned in `SPEC_BASELINE.md` as product authority.
 - Cite task and contract IDs in gameplay commits and pull requests.
 - Keep `SurveillanceCore` independent of UIKit, SwiftUI, SpriteKit, AVFoundation, wall clock, and unseeded randomness.
 - Use fixed 60 Hz ticks, stable UInt64 entity IDs, ordered iteration, and fail-closed version loading.
