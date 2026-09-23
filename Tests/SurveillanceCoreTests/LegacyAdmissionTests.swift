@@ -200,12 +200,19 @@ struct LegacyAdmissionTests {
                 .map(\.record.assetId)
         ).intersection(frames)
         // 588: 564 after the Daemon vocabulary, plus 24 from pinning the
-        // Captain attack clips to their telegraph windows.
-        #expect(frames.count == 588)
-        // 129 admitted legacy sprites plus delivered originals: every frame.
+        // Captain attack clips to their telegraph windows. Plus 368 D-071
+        // standard-enemy frames (T602), planned and not yet delivered.
+        #expect(frames.count == 956)
+        // 129 admitted legacy sprites plus delivered originals.
         #expect(backed.count == 588)
         #expect(backed.isSubset(of: frames))
-        // Every camera frame is backed; the cast roles are entirely unbacked.
+        // The unbacked frames are exactly the D-071 standard-enemy family.
+        let unbacked = frames.subtracting(backed)
+        #expect(unbacked.count == 368)
+        #expect(unbacked.allSatisfy { id in
+            ["_idle_", "_move_", "_hurt_", "_defeat_", "cableCarCorrelator_recover_"].contains { id.contains($0) }
+        })
+        // Every camera frame is backed.
         let cameraFrames = frames.filter { $0.hasPrefix("actor_camera_") }
         #expect(cameraFrames.allSatisfy { backed.contains($0) })
         // The Captain is fully backed, attacks included.
