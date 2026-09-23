@@ -1391,6 +1391,37 @@ public struct Simulation: Equatable, Sendable {
         state.projectiles.append(projectile)
     }
 
+    /// Primes `id` to the instant before its final completion check: activated,
+    /// on its last wave, spawn queue drained, nothing living, every member
+    /// spawned. Unlike `testing_completeEncounter`, this deliberately leaves
+    /// `completed == false`, so the next `step` runs the real completion branch
+    /// in `advanceEncounters` — for M-A, the branch that opens protected upgrade
+    /// selection (T700). Sets preconditions only; the transition under test is
+    /// performed by production code.
+    mutating func testing_primeEncounterForCompletion(_ id: String) {
+        guard let spec = state.content.encounters[id], !spec.waves.isEmpty else { return }
+        var runtime = state.encounters[id] ?? EncounterRuntime(
+            id: id,
+            activated: true,
+            completed: false,
+            waveIndex: 0,
+            spawnQueue: [],
+            nextSpawnTick: 0,
+            deferTicks: 0,
+            living: 0,
+            spawned: 0,
+            cleanupTick: nil
+        )
+        runtime.activated = true
+        runtime.completed = false
+        runtime.waveIndex = spec.waves.count - 1
+        runtime.spawnQueue = []
+        runtime.living = 0
+        runtime.deferTicks = 0
+        runtime.spawned = spec.totals
+        state.encounters[id] = runtime
+    }
+
     mutating func testing_completeEncounter(_ id: String) {
         var runtime = state.encounters[id] ?? EncounterRuntime(
             id: id,
