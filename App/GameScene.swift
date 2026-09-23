@@ -9,6 +9,8 @@ final class GameSession {
     private(set) var simulation: Simulation
     private var cameraHUD = CameraHUDProjector()
     private var audioProjector = AudioProjector()
+    /// Hurt, stagger, and defeat clips driven by authoritative events.
+    private var reactions = (try? ReactionClipTracker.bundled()) ?? .empty
     /// Last tick's audio projection, consumed by the device layer.
     private(set) var audio = AudioProjection.silent
     var audioSettings: PresentationAudioSettings = .enabled
@@ -30,6 +32,7 @@ final class GameSession {
 
     func step() {
         let tick = simulation.state.tick + 1
+        let enemiesBefore = simulation.state.enemies
         let result: TickResult
         if simulation.state.upgrade.pending {
             if let choice = pendingUpgradeChoice {
@@ -56,6 +59,7 @@ final class GameSession {
                 )
             )
         }
+        reactions.ingest(result, previousEnemies: enemiesBefore, currentEnemies: simulation.state.enemies)
         applyCameraHUD(result)
         applyAudio(result)
         persistTerminalReceiptIfNeeded()
@@ -72,6 +76,7 @@ final class GameSession {
         simulation = try! Simulation.make(seed: seed)
         terminalReceiptStored = false
         audioProjector.reset()
+        reactions.reset()
         audio = AudioProjection.silent
         pendingUpgradeChoice = nil
         moveX = 0
@@ -118,7 +123,9 @@ final class GameSession {
 #endif
 
     var snapshot: PresentationSnapshot {
-        PresentationSnapshot(simulation.state)
+        var snapshot = PresentationSnapshot(simulation.state)
+        reactions.apply(to: &snapshot)
+        return snapshot
     }
 }
 
