@@ -16,6 +16,14 @@ import Foundation
 /// clip's own marker, so a role gains reactions by adding clips to the
 /// contract, with no mapping table here to fall out of date.
 ///
+/// Commit clips are tracked here too (D-072). The Fog Analytics Cloud, Sutro
+/// Signal Witch, and Victorian Vendor resolve their attack on the tick they
+/// leave `TELEGRAPH` for `COOLDOWN` and never sit in an attack state, so their
+/// commit is read from consecutive states and held for its duration. The
+/// Autonomous Informant's commit is its contact hit, found through its clip's
+/// `playerDamaged` marker. A held commit replaces the state clip, so hurt and
+/// defeat still cut it only through the commit's own cancel windows.
+///
 /// Presentation only (`animation.md` §1): it reads events and never writes
 /// simulation state, so the replay digest cannot change. A reaction is also a
 /// preference, not a replacement — the renderer tries it first and falls back
@@ -37,15 +45,20 @@ public struct ReactionClipTracker: Sendable {
     static let damageMarker = "entityDamaged"
     static let playerDamageMarker = "playerDamaged"
     static let defeatMarkers: Set<String> = ["entityDied", "eliteDefeated", "bossDefeated"]
+    /// D-072: roles whose attack resolves on the telegraph-to-cooldown step.
+    static let transitionCommitRoles: [ArchetypeID] = [.fogAnalyticsCloud, .sutroSignalWitch, .victorianVendor]
 
     private let clipsById: [String: ClipRecord]
     private let hurtClipByRole: [String: ClipRecord]
     private let defeatClipByRole: [String: ClipRecord]
     private let playerHurtClip: ClipRecord?
+    private let transitionCommitByRole: [ArchetypeID: ClipRecord]
+    private let contactCommitByRole: [String: ClipRecord]
 
     public private(set) var reactions: [EntityID: Reaction] = [:]
     public private(set) var remains: [EntityID: Remains] = [:]
     public private(set) var playerReaction: Reaction?
+    public private(set) var commits: [EntityID: Reaction] = [:]
 
     public init(clips: [ClipRecord]) {
         // Deterministic when a role ever declares two clips for one marker:
@@ -55,6 +68,7 @@ public struct ReactionClipTracker: Sendable {
         var hurt: [String: ClipRecord] = [:]
         var defeat: [String: ClipRecord] = [:]
         var playerHurt: ClipRecord?
+        var contactCommit: [String: ClipRecord] = [:]
         for clip in ordered {
             byId[clip.clipId] = clip
             let marker = clip.authoritativeEventMarker
@@ -64,11 +78,20 @@ public struct ReactionClipTracker: Sendable {
             }
             if marker == Self.damageMarker, hurt[clip.actorRole] == nil { hurt[clip.actorRole] = clip }
             if Self.defeatMarkers.contains(marker), defeat[clip.actorRole] == nil { defeat[clip.actorRole] = clip }
+            if marker == Self.playerDamageMarker, contactCommit[clip.actorRole] == nil {
+                contactCommit[clip.actorRole] = clip
+            }
         }
         clipsById = byId
         hurtClipByRole = hurt
         defeatClipByRole = defeat
         playerHurtClip = playerHurt
+        contactCommitByRole = contactCommit
+        var transition: [ArchetypeID: ClipRecord] = [:]
+        for role in Self.transitionCommitRoles {
+            transition[role] = byId["\(role.rawValue)_commit"]
+        }
+        transitionCommitByRole = transition
     }
 
     public init(catalog: ClipCatalog) {
@@ -103,12 +126,19 @@ public struct ReactionClipTracker: Sendable {
             currentEnemies.first { $0.id == id } ?? previousEnemies.first { $0.id == id }
         }
         let died = Set(result.events.filter { $0.type == .entityDied }.compactMap(\.primaryEntityId))
+        for body in currentEnemies where body.state == .cooldown {
+            guard let clip = transitionCommitByRole[body.archetype],
+                  previousEnemies.first(where: { $0.id == body.id })?.state == .telegraph
+            else { continue }
+            commits[body.id] = Reaction(clipId: clip.clipId, endTick: tick + Self.durationTicks(clip))
+        }
         for event in result.events {
             switch event.type {
             case .entityDied:
                 guard let id = event.primaryEntityId, let body = enemy(id),
                       let clip = defeatClipByRole[body.archetype.rawValue] else { continue }
                 reactions[id] = nil
+                commits[id] = nil
                 remains[id] = Remains(
                     sprite: PresentationSnapshot.CircleSprite(
                         id: body.id,
@@ -129,6 +159,11 @@ public struct ReactionClipTracker: Sendable {
                       let clip = hurtClipByRole[body.archetype.rawValue] else { continue }
                 reactions[id] = Reaction(clipId: clip.clipId, endTick: tick + Self.durationTicks(clip))
             case .playerDamaged:
+                if let source = event.secondaryEntityId, !died.contains(source), let body = enemy(source),
+                   let commit = contactCommitByRole[body.archetype.rawValue]
+                {
+                    commits[source] = Reaction(clipId: commit.clipId, endTick: tick + Self.durationTicks(commit))
+                }
                 guard let clip = playerHurtClip else { continue }
                 playerReaction = Reaction(clipId: clip.clipId, endTick: tick + Self.durationTicks(clip))
             default:
@@ -141,6 +176,9 @@ public struct ReactionClipTracker: Sendable {
     public func apply(to snapshot: inout PresentationSnapshot) {
         let tick = snapshot.tick
         for index in snapshot.enemies.indices {
+            if let commit = commits[snapshot.enemies[index].id], commit.endTick > tick {
+                snapshot.enemies[index].clipId = commit.clipId
+            }
             let sprite = snapshot.enemies[index]
             guard let reaction = reactions[sprite.id], reaction.endTick > tick,
                   let clip = clipsById[reaction.clipId],
@@ -172,11 +210,13 @@ public struct ReactionClipTracker: Sendable {
         reactions = [:]
         remains = [:]
         playerReaction = nil
+        commits = [:]
     }
 
     private mutating func prune(at tick: UInt64) {
         reactions = reactions.filter { $0.value.endTick > tick }
         remains = remains.filter { $0.value.endTick > tick }
+        commits = commits.filter { $0.value.endTick > tick }
         if let reaction = playerReaction, reaction.endTick <= tick { playerReaction = nil }
     }
 }

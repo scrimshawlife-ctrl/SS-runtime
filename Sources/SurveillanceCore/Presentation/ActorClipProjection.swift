@@ -54,24 +54,21 @@ public enum ActorClipProjection {
         return ClipCatalog.clipId(for: attack)
     }
 
-    /// Each standard enemy has one anticipation clip and one commit clip, and
-    /// the state that reaches each differs by role. Every other state is
-    /// locomotion or standing (D-071).
+    /// Each standard enemy has one anticipation clip and one commit clip. Only
+    /// the Correlator's commit is a state (`CHARGE`); the other four are held by
+    /// `ReactionClipTracker` from a state transition or contact hit (D-072).
+    /// Every other state is locomotion or standing (D-071).
     static func standardClipId(role: ArchetypeID, state: EnemyAIState, velocity: VecQ8) -> String? {
         switch (role, state) {
         case (.fogAnalyticsCloud, .telegraph): return "fogAnalyticsCloud_anticipate"
-        case (.fogAnalyticsCloud, .resolve): return "fogAnalyticsCloud_commit"
 
         case (.cableCarCorrelator, .telegraph): return "cableCarCorrelator_anticipate"
         case (.cableCarCorrelator, .charge): return "cableCarCorrelator_commit"
 
         case (.sutroSignalWitch, .telegraph): return "sutroSignalWitch_anticipate"
-        case (.sutroSignalWitch, .fire): return "sutroSignalWitch_commit"
 
-        case (.autonomousInformant, .charge): return "autonomousInformant_commit"
 
         case (.victorianVendor, .telegraph): return "victorianVendor_anticipate"
-        case (.victorianVendor, .throwMine): return "victorianVendor_commit"
 
         // enemies-and-encounters.md: only the Correlator has a RECOVER.
         case (.cableCarCorrelator, .recover): return "cableCarCorrelator_recover"
