@@ -26,6 +26,27 @@ struct ClipAlignmentTests {
         #expect(westIsNotFlippedEast)
     }
 
+    /// #88: moving up the screen (world `+y`, north) must show the back view
+    /// (`n`), and the facing mapping must agree with the heading projection.
+    @Test func facingVectorDirectionAgreesWithHeadingConvention() {
+        let up = VecQ8(unitsX: 0, unitsY: 3)
+        let down = VecQ8(unitsX: 0, unitsY: -3)
+        #expect(ClipFrameLibrary.direction(forFacing: up) == "n")
+        #expect(ClipFrameLibrary.direction(forFacing: down) == "s")
+        #expect(ClipFrameLibrary.direction(forFacing: VecQ8(unitsX: 2, unitsY: 1)) == "e")
+        #expect(ClipFrameLibrary.direction(forFacing: VecQ8(unitsX: -2, unitsY: 1)) == "w")
+        #expect(ClipFrameLibrary.direction(forFacing: .zero) == "s")
+        #expect(ActorClipProjection.direction(for: up) == "n")
+        for heading in [0, 90_000, 180_000, 270_000] {
+            let unit = Cordic.headingUnit(milliDegrees: heading)
+            let facing = VecQ8(x: Q8(raw: Int64(unit.x)), y: Q8(raw: Int64(unit.y)))
+            #expect(
+                ClipFrameLibrary.direction(forFacing: facing)
+                    == ClipAlignment.cardinalDirection(headingMilli: heading)
+            )
+        }
+    }
+
     @Test func clipT605HeadingProjectsToFourAuthoredDirectionsWithoutMirroring() throws {
         let catalog = try ClipCatalog.bundled()
         let east = ClipAlignment.project(
