@@ -11,6 +11,10 @@ public struct PresentationSnapshot: Equatable, Sendable {
         /// authoritative state has no clip and it keeps its blockout.
         public var clipId: String?
         public var direction: String
+        /// Hurt, stagger, or defeat clip an authoritative event calls for, set by
+        /// `ReactionClipTracker`. The renderer tries it before `clipId` and falls
+        /// back, so an unbacked reaction never hides the state clip.
+        public var reactionClipId: String? = nil
     }
 
     public struct CameraSprite: Equatable, Sendable {
@@ -132,6 +136,11 @@ public struct PresentationSnapshot: Equatable, Sendable {
     /// clip-metadata-001 clip the Player is presenting, and the compass
     /// direction it faces. Presentation only; no rule reads either.
     public var playerClipId: String
+    /// Player hurt clip an event calls for, preferred over `playerClipId`.
+    public var playerReactionClipId: String? = nil
+    /// Defeated enemies still playing their defeat clip after leaving
+    /// authoritative state. Presentation only; drawn only where the clip is backed.
+    public var defeated: [CircleSprite] = []
     public var playerDirection: String
     public var projectiles: [ProjectileSprite]
     public var mines: [MineSprite]
