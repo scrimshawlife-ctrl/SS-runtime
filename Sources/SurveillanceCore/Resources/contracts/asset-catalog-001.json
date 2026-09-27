@@ -2,7 +2,7 @@
   "schemaVersion": "asset-catalog-001",
   "legacyRepository": "scrimshawlife-ctrl/Surveillance-Survivor",
   "legacyCommit": "3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
-  "specificationCommit": "c15a6f50ebdd8b245265e41172a87817721837c1",
+  "specificationCommit": "878cb9f07ee70efc6d717f4fc2bfa338a9bdff6e",
   "entries": [
     {
       "admissionDecision": "excluded",
@@ -6825,12 +6825,12 @@
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_decal_cable_groove_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -6844,7 +6844,7 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 REJECT under LC-009: no SS-001 role (role-identity test). Cable-car slot track. The rail spine is delivered as an original (`prop_rail_strip`); cable-car shorthand sits next to \u00a715's \"arbitrary cable car\". Magenta border. Evidence only; not runtime eligible."
       }
     },
     {
@@ -6867,7 +6867,7 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 DEFER to P2 under LC-009. Fits P2 \"rain-darkened material state\". Magenta fringe at the edge. Remains sfCandidate until intake records the frozen-commit digest; not runtime eligible."
       }
     },
     {
@@ -6894,12 +6894,12 @@
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_landmark_cable_track_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -6913,16 +6913,16 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 REJECT under LC-009: no SS-001 role (role-identity test). A building; no landmark slot. Evidence only; not runtime eligible."
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_landmark_comms_tower_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -6936,16 +6936,16 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 REJECT under LC-009: no SS-001 role (role-identity test). A gothic spire building, not the P1 \"distant three-pronged tower glyph\". No landmark slot in SS-001. Evidence only; not runtime eligible."
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_landmark_victorian_midground_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -6959,7 +6959,7 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 REJECT under LC-009: no SS-001 role (role-identity test). Fa\u00e7ades are delivered as the 14 per-solid originals; there is no midground layer. Evidence only; not runtime eligible."
       }
     },
     {
@@ -6982,16 +6982,16 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 ADMIT (candidate) \u2192 `env_fog_low` under LC-009. Same role: a fog overlay in legacy, a fog layer in SS-001. Soft band, 32% coverage, mean alpha 81/255. Fills one of the two P0 fog layers T800 records as missing. Condition: drawn under the fog readability floor \u2014 never concealing collision, lethal telegraphs, or Camera boundaries (fog-layers intent, `visual-assets.md` \u00a77). Intake still needs the frozen-commit digest and resample. `env_fog_high` stays an original. Remains sfCandidate until intake records the frozen-commit digest; not runtime eligible."
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_overlay_improper_search_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -7005,16 +7005,16 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 REJECT under LC-009: no SS-001 role (role-identity test). Daemon telegraphs are delivered originals (`telegraph_daemon_*`). Evidence only; not runtime eligible."
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_overlay_prediction_haze_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -7028,7 +7028,7 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 REJECT under LC-009: no SS-001 role (role-identity test). Telegraph and prediction presentation is delivered as originals. Evidence only; not runtime eligible."
       }
     },
     {
@@ -7051,16 +7051,16 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 DEFER to P1 under LC-009. Fits P1 \"fictional autonomous vehicle\". Magenta chroma-key fringe under the body must be removed first. Remains sfCandidate until intake records the frozen-commit digest; not runtime eligible."
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_skyline_parallax_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -7074,16 +7074,16 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 REJECT under LC-009: no SS-001 role (role-identity test). No skyline or parallax layer is declared in `environmentAssetIds`. Evidence only; not runtime eligible."
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_terrain_hill_stair_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -7097,16 +7097,16 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 REJECT under LC-009: no SS-001 role (role-identity test). Ground roles are filled by delivered originals (`ground_steps`, `ground_sidewalk`). Evidence only; not runtime eligible."
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_terrain_steep_arterial_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -7120,7 +7120,7 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "T103 SF candidate under LC-009. Individual return requires a later accepted asset-record-001 with projectOriginal or approved adapted replacement. Evidence only; runtimePath stays null. Civic Seam P0 art remains original production."
+        "notes": "D-074 REJECT under LC-009: no SS-001 role (role-identity test). Ground roles are filled by delivered originals. Evidence only; not runtime eligible."
       }
     },
     {
@@ -32375,6 +32375,46 @@
         "alpha": "straight",
         "ownerContract": "presentation-assets-001",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
+      }
+    },
+    {
+      "admissionDecision": "plannedOriginal",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "env_fog_low",
+        "kind": "sprite",
+        "productionStatus": "planned",
+        "runtimeRequired": true,
+        "provenance": "projectOriginal",
+        "license": null,
+        "source": null,
+        "runtimePath": null,
+        "sha256": null,
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "presentation-assets-001",
+        "notes": "D-073 planned original. The low fog layer declared in presentation-assets-001 environmentAssetIds; no file admitted. SS-runtime keeps fog off until it lands."
+      }
+    },
+    {
+      "admissionDecision": "plannedOriginal",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "env_fog_high",
+        "kind": "sprite",
+        "productionStatus": "planned",
+        "runtimeRequired": true,
+        "provenance": "projectOriginal",
+        "license": null,
+        "source": null,
+        "runtimePath": null,
+        "sha256": null,
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "presentation-assets-001",
+        "notes": "D-073 planned original. The high fog layer declared in presentation-assets-001 environmentAssetIds; no file admitted. SS-runtime keeps fog off until it lands."
       }
     }
   ]

@@ -68,7 +68,15 @@ struct AssetCatalogTests {
             sfVisual.first { $0.record.assetId == "legacy_san_francisco_landmark_bridge_distant_01" }
         )
         #expect(bridge.admissionDecision == .rejected)
-        #expect(sfVisual.filter { $0.admissionDecision == .sfCandidate }.count == 12)
+        // D-074: nine rejected for having no SS-001 role; the AV shell (P1),
+        // damp asphalt (P2), and fog band remain candidates at this pin.
+        #expect(
+            Set(sfVisual.filter { $0.admissionDecision == .sfCandidate }.map(\.record.assetId)) == [
+                "legacy_san_francisco_prop_av_shell_01",
+                "legacy_san_francisco_decal_damp_asphalt_01",
+                "legacy_san_francisco_overlay_fog_band_01"
+            ]
+        )
 
         let atlanta = try #require(
             catalog.entries.first { $0.record.assetId == "legacy_atlanta_decal_beltline_stripe_01" }

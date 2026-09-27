@@ -429,7 +429,7 @@
         "x": 32,
         "y": 56
       },
-      "authoritativeEventMarker": "exposureChanged",
+      "authoritativeEventMarker": "none",
       "cancelWindows": [
         "hurt",
         "defeat"
@@ -689,7 +689,7 @@
         "x": 32,
         "y": 56
       },
-      "authoritativeEventMarker": "playerDamaged",
+      "authoritativeEventMarker": "none",
       "cancelWindows": [
         "hurt",
         "defeat"
@@ -989,7 +989,7 @@
         "x": 32,
         "y": 56
       },
-      "authoritativeEventMarker": "projectileHit",
+      "authoritativeEventMarker": "none",
       "cancelWindows": [
         "hurt",
         "defeat"
@@ -1249,7 +1249,7 @@
         "x": 32,
         "y": 56
       },
-      "authoritativeEventMarker": "none",
+      "authoritativeEventMarker": "playerDamaged",
       "cancelWindows": [
         "hurt",
         "defeat"
