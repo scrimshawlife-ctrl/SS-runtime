@@ -15,7 +15,7 @@ struct AudioDeliveryTests {
 
     private func presentation() throws -> [String: Any] {
         try JSONSerialization.jsonObject(
-            with: SpecBundle.contract("presentation-assets-001")
+            with: SpecBundle.contract("presentation-assets-002")
         ) as! [String: Any]
     }
 
@@ -76,7 +76,8 @@ struct AudioDeliveryTests {
         }
     }
 
-    /// Every one of the 24 event IDs is backed.
+    /// 32 event IDs; 29 are backed. The three unbacked ones are the boss
+    /// telegraphs with no legacy match, which stay planned originals (D-075).
     @Test func audioCoverageIsMeasurable() throws {
         let catalog = try AssetCatalog.bundled()
         let eventIds = Set(try presentation()["audioEventIds"] as! [String])
@@ -85,8 +86,50 @@ struct AudioDeliveryTests {
             .map(\.record.assetId)
             .filter { eventIds.contains($0) }
 
-        #expect(eventIds.count == 24)
-        #expect(backed.count == 24)
+        #expect(eventIds.count == 32)
+        #expect(backed.count == 29)
+        let planned = catalog.entries
+            .filter { $0.admissionDecision == .plannedOriginal && eventIds.contains($0.record.assetId) }
+            .map(\.record.assetId)
+        #expect(Set(planned) == [
+            "boss_telegraph_safetyRationale",
+            "boss_telegraph_narrowTailoring",
+            "boss_telegraph_independentReview"
+        ])
+    }
+
+    /// Every boss cue ID `AudioProjector` can build — `boss_phase_<phase>` and
+    /// `boss_telegraph_<attack>` over the content contract's phases and attacks
+    /// — is registered. Before D-075 none was, so the encounter was silent.
+    @Test func everyBossCueTheProjectorBuildsIsRegistered() throws {
+        let eventIds = Set(try presentation()["audioEventIds"] as! [String])
+        let content = try JSONSerialization.jsonObject(
+            with: SpecBundle.contract("combat-content-001")
+        ) as! [String: Any]
+        let boss = content["boss"] as! [String: Any]
+        let phases = (boss["phases"] as! [[String: Any]]).map { $0["id"] as! String }
+        let attacks = (boss["attacks"] as! [String: Any]).keys
+        #expect(phases.count == 4)
+        #expect(attacks.count == 4)
+        for phase in phases {
+            #expect(eventIds.contains("boss_phase_\(phase)"), "boss_phase_\(phase)")
+        }
+        for attack in attacks {
+            #expect(eventIds.contains("boss_telegraph_\(attack)"), "boss_telegraph_\(attack)")
+        }
+    }
+
+    /// The admitted boss cues reuse files already delivered for other events,
+    /// so D-075 adds no bytes to the bundle.
+    @Test func bossCuesShareAlreadyDeliveredFiles() throws {
+        let catalog = try AssetCatalog.bundled()
+        func path(_ id: String) throws -> String? {
+            try #require(catalog.entries.first { $0.record.assetId == id }, "\(id)").record.runtimePath
+        }
+        for phase in ["publicSafety", "civilLiberties", "temporarySafeguard", "independentReview"] {
+            #expect(try path("boss_phase_\(phase)") == path("lockdown_enter"))
+        }
+        #expect(try path("boss_telegraph_temporaryOrder") == path("camera_hit_02"))
     }
 
     /// One source may legitimately back several IDs — `sfx_upgrade_selected`
@@ -292,7 +335,7 @@ struct BossPhaseMusicTests {
 struct ApproximateCueTests {
     private func audioEntries() throws -> [AssetCatalogEntry] {
         let presentation = try JSONSerialization.jsonObject(
-            with: SpecBundle.contract("presentation-assets-001")
+            with: SpecBundle.contract("presentation-assets-002")
         ) as! [String: Any]
         let ids = Set(presentation["audioEventIds"] as! [String])
         return try AssetCatalog.bundled().entries.filter { ids.contains($0.record.assetId) }

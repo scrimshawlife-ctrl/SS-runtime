@@ -94,7 +94,7 @@ public struct EnvironmentLibrary: Equatable, Sendable {
     // MARK: - Loading
 
     public static func bundled() throws -> EnvironmentLibrary {
-        let presentation = try SpecBundle.contract("presentation-assets-001")
+        let presentation = try SpecBundle.contract("presentation-assets-002")
         guard let root = try? JSONSerialization.jsonObject(with: presentation) as? [String: Any] else {
             throw AssetCatalogError.invalidJSON
         }

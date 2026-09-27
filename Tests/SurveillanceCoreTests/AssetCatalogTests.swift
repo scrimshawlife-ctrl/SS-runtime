@@ -31,10 +31,10 @@ struct AssetCatalogTests {
         }
 
         let presentation = try JSONSerialization.jsonObject(
-            with: SpecBundle.contract("presentation-assets-001")
+            with: SpecBundle.contract("presentation-assets-002")
         ) as! [String: Any]
         let required = (presentation["requiredAssetIds"] as! [String]) + (presentation["audioEventIds"] as! [String])
-        #expect(required.count == 52)
+        #expect(required.count == 60)
         // Every required presentation ID is accounted for, either by a planned
         // original still to be produced or by an admitted legacy asset.
         for id in required {
@@ -95,7 +95,7 @@ struct AssetCatalogTests {
         let good = try JSONSerialization.jsonObject(
             with: SpecBundle.contract("asset-catalog-001")
         ) as! [String: Any]
-        let presentation = SpecBundle.contract("presentation-assets-001")
+        let presentation = SpecBundle.contract("presentation-assets-002")
 
         func encode(_ object: [String: Any]) throws -> Data {
             try JSONSerialization.data(withJSONObject: object)

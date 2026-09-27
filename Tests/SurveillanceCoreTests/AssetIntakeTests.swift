@@ -57,7 +57,7 @@ struct AssetIntakeChecks {
         mutated["entries"] = entries
         let catalog = try AssetCatalogLoader.decodeAndValidate(
             catalogJSON: JSONSerialization.data(withJSONObject: mutated),
-            presentationJSON: SpecBundle.contract("presentation-assets-001")
+            presentationJSON: SpecBundle.contract("presentation-assets-002")
         )
         let issues = try AssetIntake.validate(catalog: catalog, evidenceRoot: repoRoot())
         #expect(issues.contains { if case .duplicateHash = $0 { true } else { false } })
