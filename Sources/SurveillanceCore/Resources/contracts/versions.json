@@ -23,7 +23,7 @@
     "eventSchema": "event-001",
     "eventCatalog": "event-catalog-001",
     "runReceipt": "run-receipt-001",
-    "presentationAssets": "presentation-assets-001",
+    "presentationAssets": "presentation-assets-002",
     "completenessAudit": "completeness-audit-001",
     "assetRecord": "asset-record-001",
     "kernelVectors": "kernel-vectors-001",

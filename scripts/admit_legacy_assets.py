@@ -167,7 +167,7 @@ APPROXIMATE = {
     ),
 }
 
-# Music beds, registered as `musicAssetIds` in presentation-assets-001. These
+# Music beds, registered as `musicAssetIds` in presentation-assets-002. These
 # are continuous beds, not event cues: no priority, no coalescence, no voice
 # cost. The legacy run loop backs both `explore` and `observed` because it is
 # the same "not yet in trouble" bed in both games; lockdown, extraction, and
@@ -381,7 +381,7 @@ def main() -> int:
 
     # A registered music ID with no admitted bed still needs a catalog entry, or
     # the loader fails closed on an uncovered presentation ID.
-    presentation = json.loads((CONTRACTS / "presentation-assets-001.json").read_text())
+    presentation = json.loads((CONTRACTS / "presentation-assets-002.json").read_text())
     for asset_id in presentation.get("musicAssetIds", []):
         if asset_id in MUSIC_MAP:
             continue
