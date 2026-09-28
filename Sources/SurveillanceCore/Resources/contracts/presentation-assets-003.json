@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "presentation-assets-002",
+  "schemaVersion": "presentation-assets-003",
   "contract": "hud-tutorial-001",
   "requiredAssetIds": [
     "hud_integrity_frame",
@@ -104,6 +104,8 @@
     "env_camera_traffic_reader",
     "env_camera_ornamental_civic",
     "env_camera_temporary_mast",
+    "env_camera_captain_idle",
+    "env_camera_captain_active",
     "env_prop_trolley_pole",
     "env_prop_signal_mast",
     "env_prop_bus_shelter",

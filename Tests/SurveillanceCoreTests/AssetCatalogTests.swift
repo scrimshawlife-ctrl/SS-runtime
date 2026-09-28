@@ -31,7 +31,7 @@ struct AssetCatalogTests {
         }
 
         let presentation = try JSONSerialization.jsonObject(
-            with: SpecBundle.contract("presentation-assets-002")
+            with: SpecBundle.contract("presentation-assets-003")
         ) as! [String: Any]
         let required = (presentation["requiredAssetIds"] as! [String]) + (presentation["audioEventIds"] as! [String])
         #expect(required.count == 60)
@@ -95,7 +95,7 @@ struct AssetCatalogTests {
         let good = try JSONSerialization.jsonObject(
             with: SpecBundle.contract("asset-catalog-001")
         ) as! [String: Any]
-        let presentation = SpecBundle.contract("presentation-assets-002")
+        let presentation = SpecBundle.contract("presentation-assets-003")
 
         func encode(_ object: [String: Any]) throws -> Data {
             try JSONSerialization.data(withJSONObject: object)

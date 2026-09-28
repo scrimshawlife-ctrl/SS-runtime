@@ -41,6 +41,11 @@ final class EnvironmentTextures {
         texture(assetId: EnvironmentLibrary.cameraAssetId(for: family))
     }
 
+    /// Captain Camera art, or nil until both images are delivered.
+    func captainTexture(_ housing: PresentationSnapshot.CaptainHousing) -> SKTexture? {
+        texture(assetId: housing.assetId)
+    }
+
     func texture(assetId: String) -> SKTexture? {
         if let cached = textures[assetId] { return cached }
         guard let path = library.path(for: assetId),

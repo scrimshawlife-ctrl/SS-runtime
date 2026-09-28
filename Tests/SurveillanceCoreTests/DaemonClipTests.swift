@@ -65,7 +65,7 @@ struct DaemonClipTests {
 
         let audioIds = Set(
             (try JSONSerialization.jsonObject(
-                with: SpecBundle.contract("presentation-assets-002")
+                with: SpecBundle.contract("presentation-assets-003")
             ) as! [String: Any])["audioEventIds"] as! [String]
         )
         #expect(audioIds.contains("daemon_query"))
