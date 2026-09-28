@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Admit delivered environment art against `presentation-assets-002`.
+"""Admit delivered environment art against `presentation-assets-003`.
 
 Sibling of `admit_original_art.py`, with one important difference: the sizes are
 not free. A solid's art is drawn over its collision box, so it is verified
@@ -60,11 +60,11 @@ def main() -> int:
     if not source.is_dir():
         return fail(f"not a directory: {source}")
 
-    presentation = json.loads((CONTRACTS / "presentation-assets-002.json").read_text())
+    presentation = json.loads((CONTRACTS / "presentation-assets-003.json").read_text())
     declared: list[str] = presentation.get("environmentAssetIds", [])
     if not declared:
         return fail(
-            "presentation-assets-002 declares no environmentAssetIds. "
+            "presentation-assets-003 declares no environmentAssetIds. "
             "Without them the bundle filter cannot reach environment art."
         )
 
@@ -160,7 +160,7 @@ def main() -> int:
                                    "height": want[1] if want else height},
                     "colorSpace": "sRGB",
                     "alpha": "straight",
-                    "ownerContract": "presentation-assets-002",
+                    "ownerContract": "presentation-assets-003",
                     "notes": (
                         "Original environment art. Solid sizes are verified against "
                         "civic-seam-arena-001 rather than resampled: art that does not "

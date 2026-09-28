@@ -15,7 +15,7 @@ struct AudioDeliveryTests {
 
     private func presentation() throws -> [String: Any] {
         try JSONSerialization.jsonObject(
-            with: SpecBundle.contract("presentation-assets-002")
+            with: SpecBundle.contract("presentation-assets-003")
         ) as! [String: Any]
     }
 
@@ -344,7 +344,7 @@ struct BossPhaseMusicTests {
 struct ApproximateCueTests {
     private func audioEntries() throws -> [AssetCatalogEntry] {
         let presentation = try JSONSerialization.jsonObject(
-            with: SpecBundle.contract("presentation-assets-002")
+            with: SpecBundle.contract("presentation-assets-003")
         ) as! [String: Any]
         let ids = Set(presentation["audioEventIds"] as! [String])
         return try AssetCatalog.bundled().entries.filter { ids.contains($0.record.assetId) }

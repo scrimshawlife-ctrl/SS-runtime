@@ -27,6 +27,10 @@ public struct EnvironmentLibrary: Equatable, Sendable {
         case ground = "env_ground_"
         case solid = "env_solid_"
         case camera = "env_camera_"
+        /// The Captain Camera (D-078): idle and active, drawn at the boss
+        /// emitters. Its own group, so an undelivered Captain Camera never
+        /// takes the five standard housings down with it.
+        case captain = "env_camera_captain_"
         case prop = "env_prop_"
         case motif = "env_motif_"
         /// `civic-seam-visual-direction.md` §7. Two layers, and the pair is
@@ -35,8 +39,16 @@ public struct EnvironmentLibrary: Equatable, Sendable {
         case fog = "env_fog_"
     }
 
+    /// The group an ID belongs to: the longest matching prefix, so
+    /// `env_camera_captain_idle` is `captain`, not `camera`.
+    public static func group(of assetId: String) -> Group? {
+        Group.allCases
+            .filter { assetId.hasPrefix($0.rawValue) }
+            .max { $0.rawValue.count < $1.rawValue.count }
+    }
+
     public func ids(in group: Group) -> [String] {
-        declaredIds.filter { $0.hasPrefix(group.rawValue) }
+        declaredIds.filter { Self.group(of: $0) == group }
     }
 
     /// Whether every ID in a group has been delivered.
@@ -50,7 +62,7 @@ public struct EnvironmentLibrary: Equatable, Sendable {
 
     /// Delivered file for an ID, or nil when its group is not fully backed.
     public func path(for assetId: String) -> String? {
-        guard let group = Group.allCases.first(where: { assetId.hasPrefix($0.rawValue) }),
+        guard let group = Self.group(of: assetId),
               isBacked(group)
         else { return nil }
         return deliveredPaths[assetId]
@@ -94,7 +106,7 @@ public struct EnvironmentLibrary: Equatable, Sendable {
     // MARK: - Loading
 
     public static func bundled() throws -> EnvironmentLibrary {
-        let presentation = try SpecBundle.contract("presentation-assets-002")
+        let presentation = try SpecBundle.contract("presentation-assets-003")
         guard let root = try? JSONSerialization.jsonObject(with: presentation) as? [String: Any] else {
             throw AssetCatalogError.invalidJSON
         }

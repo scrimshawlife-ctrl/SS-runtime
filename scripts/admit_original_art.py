@@ -2,7 +2,7 @@
 """Admit delivered original art.
 
 Reads a delivery folder of PNGs named by asset ID, reconciles them against
-`clip-metadata-001` and `presentation-assets-002`, copies what matches into the
+`clip-metadata-001` and `presentation-assets-003`, copies what matches into the
 runtime bundle, and writes an `asset-record-001` entry per delivered file.
 
 Two reconciliations happen on the way in, both mechanical:
@@ -80,7 +80,7 @@ def main() -> int:
         return fail(f"not a directory: {source}")
 
     clips = json.loads((CONTRACTS / "clip-metadata-001.json").read_text())["clips"]
-    presentation = json.loads((CONTRACTS / "presentation-assets-002.json").read_text())
+    presentation = json.loads((CONTRACTS / "presentation-assets-003.json").read_text())
     visual = json.loads((CONTRACTS / "visual-language-001.json").read_text())
     boxes = visual["spriteBoxes"]
     catalog_path = CONTRACTS / "asset-catalog-001.json"
@@ -198,7 +198,7 @@ def main() -> int:
                 kind="ui",
                 dimensions={"width": width, "height": height},
                 alpha="straight" if has_alpha else "opaque",
-                owner="presentation-assets-002",
+                owner="presentation-assets-003",
                 note=f"Original interface asset. Delivered as {path.stem}.",
             )
         )

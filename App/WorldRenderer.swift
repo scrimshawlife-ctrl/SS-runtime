@@ -563,6 +563,17 @@ final class WorldRenderer {
             }
         }
 
+        // D-078: the Captain Camera stands at every emitter, lit where its field
+        // is live. No art yet leaves the emitters bare, as before.
+        for housing in snap.captainHousings {
+            guard let texture = environment.captainTexture(housing) else { continue }
+            let sprite = node(.cameraHousings, "captain-\(housing.id)") {
+                SKSpriteNode(texture: texture, size: CGSize(width: 64, height: 96))
+            }
+            (sprite as? SKSpriteNode)?.texture = texture
+            sprite.position = CGPoint(x: housing.x, y: housing.y)
+        }
+
         if let field = snap.captainField {
             let node = node(.cameraFields, "captain-field") { SKShapeNode() }
             if let shape = node as? SKShapeNode {

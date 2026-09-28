@@ -123,15 +123,15 @@ struct EnvironmentContractTests {
     /// never be backed. This is the renderer/contract agreement, asserted at
     /// the contract so a regression fails here rather than as missing fog.
     @Test func fogIDsResolveThroughThePresentationContract() throws {
-        let presentation = try SpecBundle.contract("presentation-assets-002")
+        let presentation = try SpecBundle.contract("presentation-assets-003")
         let root = try #require(
             try JSONSerialization.jsonObject(with: presentation) as? [String: Any]
         )
         let environment = Set(root["environmentAssetIds"] as? [String] ?? [])
         #expect(environment.contains("env_fog_low"),
-                "presentation-assets-002 does not declare env_fog_low")
+                "presentation-assets-003 does not declare env_fog_low")
         #expect(environment.contains("env_fog_high"),
-                "presentation-assets-002 does not declare env_fog_high")
+                "presentation-assets-003 does not declare env_fog_high")
 
         // The two runtime consumers of that array must see the fog pair:
         // the library that decides whether the fog group is backed, and the
@@ -153,7 +153,7 @@ struct CameraHousingArtTests {
     /// simply never be backed and every Camera would silently lose its housing,
     /// which is exactly the failure this asserts against.
     @Test func everyHousingFamilyNamesADeclaredAsset() throws {
-        let presentation = try SpecBundle.contract("presentation-assets-002")
+        let presentation = try SpecBundle.contract("presentation-assets-003")
         let root = try #require(
             try JSONSerialization.jsonObject(with: presentation) as? [String: Any]
         )
@@ -227,7 +227,7 @@ struct CameraMountSolidTests {
 /// Declared and shipped is not the same as drawn.
 ///
 /// `RuntimeBundleFilter` unions the ID lists the contracts name, so anything
-/// `presentation-assets-002` declares is "reachable" *by construction* — the
+/// `presentation-assets-003` declares is "reachable" *by construction* — the
 /// filter cannot tell the difference between art the renderer draws and art
 /// nobody wired up. `env_camera_*` sat in the bundle unused for exactly that
 /// reason and no test noticed.
@@ -257,6 +257,8 @@ struct EnvironmentAssetsAreDrawnTests {
         let placed = Set(arena.placedDecorations.map(\.assetId))
         let solids = Set(arena.permanentSolids.map { EnvironmentLibrary.solidAssetId(forSolidId: $0.id) })
         let housings = Set(HousingFamily.allCases.map(EnvironmentLibrary.cameraAssetId(for:)))
+        // D-078: drawn at every captainCameraEmitters anchor via captainHousings.
+        let captain: Set<String> = arena.captainCameraEmitters.isEmpty ? [] : ["env_camera_captain_idle", "env_camera_captain_active"]
 
         for id in library.declaredIds {
             if Self.stagedForFacadeWork.contains(id) { continue }
@@ -269,7 +271,7 @@ struct EnvironmentAssetsAreDrawnTests {
             { continue }
 
             #expect(
-                placed.contains(id) || solids.contains(id) || housings.contains(id),
+                placed.contains(id) || solids.contains(id) || housings.contains(id) || captain.contains(id),
                 "\(id) ships but nothing draws it: place it, map it, or stage it explicitly"
             )
         }
@@ -283,5 +285,66 @@ struct EnvironmentAssetsAreDrawnTests {
         for id in Self.stagedForFacadeWork {
             #expect(!placed.contains(id), "\(id) is placed now — drop it from stagedForFacadeWork")
         }
+    }
+}
+
+/// D-078: the Captain Camera stands at every boss emitter, lit where its
+/// Temporary Order field is live, and is its own all-or-nothing group.
+@Suite(.serialized)
+struct CaptainCameraTests {
+    /// The longest prefix wins, so the Captain IDs never join the standard
+    /// housings' group, where one undelivered ID would unback all five.
+    @Test func captainIdsAreTheirOwnGroup() {
+        #expect(EnvironmentLibrary.group(of: "env_camera_captain_idle") == .captain)
+        #expect(EnvironmentLibrary.group(of: "env_camera_captain_active") == .captain)
+        #expect(EnvironmentLibrary.group(of: "env_camera_municipal_dome") == .camera)
+        let library = EnvironmentLibrary(
+            declaredIds: ["env_camera_municipal_dome", "env_camera_captain_idle", "env_camera_captain_active"],
+            deliveredPaths: ["env_camera_municipal_dome": "dome@1x.png"]
+        )
+        #expect(library.isBacked(.camera))
+        #expect(!library.isBacked(.captain))
+        #expect(library.path(for: "env_camera_municipal_dome") == "dome@1x.png")
+    }
+
+    /// Idle alone is not enough: an active emitter with no lit art would read
+    /// the same as the other two.
+    @Test func captainArtIsAllOrNothing() {
+        let library = EnvironmentLibrary(
+            declaredIds: ["env_camera_captain_idle", "env_camera_captain_active"],
+            deliveredPaths: ["env_camera_captain_idle": "idle@1x.png"]
+        )
+        #expect(library.path(for: "env_camera_captain_idle") == nil)
+    }
+
+    /// The bundled contract keeps every standard housing drawn while the
+    /// Captain Camera is still planned.
+    @Test func plannedCaptainNeverHidesStandardHousings() throws {
+        let library = try EnvironmentLibrary.bundled()
+        #expect(library.ids(in: .captain).sorted() == ["env_camera_captain_active", "env_camera_captain_idle"])
+        #expect(library.isBacked(.camera))
+    }
+
+    @Test func everyEmitterHasAHousingAndOnlyTheLiveOneIsActive() throws {
+        var state = try Simulation.make(seed: 1).state
+        let emitters = state.arena.captainCameraEmitters
+        #expect(emitters.count == 3)
+
+        let idle = PresentationSnapshot(state)
+        #expect(idle.captainHousings.map(\.id) == emitters.map(\.id))
+        #expect(idle.captainHousings.allSatisfy { !$0.active && $0.assetId == "env_camera_captain_idle" })
+
+        var runtime = BossRuntime()
+        runtime.activeEmitter = emitters[1]
+        runtime.fieldRemaining = 90
+        state.bossRuntime = runtime
+        let live = PresentationSnapshot(state)
+        #expect(live.captainHousings.filter(\.active).map(\.id) == [emitters[1].id])
+        #expect(live.captainHousings[1].assetId == "env_camera_captain_active")
+
+        // A spent field is not live, even while the emitter is remembered.
+        runtime.fieldRemaining = 0
+        state.bossRuntime = runtime
+        #expect(PresentationSnapshot(state).captainHousings.allSatisfy { !$0.active })
     }
 }

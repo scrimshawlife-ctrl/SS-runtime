@@ -131,6 +131,17 @@ public struct PresentationSnapshot: Equatable, Sendable {
     public var extractionSeconds: Int
     public var queryMarkers: [CircleSprite]
     public var captainField: CameraSprite?
+    /// The Captain Camera housing at every boss emitter (D-078). `active` marks
+    /// the one whose Temporary Order field is live. Presentation only.
+    public var captainHousings: [CaptainHousing] = []
+
+    public struct CaptainHousing: Equatable, Sendable {
+        public var id: String
+        public var x: Int
+        public var y: Int
+        public var active: Bool
+        public var assetId: String { active ? "env_camera_captain_active" : "env_camera_captain_idle" }
+    }
     public var spawnSockets: [VecI]
     public var debugSolids: [AABB]
     /// clip-metadata-001 clip the Player is presenting, and the compass
@@ -286,6 +297,10 @@ public struct PresentationSnapshot: Equatable, Sendable {
             )
         } else {
             captainField = nil
+        }
+        let liveEmitter = (state.bossRuntime?.fieldRemaining ?? 0) > 0 ? state.bossRuntime?.activeEmitter?.id : nil
+        captainHousings = state.arena.captainCameraEmitters.map {
+            CaptainHousing(id: $0.id, x: $0.x, y: $0.y, active: $0.id == liveEmitter)
         }
         spawnSockets = state.arena.enemySpawnSockets.values.flatMap { sockets in
             sockets.map { VecI(x: $0.x, y: $0.y) }
