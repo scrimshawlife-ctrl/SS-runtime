@@ -68,13 +68,13 @@ struct AssetCatalogTests {
             sfVisual.first { $0.record.assetId == "legacy_san_francisco_landmark_bridge_distant_01" }
         )
         #expect(bridge.admissionDecision == .rejected)
-        // D-074: nine rejected for having no SS-001 role; the AV shell (P1),
-        // damp asphalt (P2), and fog band remain candidates at this pin.
+        // D-074: nine rejected for having no SS-001 role, and the fog band
+        // rejected because runtime fog is a seamless 512x512 tile (SS-specs #41);
+        // the AV shell (P1) and damp asphalt (P2) remain candidates.
         #expect(
             Set(sfVisual.filter { $0.admissionDecision == .sfCandidate }.map(\.record.assetId)) == [
                 "legacy_san_francisco_prop_av_shell_01",
-                "legacy_san_francisco_decal_damp_asphalt_01",
-                "legacy_san_francisco_overlay_fog_band_01"
+                "legacy_san_francisco_decal_damp_asphalt_01"
             ]
         )
 

@@ -2,7 +2,7 @@
   "schemaVersion": "asset-catalog-001",
   "legacyRepository": "scrimshawlife-ctrl/Surveillance-Survivor",
   "legacyCommit": "3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
-  "specificationCommit": "911a3a799b6bca2ab7e17129d0c140f3d15ff97c",
+  "specificationCommit": "8a5d07bceab91db7f70b8d441bd422354167c6ea",
   "entries": [
     {
       "admissionDecision": "excluded",
@@ -6963,12 +6963,12 @@
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_overlay_fog_band_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -6982,7 +6982,7 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "D-074 ADMIT (candidate) \u2192 `env_fog_low` under LC-009. Same role: a fog overlay in legacy, a fog layer in SS-001. Soft band, 32% coverage, mean alpha 81/255. Fills one of the two P0 fog layers T800 records as missing. Condition: drawn under the fog readability floor \u2014 never concealing collision, lethal telegraphs, or Camera boundaries (fog-layers intent, `visual-assets.md` \u00a77). Intake still needs the frozen-commit digest and resample. `env_fog_high` stays an original. Remains sfCandidate until intake records the frozen-commit digest; not runtime eligible."
+        "notes": "D-074 REJECT under LC-009: SS-runtime draws each fog layer as a seamless 512x512 tile; this band is 256x256 and not tileable, so it would seam. Tone reference only for env_fog_low/env_fog_high originals. Evidence only; not runtime eligible."
       }
     },
     {
