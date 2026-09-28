@@ -317,12 +317,13 @@ struct CaptainCameraTests {
         #expect(library.path(for: "env_camera_captain_idle") == nil)
     }
 
-    /// The bundled contract keeps every standard housing drawn while the
-    /// Captain Camera is still planned.
-    @Test func plannedCaptainNeverHidesStandardHousings() throws {
+    /// Both groups are delivered and backed independently in the bundle.
+    @Test func captainAndStandardHousingsAreBothBacked() throws {
         let library = try EnvironmentLibrary.bundled()
         #expect(library.ids(in: .captain).sorted() == ["env_camera_captain_active", "env_camera_captain_idle"])
         #expect(library.isBacked(.camera))
+        #expect(library.isBacked(.captain))
+        #expect(library.path(for: "env_camera_captain_active") == "env_camera_captain_active@1x.png")
     }
 
     @Test func everyEmitterHasAHousingAndOnlyTheLiveOneIsActive() throws {
