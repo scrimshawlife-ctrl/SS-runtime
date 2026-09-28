@@ -2,7 +2,7 @@
   "schemaVersion": "asset-catalog-001",
   "legacyRepository": "scrimshawlife-ctrl/Surveillance-Survivor",
   "legacyCommit": "3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
-  "specificationCommit": "c9b1bbf45aa2317f6acd039292cf39f6d5850e10",
+  "specificationCommit": "cd777708e6b4390d9c2c2671e3f67a53d8b1a3c3",
   "entries": [
     {
       "admissionDecision": "excluded",
@@ -23018,7 +23018,7 @@
         "colorSpace": null,
         "alpha": null,
         "ownerContract": "audio-haptics-001",
-        "notes": "D-077 sibling-product cue. Hexwire role: the alarm when the player is being traced (PacketRouterMiniGame, trace bar at 70%). Safety Rationale telegraphs a sightline cone the player must leave before it resolves, so a being-traced warning is the same meaning. 0.50 s, inside the 45-tick (0.75 s) telegraph. Delivered as AAC; sha256 is the digest of the source MP3 at the named Hexwire commit. Priority, coalescence, and captions remain with AudioProjector."
+        "notes": "D-077 sibling-product cue. Hexwire role: the alarm when the player is being traced (PacketRouterMiniGame, trace bar at 70%). Safety Rationale telegraphs a sightline cone the player must leave before it resolves, so a being-traced warning is the same meaning. 0.50 s, inside the 45-tick (0.75 s) telegraph. Delivered as AAC after level-matching to the SS-001 cue set (gain -4.7 dB, loudest 400 ms at -15 dBFS, no clipped samples; the Hexwire master is mastered hotter and partly clipped); sha256 is the digest of the source MP3 at the named Hexwire commit. Priority, coalescence, and captions remain with AudioProjector."
       }
     },
     {
@@ -23038,7 +23038,7 @@
         "colorSpace": null,
         "alpha": null,
         "ownerContract": "audio-haptics-001",
-        "notes": "D-077 sibling-product cue. Hexwire role: the boss mech's attack burst (SFXManager, archetype bossmech). Narrow Tailoring is the boss's aimed three-shot volley. 0.84 s, spanning the 30-tick (0.5 s) telegraph into the shots. Delivered as AAC; sha256 is the digest of the source MP3 at the named Hexwire commit. Priority, coalescence, and captions remain with AudioProjector."
+        "notes": "D-077 sibling-product cue. Hexwire role: the boss mech's attack burst (SFXManager, archetype bossmech). Narrow Tailoring is the boss's aimed three-shot volley. 0.84 s, spanning the 30-tick (0.5 s) telegraph into the shots. Delivered as AAC after level-matching to the SS-001 cue set (gain -11.2 dB, loudest 400 ms at -15 dBFS, no clipped samples; the Hexwire master is mastered hotter and partly clipped); sha256 is the digest of the source MP3 at the named Hexwire commit. Priority, coalescence, and captions remain with AudioProjector."
       }
     },
     {
@@ -23058,7 +23058,7 @@
         "colorSpace": null,
         "alpha": null,
         "ownerContract": "audio-haptics-001",
-        "notes": "D-077 sibling-product cue. Hexwire role: the AGI boss's Reality Glitch attack burst (SFXManager, archetype bossagi). Independent Review is the boss's radial six-lane volley. 0.72 s, inside the 60-tick (1.0 s) telegraph. Delivered as AAC; sha256 is the digest of the source MP3 at the named Hexwire commit. Priority, coalescence, and captions remain with AudioProjector."
+        "notes": "D-077 sibling-product cue. Hexwire role: the AGI boss's Reality Glitch attack burst (SFXManager, archetype bossagi). Independent Review is the boss's radial six-lane volley. 0.72 s, inside the 60-tick (1.0 s) telegraph. Delivered as AAC after level-matching to the SS-001 cue set (gain -9.6 dB, loudest 400 ms at -15 dBFS, no clipped samples; the Hexwire master is mastered hotter and partly clipped); sha256 is the digest of the source MP3 at the named Hexwire commit. Priority, coalescence, and captions remain with AudioProjector."
       }
     },
     {
