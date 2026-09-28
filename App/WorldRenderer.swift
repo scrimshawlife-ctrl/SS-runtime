@@ -646,15 +646,19 @@ final class WorldRenderer {
     private func renderActors(_ snap: PresentationSnapshot) {
         let playerPosition = CGPoint(x: snap.player.x, y: snap.player.y)
         // clip-metadata-001 sprite box for the Player.
-        let playerDrawn = playClip(
-            snap.playerClipId,
-            direction: snap.playerDirection,
-            key: "player",
-            at: playerPosition,
-            boxWidth: 64,
-            boxHeight: 64,
-            layer: .actors
-        )
+        // A reaction (hurt) is preferred and the state clip is the fallback,
+        // so an unbacked reaction never costs the Player its sprite.
+        let playerDrawn = [snap.playerReactionClipId, snap.playerClipId].compactMap { $0 }.contains {
+            playClip(
+                $0,
+                direction: snap.playerDirection,
+                key: "player",
+                at: playerPosition,
+                boxWidth: 64,
+                boxHeight: 64,
+                layer: .actors
+            )
+        }
         if !playerDrawn {
             let player = node(.actors, "player") {
                 let shape = SKShapeNode(path: Geometry.silhouettePath(snap.player.silhouette))
@@ -670,7 +674,8 @@ final class WorldRenderer {
             let key = "enemy-\(enemy.id.raw)"
             let position = CGPoint(x: enemy.x, y: enemy.y)
             let box = Self.spriteBox(for: enemy.role)
-            let drawn = enemy.clipId.map {
+            // Reaction first, then the state clip, then the blockout below.
+            let drawn = [enemy.reactionClipId, enemy.clipId].compactMap { $0 }.contains {
                 playClip(
                     $0,
                     direction: enemy.direction,
@@ -680,7 +685,7 @@ final class WorldRenderer {
                     boxHeight: box.height,
                     layer: .actors
                 )
-            } ?? false
+            }
             if !drawn {
                 let body = node(.actors, key) {
                     let shape = SKShapeNode(path: Geometry.silhouettePath(enemy.silhouette))
@@ -691,6 +696,22 @@ final class WorldRenderer {
                 }
                 body.position = position
             }
+        }
+
+        // Defeated enemies play their defeat clip where it is backed. There is
+        // deliberately no blockout fallback: a defeated enemy must not look alive.
+        for fallen in snap.defeated {
+            guard let clipId = fallen.clipId else { continue }
+            let box = Self.spriteBox(for: fallen.role)
+            _ = playClip(
+                clipId,
+                direction: fallen.direction,
+                key: "defeated-\(fallen.id.raw)",
+                at: CGPoint(x: fallen.x, y: fallen.y),
+                boxWidth: box.width,
+                boxHeight: box.height,
+                layer: .actors
+            )
         }
         endLayer(.actors)
     }
