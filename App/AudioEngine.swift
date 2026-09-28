@@ -61,19 +61,7 @@ final class AudioEngine {
     private(set) var missingCueIds: Set<String> = []
 
     init() {
-        var delivered: [String: String] = [:]
-        if let catalog = try? AssetCatalog.bundled() {
-            for entry in catalog.entries
-            where entry.admissionDecision == .adaptedAdmitted
-                && entry.record.productionStatus == .accepted
-                && (entry.record.kind == .audio || entry.record.kind == .music)
-            {
-                if let path = entry.record.runtimePath {
-                    delivered[entry.record.assetId] = path
-                }
-            }
-        }
-        deliveredPaths = delivered
+        deliveredPaths = (try? AssetCatalog.bundled())?.deliveredAudioPaths ?? [:]
         configureSession()
         prepareHaptics()
     }

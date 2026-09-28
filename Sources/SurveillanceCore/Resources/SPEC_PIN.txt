@@ -1,4 +1,4 @@
-SS-specs commit 14a042f55aa8da5615033a9f615dc73b2f7c18d9
+SS-specs commit c9b1bbf45aa2317f6acd039292cf39f6d5850e10
 ruleset ss-rules-001
 content civic-seam-content-001
 arena civic-seam-arena-001

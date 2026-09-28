@@ -2,7 +2,7 @@
   "schemaVersion": "asset-catalog-001",
   "legacyRepository": "scrimshawlife-ctrl/Surveillance-Survivor",
   "legacyCommit": "3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
-  "specificationCommit": "14a042f55aa8da5615033a9f615dc73b2f7c18d9",
+  "specificationCommit": "c9b1bbf45aa2317f6acd039292cf39f6d5850e10",
   "entries": [
     {
       "admissionDecision": "excluded",
@@ -23002,63 +23002,63 @@
       }
     },
     {
-      "admissionDecision": "plannedOriginal",
+      "admissionDecision": "originalAccepted",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "boss_telegraph_safetyRationale",
         "kind": "audio",
-        "productionStatus": "planned",
+        "productionStatus": "accepted",
         "runtimeRequired": true,
         "provenance": "projectOriginal",
-        "license": null,
-        "source": null,
-        "runtimePath": null,
-        "sha256": null,
+        "license": "Owned original work product, Zero State LLC. Generated with ElevenLabs Sound Effects on the owner's paid plan (commercial use permitted, no attribution; Hexwire docs/audio/rights ELEVENLABS_LICENSE_DETERMINATION.md section 2). Plan-on-generation-date evidence pending in the Hexwire audio rights ledger, as for the legacy ElevenLabs cues.",
+        "source": "original://Hexwire/Sounds/sfx/trace_warning.mp3@19e12b62d9998aaa76de9acb069c59ba53d010de",
+        "runtimePath": "trace_warning.m4a",
+        "sha256": "9a44bc9f450e53f943613b66feef81acb7728c73a607f0143104f58b70133b22",
         "dimensions": null,
         "colorSpace": null,
         "alpha": null,
         "ownerContract": "audio-haptics-001",
-        "notes": "Planned original (D-075). No legacy one-shot carries a cone of rationale resolved from the boss; the scan sweep already carries Temporary Order's camera field, and approximate substitution is closed (legacy-admission.md). Until delivered, AudioProjector still emits the cue and its warning haptic and caption; only the sound is absent."
+        "notes": "D-077 sibling-product cue. Hexwire role: the alarm when the player is being traced (PacketRouterMiniGame, trace bar at 70%). Safety Rationale telegraphs a sightline cone the player must leave before it resolves, so a being-traced warning is the same meaning. 0.50 s, inside the 45-tick (0.75 s) telegraph. Delivered as AAC; sha256 is the digest of the source MP3 at the named Hexwire commit. Priority, coalescence, and captions remain with AudioProjector."
       }
     },
     {
-      "admissionDecision": "plannedOriginal",
+      "admissionDecision": "originalAccepted",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "boss_telegraph_narrowTailoring",
         "kind": "audio",
-        "productionStatus": "planned",
+        "productionStatus": "accepted",
         "runtimeRequired": true,
         "provenance": "projectOriginal",
-        "license": null,
-        "source": null,
-        "runtimePath": null,
-        "sha256": null,
+        "license": "Owned original work product, Zero State LLC. Generated with ElevenLabs Sound Effects on the owner's paid plan (commercial use permitted, no attribution; Hexwire docs/audio/rights ELEVENLABS_LICENSE_DETERMINATION.md section 2). Plan-on-generation-date evidence pending in the Hexwire audio rights ledger, as for the legacy ElevenLabs cues.",
+        "source": "original://Hexwire/Sounds/sfx/mech_autocannon.mp3@19e12b62d9998aaa76de9acb069c59ba53d010de",
+        "runtimePath": "mech_autocannon.m4a",
+        "sha256": "202019147d9dfda258dabea17988f2f9d7caeebfef56301a9c1136f95145b3b9",
         "dimensions": null,
         "colorSpace": null,
         "alpha": null,
         "ownerContract": "audio-haptics-001",
-        "notes": "Planned original (D-075). No legacy one-shot carries a three-projectile aimed volley from the boss; sfx_weapon_fire is the player's own shot and would invert the vocabulary. Until delivered, AudioProjector still emits the cue and its warning haptic and caption; only the sound is absent."
+        "notes": "D-077 sibling-product cue. Hexwire role: the boss mech's attack burst (SFXManager, archetype bossmech). Narrow Tailoring is the boss's aimed three-shot volley. 0.84 s, spanning the 30-tick (0.5 s) telegraph into the shots. Delivered as AAC; sha256 is the digest of the source MP3 at the named Hexwire commit. Priority, coalescence, and captions remain with AudioProjector."
       }
     },
     {
-      "admissionDecision": "plannedOriginal",
+      "admissionDecision": "originalAccepted",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "boss_telegraph_independentReview",
         "kind": "audio",
-        "productionStatus": "planned",
+        "productionStatus": "accepted",
         "runtimeRequired": true,
         "provenance": "projectOriginal",
-        "license": null,
-        "source": null,
-        "runtimePath": null,
-        "sha256": null,
+        "license": "Owned original work product, Zero State LLC. Generated with ElevenLabs Sound Effects on the owner's paid plan (commercial use permitted, no attribution; Hexwire docs/audio/rights ELEVENLABS_LICENSE_DETERMINATION.md section 2). Plan-on-generation-date evidence pending in the Hexwire audio rights ledger, as for the legacy ElevenLabs cues.",
+        "source": "original://Hexwire/Sounds/sfx/agi_attack_burst.mp3@19e12b62d9998aaa76de9acb069c59ba53d010de",
+        "runtimePath": "agi_attack_burst.m4a",
+        "sha256": "0fedc271d659a3e324b4c02d743f0c4edf80a793c1c1350ed016d01ce110251e",
         "dimensions": null,
         "colorSpace": null,
         "alpha": null,
         "ownerContract": "audio-haptics-001",
-        "notes": "Planned original (D-075). No legacy one-shot carries a six-lane radial volley with a safe gap; the nearest (sfx_wichita_zoning_corridor_activate, lanes lighting in sequence) is authored as a corridor activation, not an attack. Until delivered, AudioProjector still emits the cue and its warning haptic and caption; only the sound is absent."
+        "notes": "D-077 sibling-product cue. Hexwire role: the AGI boss's Reality Glitch attack burst (SFXManager, archetype bossagi). Independent Review is the boss's radial six-lane volley. 0.72 s, inside the 60-tick (1.0 s) telegraph. Delivered as AAC; sha256 is the digest of the source MP3 at the named Hexwire commit. Priority, coalescence, and captions remain with AudioProjector."
       }
     },
     {

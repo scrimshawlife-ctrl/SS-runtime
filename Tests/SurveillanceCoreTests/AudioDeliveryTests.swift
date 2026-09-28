@@ -76,26 +76,35 @@ struct AudioDeliveryTests {
         }
     }
 
-    /// 32 event IDs; 29 are backed. The three unbacked ones are the boss
-    /// telegraphs with no legacy match, which stay planned originals (D-075).
+    /// 32 event IDs, all playable. The three boss telegraphs are Zero State
+    /// originals from Hexwire (D-077); the rest are
+    /// admitted legacy. Every one is something `AudioEngine` will play.
     @Test func audioCoverageIsMeasurable() throws {
         let catalog = try AssetCatalog.bundled()
         let eventIds = Set(try presentation()["audioEventIds"] as! [String])
-        let backed = catalog.entries
-            .filter { $0.admissionDecision == .adaptedAdmitted }
-            .map(\.record.assetId)
-            .filter { eventIds.contains($0) }
+        let playable = catalog.deliveredAudioPaths
 
         #expect(eventIds.count == 32)
-        #expect(backed.count == 29)
-        let planned = catalog.entries
-            .filter { $0.admissionDecision == .plannedOriginal && eventIds.contains($0.record.assetId) }
+        #expect(eventIds.isSubset(of: Set(playable.keys)), "silent: \(eventIds.subtracting(playable.keys).sorted())")
+        let originals = catalog.entries
+            .filter { $0.admissionDecision == .originalAccepted && eventIds.contains($0.record.assetId) }
             .map(\.record.assetId)
-        #expect(Set(planned) == [
+        #expect(Set(originals) == [
             "boss_telegraph_safetyRationale",
             "boss_telegraph_narrowTailoring",
             "boss_telegraph_independentReview"
         ])
+        #expect(!catalog.entries.contains { $0.admissionDecision == .plannedOriginal && eventIds.contains($0.record.assetId) })
+    }
+
+    /// Accepted original audio plays, not only admitted legacy audio. The
+    /// engine once loaded `adaptedAdmitted` alone, which would have kept every
+    /// original cue silent however it was recorded.
+    @Test func acceptedOriginalAudioIsPlayable() throws {
+        let playable = try AssetCatalog.bundled().deliveredAudioPaths
+        #expect(playable["boss_telegraph_narrowTailoring"] == "mech_autocannon.m4a")
+        #expect(playable["boss_telegraph_independentReview"] == "agi_attack_burst.m4a")
+        #expect(playable["boss_telegraph_safetyRationale"] == "trace_warning.m4a")
     }
 
     /// Every boss cue ID `AudioProjector` can build — `boss_phase_<phase>` and
