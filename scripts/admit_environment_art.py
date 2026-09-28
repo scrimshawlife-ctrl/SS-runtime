@@ -93,6 +93,12 @@ def main() -> int:
 
     for asset_id in declared:
         src = source / f"{asset_id}.png"
+        # A first delivery supersedes the plannedOriginal record that declared it.
+        if src.exists() and asset_id not in already:
+            catalog["entries"] = [
+                e for e in catalog["entries"]
+                if not (e["record"]["assetId"] == asset_id and e["admissionDecision"] == "plannedOriginal")
+            ]
         if asset_id in already:
             if not src.exists() or existing_digest.get(asset_id) == sha256_of(src):
                 continue
