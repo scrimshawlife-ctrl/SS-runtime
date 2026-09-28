@@ -26,10 +26,24 @@ import SurveillanceCore
 /// person. It reads only `PresentationSnapshot` and never writes state.
 struct ProbePilot {
     struct Profile: Sendable {
+        /// How the pilot treats Cameras (D-082, D-083).
+        enum CameraStyle: Sendable {
+            /// Ignores Cameras: the T305 policy.
+            case indifferent
+            /// Routes around Camera fields where a path exists, never walks
+            /// at a Camera the weapon would then choose, and breaks line of
+            /// sight to recover Exposure before the next wave can start.
+            case stealth
+            /// Walks at every Camera it passes with a clear line, so the
+            /// weapon chooses and destroys it.
+            case loud
+        }
+
         var name: String
         /// The pilot decides from the snapshot this many ticks old.
         var perceptionDelayTicks: Int
         var usesDodge: Bool
+        var cameraStyle: CameraStyle = .indifferent
 
         /// Perfect route knowledge, zero reaction latency, Dodge on close
         /// contact.
@@ -38,6 +52,12 @@ struct ProbePilot {
         /// Same route knowledge, 250 ms (15-tick) perception latency, never
         /// dodges. A lower bound on a first run, not an estimate of one.
         static let firstRun = Profile(name: "firstRun", perceptionDelayTicks: 15, usesDodge: false)
+
+        /// `competent`, played as a careful run.
+        static let stealth = Profile(name: "stealth", perceptionDelayTicks: 0, usesDodge: true, cameraStyle: .stealth)
+
+        /// `competent`, played as a loud run.
+        static let loud = Profile(name: "loud", perceptionDelayTicks: 0, usesDodge: true, cameraStyle: .loud)
     }
 
     struct Command {
@@ -66,11 +86,38 @@ struct ProbePilot {
     private static let heavyMargin = 100
     private static let fireRange = Targeting.civicPulseRange - 24
     private static let replanTicks = 30
+    /// Stealth: one step into a Camera field costs as much as this many
+    /// steps outside one.
+    private static let fieldStepCost = 12
+    /// Loud: a Camera anchor this close with a clear line gets walked at.
+    private static let loudReach = 360
 
     private let cols: Int
     private let rows: Int
     private var walkable: [Bool] = []
     private var walkableSolids: [AABB] = []
+
+    /// A live Camera in the geometry the rules use: field origin and target
+    /// anchor from the arena socket, not from the sprite.
+    private struct LiveCamera {
+        var id: EntityID
+        var origin: VecQ8
+        var anchor: VecQ8
+        var headingMilli: Int
+        var halfFieldMilli: Int
+        var range: Int
+    }
+    private var liveCameras: [LiveCamera] = []
+    /// Grid cells some live Camera field covers (stealth only).
+    private var inField: [Bool] = []
+    private var fieldKey: [EntityID] = []
+    private var fieldSolids: [AABB] = []
+    private var solidPairs: [(id: String, box: AABB)] = []
+    private var huntCache: (target: VecI, goal: VecI)?
+    private var detourStuckTicks = 0
+    private var detourOverrideTicks = 0
+    private var lastDetourPosition: VecI?
+    private var huntTicks = 0
 
     /// Receipt mines, armed or arming, as circles to keep out of.
     private var hazards: [(center: VecI, radius: Int)] = []
@@ -92,6 +139,31 @@ struct ProbePilot {
     // MARK: - Decision
 
     mutating func command(_ snapshot: PresentationSnapshot) -> Command {
+        let command = decide(snapshot)
+        guard profile.cameraStyle == .stealth else { return command }
+        if detourOverrideTicks > 0 {
+            // Every Camera-free heading was blocked: walking past the Camera
+            // is the only way on, and a careful player would take it too.
+            detourOverrideTicks -= 1
+            return command
+        }
+        let filtered = withoutChosenCamera(command, snapshot: snapshot)
+        let position = VecI(x: snapshot.player.x, y: snapshot.player.y)
+        if filtered.moveX != command.moveX || filtered.moveY != command.moveY {
+            detourStuckTicks = lastDetourPosition == position ? detourStuckTicks + 1 : 0
+            lastDetourPosition = position
+            if detourStuckTicks >= 15 {
+                detourStuckTicks = 0
+                detourOverrideTicks = 60
+                return command
+            }
+        } else {
+            detourStuckTicks = 0
+        }
+        return filtered
+    }
+
+    private mutating func decide(_ snapshot: PresentationSnapshot) -> Command {
         if snapshot.objectiveNode != lastObjective {
             lastObjective = snapshot.objectiveNode
             ticksOnObjective = 0
@@ -99,6 +171,8 @@ struct ProbePilot {
             ticksOnObjective += 1
         }
         if snapshot.solids != walkableSolids { rebuildGrid(snapshot.solids) }
+        solidPairs = Array(zip(snapshot.solidIds, snapshot.solids)).map { (id: $0.0, box: $0.1) }
+        refreshCameras(snapshot)
 
         let position = VecI(x: snapshot.player.x, y: snapshot.player.y)
         hazards = snapshot.mines.map { (VecI(x: $0.x, y: $0.y), $0.radius + PlayerBody.radiusUnits + 8) }
@@ -116,7 +190,7 @@ struct ProbePilot {
         let solids = Array(zip(snapshot.solidIds, snapshot.solids)).map { (id: $0.0, box: $0.1) }
         let contacts = snapshot.enemies.map { enemy -> (point: VecI, d: Int, clear: Bool) in
             let point = VecI(x: enemy.x, y: enemy.y)
-            let clear = Collision.lineOfFireClear(from: position.asQ8, to: point.asQ8, solids: solids)
+            let clear = Self.clearShot(from: position, to: point, solids: solids)
             // The elite and the boss hit hardest on contact; keep them further off
             // by treating them as closer than they are.
             let heavy = enemy.role == "improperSearchDaemon" || enemy.role == "algorithmicModerate"
@@ -151,8 +225,26 @@ struct ProbePilot {
             command.dodge = profile.usesDodge && threat.d < kiteRange / 2
             return command
         }
+        if profile.cameraStyle == .loud, let camera = cameraToDestroy(from: position) {
+            // Walk straight at it: the weapon now chooses it at every attack
+            // opportunity until its three hits land.
+            return vector(dx: camera.x - position.x, dy: camera.y - position.y)
+        }
+        if profile.cameraStyle == .stealth, contacts.isEmpty, snapshot.detection != .hidden,
+           snapshot.detection != .lockdown
+        {
+            // Seen with nothing to fight: get out of every field and wait for
+            // Exposure to fall back to hidden before the next wave can start.
+            return hide(from: position)
+        }
         if let nearest {
-            if !hasShot { return navigate(from: position, to: nearest.point) }
+            if !hasShot {
+                // Walk to the nearest place with a clear shot at it. Walking
+                // at the enemy itself deadlocks when it is wedged behind a
+                // solid and pursues along the far side (seen at M-A under
+                // ss-rules-002).
+                return navigate(from: position, to: firingPosition(from: position, at: nearest.point) ?? nearest.point)
+            }
             return orbit(position: position, around: (nearestClear ?? nearest).point)
         }
         if distance(position, objective) > Self.arrivalRadius {
@@ -311,6 +403,201 @@ struct ProbePilot {
         return vector(dx: waypoint.x - position.x, dy: waypoint.y - position.y)
     }
 
+    /// A line of fire that stays clear when either end moves two units. The
+    /// snapshot gives whole-unit positions; the rules test Q8 ones, so a
+    /// segment that grazes a corner can be clear here and blocked there, and
+    /// the pilot would then orbit a target the weapon cannot see.
+    static func clearShot(from a: VecI, to b: VecI, solids: [(id: String, box: AABB)]) -> Bool {
+        for (dx, dy) in [(0, 0), (2, 2), (-2, 2), (2, -2), (-2, -2)] {
+            let from = VecI(x: a.x + dx, y: a.y + dy).asQ8
+            let to = VecI(x: b.x - dx, y: b.y + dy).asQ8
+            if !Collision.lineOfFireClear(from: from, to: to, solids: solids) { return false }
+        }
+        return true
+    }
+
+    /// Nearest walkable cell, by path, with a clear line of fire to `target`
+    /// inside fire range and outside kiting range. Cached for `replanTicks`
+    /// while the target stays within two grid steps.
+    private mutating func firingPosition(from position: VecI, at target: VecI) -> VecI? {
+        huntTicks += 1
+        if let cached = huntCache, distance(cached.target, target) <= Self.step * 2, huntTicks < Self.replanTicks {
+            return cached.goal
+        }
+        huntTicks = 0
+        guard let s = nearestWalkable(position) else { return nil }
+        var seen = Array(repeating: false, count: cols * rows)
+        seen[s] = true
+        var queue = [s]
+        var head = 0
+        // Stealth prefers a firing position no Camera field covers.
+        let preferUnseen = profile.cameraStyle == .stealth && inField.count == cols * rows
+        var goal: VecI?
+        var fallback: VecI?
+        var fallbackAt = 0
+        while head < queue.count {
+            let current = queue[head]
+            head += 1
+            let p = point(current % cols, current / cols)
+            let d = distance(p, target)
+            if d <= Self.fireRange, d >= Self.kiteRange,
+               Self.clearShot(from: p, to: target, solids: solidPairs)
+            {
+                if !preferUnseen || !inField[current] {
+                    goal = p
+                    break
+                }
+                if fallback == nil {
+                    fallback = p
+                    fallbackAt = head
+                }
+            }
+            // Do not walk across the arena for an unseen spot.
+            if fallback != nil, head - fallbackAt > 400 { break }
+            for n in neighbours(current) where !seen[n] {
+                seen[n] = true
+                queue.append(n)
+            }
+        }
+        goal = goal ?? fallback
+        huntCache = goal.map { (target: target, goal: $0) }
+        return goal
+    }
+
+    // MARK: - Cameras (stealth and loud)
+
+    /// Live Cameras from the snapshot, located on their arena sockets, and
+    /// for stealth the grid cells their fields cover, rebuilt when a Camera
+    /// dies or the solids change.
+    private mutating func refreshCameras(_ snapshot: PresentationSnapshot) {
+        guard profile.cameraStyle != .indifferent else { return }
+        liveCameras = snapshot.cameras.filter { $0.integrity > 0 }.compactMap { sprite in
+            guard let socket = arena.cameraSockets.first(where: {
+                $0.position.x == sprite.x && $0.position.y == sprite.y && $0.headingMilliDegrees == sprite.headingMilli
+            }) else { return nil }
+            return LiveCamera(
+                id: sprite.id,
+                origin: CameraPlacement.fieldOrigin(socket: socket, geometry: arena.standardCameraGeometry),
+                anchor: CameraPlacement.targetAnchor(socket: socket, geometry: arena.standardCameraGeometry),
+                headingMilli: sprite.headingMilli,
+                halfFieldMilli: sprite.fieldAngleMilli / 2,
+                range: sprite.range
+            )
+        }
+        guard profile.cameraStyle == .stealth else { return }
+        let key = liveCameras.map(\.id)
+        guard key != fieldKey || walkableSolids != fieldSolids else { return }
+        fieldKey = key
+        fieldSolids = walkableSolids
+        inField = Array(repeating: false, count: cols * rows)
+        for gy in 0..<rows {
+            for gx in 0..<cols where walkable[gy * cols + gx] {
+                inField[gy * cols + gx] = seen(point(gx, gy))
+            }
+        }
+    }
+
+    /// True when some live Camera's field covers `p`, by the rules' own cone
+    /// and line-of-sight test.
+    private func seen(_ p: VecI) -> Bool {
+        let q = p.asQ8
+        return liveCameras.contains { camera in
+            Collision.pointInCone(
+                origin: camera.origin,
+                point: q,
+                headingMilli: camera.headingMilli,
+                halfFieldMilli: camera.halfFieldMilli,
+                rangeUnits: camera.range
+            ) && Collision.lineOfFireClear(from: camera.origin, to: q, solids: solidPairs)
+        }
+    }
+
+    /// Loud: the nearest live Camera within reach with a clear line of fire.
+    private func cameraToDestroy(from position: VecI) -> VecI? {
+        let q = position.asQ8
+        let reach = Int64(Self.loudReach) * Q8.scale
+        return liveCameras
+            .filter {
+                q.distanceSquared(to: $0.anchor) <= reach * reach
+                    && Collision.lineOfFireClear(from: q, to: $0.anchor, solids: solidPairs)
+            }
+            .min { q.distanceSquared(to: $0.anchor) < q.distanceSquared(to: $1.anchor) }
+            .map { VecI(x: $0.anchor.x.unitsTruncated, y: $0.anchor.y.unitsTruncated) }
+    }
+
+    /// Stealth: walk to the nearest cell no field covers, then stand still
+    /// until Exposure recovers.
+    private mutating func hide(from position: VecI) -> Command {
+        let (cx, cy) = cell(position)
+        if !inField[cy * cols + cx], !seen(position) { return Command() }
+        guard let s = nearestWalkable(position) else { return Command() }
+        var parent = Array(repeating: -1, count: cols * rows)
+        parent[s] = s
+        var queue = [s]
+        var head = 0
+        var goal: Int?
+        while head < queue.count {
+            let current = queue[head]
+            head += 1
+            if !inField[current], !inHazard(point(current % cols, current / cols)) {
+                goal = current
+                break
+            }
+            for n in neighbours(current) where parent[n] == -1 {
+                parent[n] = current
+                queue.append(n)
+            }
+        }
+        guard let goal else { return Command() }
+        return navigate(from: position, to: point(goal % cols, goal / cols))
+    }
+
+    /// Stealth: when no enemy is within the close-enemy range, the weapon
+    /// would choose any Camera the Player walks at (D-082). Keep the heading
+    /// closest to the intended one that chooses none, or stand.
+    private func withoutChosenCamera(_ command: Command, snapshot: PresentationSnapshot) -> Command {
+        guard command.moveX != 0 || command.moveY != 0 else { return command }
+        let position = VecI(x: snapshot.player.x, y: snapshot.player.y)
+        let close = Int64(Targeting.closeEnemyRange)
+        let enemyClose = snapshot.enemies.contains {
+            let dx = Int64($0.x - position.x)
+            let dy = Int64($0.y - position.y)
+            return dx * dx + dy * dy <= close * close
+        }
+        if enemyClose || !choosesCamera(command, at: position) { return command }
+        let want = (x: Double(command.moveX), y: Double(command.moveY))
+        var best: (score: Double, command: Command)?
+        for (dx, dy) in Self.headings {
+            let candidate = vector(dx: dx, dy: dy)
+            let probe = VecI(x: position.x + dx * 3, y: position.y + dy * 3)
+            guard ArenaReachability.isWalkable(
+                probe, radius: PlayerBody.radiusUnits, bounds: bounds, solids: walkableSolids
+            ), !choosesCamera(candidate, at: position) else { continue }
+            let score = Double(dx) * want.x + Double(dy) * want.y
+            if best == nil || score > best!.score { best = (score, candidate) }
+        }
+        guard let best, best.score > 0 else { return Command(dodge: command.dodge) }
+        var result = best.command
+        result.dodge = command.dodge
+        return result
+    }
+
+    /// Whether this command's velocity makes some live Camera in range and
+    /// in line of fire a chosen Camera, by the rules' own integer test.
+    private func choosesCamera(_ command: Command, at position: VecI) -> Bool {
+        let velocity = Movement.displacement(
+            from: PlayerCommand(tick: 1, moveX: command.moveX, moveY: command.moveY, dodgePressed: false),
+            dodgeActive: false,
+            ghostStep: false
+        )
+        let q = position.asQ8
+        return liveCameras.contains { camera in
+            Targeting.isChosen(velocity: velocity, from: q, to: camera.anchor)
+                && Targeting.inRange(q.distanceSquared(to: camera.anchor))
+                && Collision.lineOfFireClear(from: q, to: camera.anchor, solids: solidPairs)
+        }
+    }
+
     // MARK: - Grid
 
     private static let headings = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
@@ -348,21 +635,100 @@ struct ProbePilot {
     }
 
     /// Nearest walkable cell to `p`, searched outward ring by ring.
+    ///
+    /// Within the first ring that has any, it takes the closest cell with no
+    /// solid between it and `p`: the first cell in scan order can lie across
+    /// a thin wall, and a path planned from there pins the Player against
+    /// that wall (seen at M-A under ss-rules-002).
     private func nearestWalkable(_ p: VecI) -> Int? {
         let (cx, cy) = cell(p)
         for r in 0..<8 {
+            var best: (clear: Bool, d: Int, index: Int)?
             for gy in max(0, cy - r)...min(rows - 1, cy + r) {
                 for gx in max(0, cx - r)...min(cols - 1, cx + r) where walkable[gy * cols + gx] {
-                    return gy * cols + gx
+                    let q = point(gx, gy)
+                    let clear = solidPairs.isEmpty
+                        || Collision.lineOfFireClear(from: p.asQ8, to: q.asQ8, solids: solidPairs)
+                    let candidate = (clear: clear, d: distance(p, q), index: gy * cols + gx)
+                    if let current = best {
+                        if (candidate.clear && !current.clear)
+                            || (candidate.clear == current.clear && candidate.d < current.d)
+                        {
+                            best = candidate
+                        }
+                    } else {
+                        best = candidate
+                    }
                 }
             }
+            if let best { return best.index }
         }
         return nil
     }
 
-    /// Eight-connected BFS; diagonal moves need both side cells open.
+    /// Walkable, hazard-free eight-connected neighbours; diagonal moves need
+    /// both side cells open.
+    private func neighbours(_ current: Int) -> [Int] {
+        let cx = current % cols
+        let cy = current / cols
+        var result: [Int] = []
+        for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)] {
+            let nx = cx + dx
+            let ny = cy + dy
+            guard nx >= 0, ny >= 0, nx < cols, ny < rows else { continue }
+            let n = ny * cols + nx
+            guard walkable[n], !inHazard(point(nx, ny)) else { continue }
+            if dx != 0, dy != 0, !walkable[cy * cols + nx] || !walkable[ny * cols + cx] { continue }
+            result.append(n)
+        }
+        return result
+    }
+
+    /// Eight-connected shortest path. Every step costs one, except that the
+    /// stealth pilot pays `fieldStepCost` to step into a Camera field, so it
+    /// goes around a field wherever a detour exists and through it only
+    /// where none does (Dial's bucket queue over integer costs).
     private func plan(from start: VecI, to goal: VecI) -> [VecI] {
         guard let s = nearestWalkable(start), let g = nearestWalkable(goal) else { return [] }
+        let avoid = profile.cameraStyle == .stealth && inField.count == cols * rows
+        if !avoid { return breadthFirst(from: s, to: g) }
+        var parent = Array(repeating: -1, count: cols * rows)
+        var cost = Array(repeating: Int.max, count: cols * rows)
+        parent[s] = s
+        cost[s] = 0
+        var buckets: [[Int]] = [[s]]
+        var d = 0
+        search: while d < buckets.count {
+            var i = 0
+            while i < buckets[d].count {
+                let current = buckets[d][i]
+                i += 1
+                if cost[current] != d { continue }
+                if current == g { break search }
+                for n in neighbours(current) {
+                    let step = avoid && inField[n] ? Self.fieldStepCost : 1
+                    let next = d + step
+                    guard next < cost[n] else { continue }
+                    cost[n] = next
+                    parent[n] = current
+                    while buckets.count <= next { buckets.append([]) }
+                    buckets[next].append(n)
+                }
+            }
+            d += 1
+        }
+        guard parent[g] != -1 else { return [] }
+        var cells: [Int] = []
+        var c = g
+        while c != s {
+            cells.append(c)
+            c = parent[c]
+        }
+        return cells.reversed().map { point($0 % cols, $0 / cols) }
+    }
+
+    /// The T305 planner, unchanged: eight-connected BFS.
+    private func breadthFirst(from s: Int, to g: Int) -> [VecI] {
         var parent = Array(repeating: -1, count: cols * rows)
         parent[s] = s
         var queue = [s]
@@ -371,15 +737,7 @@ struct ProbePilot {
             let current = queue[head]
             head += 1
             if current == g { break }
-            let cx = current % cols
-            let cy = current / cols
-            for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)] {
-                let nx = cx + dx
-                let ny = cy + dy
-                guard nx >= 0, ny >= 0, nx < cols, ny < rows else { continue }
-                let n = ny * cols + nx
-                guard walkable[n], parent[n] == -1, !inHazard(point(nx, ny)) else { continue }
-                if dx != 0, dy != 0, !walkable[cy * cols + nx] || !walkable[ny * cols + cx] { continue }
+            for n in neighbours(current) where parent[n] == -1 {
                 parent[n] = current
                 queue.append(n)
             }

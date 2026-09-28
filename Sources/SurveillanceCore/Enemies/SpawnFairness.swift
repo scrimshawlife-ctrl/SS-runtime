@@ -37,7 +37,7 @@ public enum SpawnFairness {
 
     /// First valid authored socket, or `nil` to defer. Offscreen sockets win; on-screen sockets
     /// are only used as the spec's "visibly delivered" exception when no offscreen candidate exists.
-    /// Declared offscreen margin is absent from `combat-content-001`; do not invent one (T406 / D-021).
+    /// Declared offscreen margin is absent from `combat-content-002`; do not invent one (T406 / D-021).
     public static func select(
         sockets: [ArenaPoint],
         player: VecQ8,

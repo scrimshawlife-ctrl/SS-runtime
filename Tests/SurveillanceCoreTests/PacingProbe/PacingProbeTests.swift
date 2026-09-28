@@ -86,4 +86,46 @@ struct PacingProbeTests {
             try (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
         }
     }
+
+    /// D-082 / D-083 style sweep: does a careful run draw fewer heat
+    /// reinforcements than a loud one? Opt-in, like the T305 matrix:
+    ///
+    /// ```
+    /// SS_HEAT_SEEDS=20 SS_HEAT_REPORT=/path/heat.jsonl \
+    ///   swift test -c release -Xswiftc -enable-testing --filter heatD083StyleSweep
+    /// ```
+    ///
+    /// It measures and does not assert the design verdict. It does assert
+    /// what must hold on every run: legal runs replay to their digest, and
+    /// the Informants the director queued at each M-A/M-B wave start are
+    /// exactly the authored members plus what the Detection State, derived
+    /// by `HeatCaptionProjector` from the published events, calls for.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["SS_HEAT_SEEDS"] != nil))
+    func heatD083StyleSweep() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let seedCount = try #require(environment["SS_HEAT_SEEDS"].flatMap(UInt64.init))
+        var lines: [String] = []
+        for seed in 1...seedCount {
+            for profile in [ProbePilot.Profile.stealth, .loud, .competent] {
+                for upgrade in UpgradeID.allCases {
+                    for sustained in [false, true] {
+                        let run = try PacingProbe.run(seed: seed, upgrade: upgrade, profile: profile, sustained: sustained)
+                        for wave in run.waveHeat {
+                            #expect(wave.queued == wave.authored + wave.added, "\(profile.name) seed \(seed) \(wave.wave)")
+                        }
+                        var digests: [String] = []
+                        if !sustained {
+                            let replay = PacingProbe.replay(run)
+                            #expect(replay?.digest == run.digest)
+                            digests = replay.map { [$0.digest] } ?? []
+                        }
+                        lines.append(PacingProbe.reportLine(run, replayDigests: digests))
+                    }
+                }
+            }
+        }
+        if let path = environment["SS_HEAT_REPORT"] {
+            try (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+        }
+    }
 }

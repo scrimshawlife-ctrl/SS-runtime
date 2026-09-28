@@ -95,6 +95,27 @@ public struct WaveSpec: Equatable, Sendable {
     public var members: [WaveMember]
 }
 
+/// `combat-content-002` `heat` (D-083): Autonomous Informants appended to an
+/// M-A or M-B wave by the Detection State read when the wave starts.
+public struct HeatSpec: Equatable, Sendable {
+    public var reinforcementArchetype: ArchetypeID
+    public var encounters: [String]
+    public var byDetectionState: [DetectionState: Int]
+
+    /// Informants appended to a wave of `encounter` that starts while
+    /// `state`. Zero for any encounter the block does not name (M-C).
+    ///
+    /// The contract's table names `hidden` through `hunted`. A Lockdown
+    /// latched before M-C is not in it; it takes the `hunted` count, the
+    /// table's ceiling, so escalating further never lowers the pressure.
+    /// That reading is the runtime's and is recorded in the adoption PR.
+    public func reinforcements(encounter: String, state: DetectionState) -> Int {
+        guard encounters.contains(encounter) else { return 0 }
+        let key: DetectionState = state == .lockdown ? .hunted : state
+        return byDetectionState[key] ?? 0
+    }
+}
+
 public struct EncounterSpec: Equatable, Sendable {
     public var zone: String
     public var totals: Int
@@ -148,9 +169,10 @@ public struct CombatContent: Equatable, Sendable {
     public var bossSpeed: Int
     public var bossContactDps: Int
     public var bossInitialDelay: Int
+    public var heat: HeatSpec
 
     public static func bundled() -> CombatContent {
-        let data = BundledResource.data(name: "combat-content-001", subdirectory: "contracts")
+        let data = BundledResource.data(name: "combat-content-002", subdirectory: "contracts")
         return try! decode(data)
     }
 
@@ -181,8 +203,38 @@ public struct CombatContent: Equatable, Sendable {
             bossRadius: try boss.int("radius", within: "boss"),
             bossSpeed: try boss.int("baseSpeed", within: "boss"),
             bossContactDps: try boss.int("baseContactDps", within: "boss"),
-            bossInitialDelay: try boss.int("initialDelay", within: "boss")
+            bossInitialDelay: try boss.int("initialDelay", within: "boss"),
+            heat: try parseHeat(root["heat"])
         )
+    }
+
+    /// The four table states are required; any other key fails closed.
+    private static func parseHeat(_ raw: Any?) throws -> HeatSpec {
+        let heat = try decodeObject(raw, path: "heat")
+        let archetypeKey = try heat.string("reinforcementArchetype", within: "heat")
+        guard let archetype = ArchetypeID(rawValue: archetypeKey) else {
+            throw CombatContentError.unknownArchetype(archetypeKey)
+        }
+        guard let rawEncounters = heat["encounters"] else {
+            throw CombatContentError.missingField("heat.encounters")
+        }
+        guard let encounters = rawEncounters as? [String] else {
+            throw CombatContentError.wrongType("heat.encounters")
+        }
+        let table = try decodeDictionary(heat["byDetectionState"], path: "heat.byDetectionState")
+        var counts: [DetectionState: Int] = [:]
+        for key in table.keys.sorted() {
+            guard let state = DetectionState(rawValue: key), state != .lockdown,
+                  let value = table[key] as? Int, value >= 0
+            else {
+                throw CombatContentError.wrongType("heat.byDetectionState.\(key)")
+            }
+            counts[state] = value
+        }
+        for state in [DetectionState.hidden, .observed, .tracked, .hunted] where counts[state] == nil {
+            throw CombatContentError.missingField("heat.byDetectionState.\(state.rawValue)")
+        }
+        return HeatSpec(reinforcementArchetype: archetype, encounters: encounters, byDetectionState: counts)
     }
 
     private static func parseEnemies(_ raw: Any?) throws -> [ArchetypeID: StandardEnemyStats] {

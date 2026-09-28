@@ -180,7 +180,7 @@ public enum HUDLayout {
     public static let tamperCopy = "+100 TAMPER"
     public static let integrityNotchCount = 3
     public static let integrityNotchPersistTicks: UInt64 = 90
-    public static let firstEncounterCameraCopy = "CAMERAS: 3 HITS • DESTRUCTION ADDS EXPOSURE"
+    public static let firstEncounterCameraCopy = "MOVE TOWARD A CAMERA TO SHOOT IT • DESTRUCTION ADDS EXPOSURE"
 
     public static func integrityNotchFilled(integrity: Int, index: Int) -> Bool {
         index >= 0 && index < integrityNotchCount && index < max(0, integrity)

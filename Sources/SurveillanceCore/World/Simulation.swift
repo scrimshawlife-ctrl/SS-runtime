@@ -868,7 +868,7 @@ public struct Simulation: Equatable, Sendable {
                 runtime.activated = true
                 if id == "M-C" { forceLockdown = true }
                 if let spec = state.content.encounters[id], let first = spec.waves.first {
-                    runtime.spawnQueue = flatten(first.members)
+                    runtime.spawnQueue = waveQueue(first, encounter: id)
                     runtime.nextSpawnTick = tick + UInt64(first.delay)
                     events.emit(
                         tick: tick,
@@ -906,7 +906,7 @@ public struct Simulation: Equatable, Sendable {
                 if runtime.waveIndex + 1 < spec.waves.count {
                     runtime.waveIndex += 1
                     let wave = spec.waves[runtime.waveIndex]
-                    runtime.spawnQueue = flatten(wave.members)
+                    runtime.spawnQueue = waveQueue(wave, encounter: id)
                     runtime.nextSpawnTick = tick + UInt64(wave.delay)
                     events.emit(
                         tick: tick,
@@ -931,6 +931,18 @@ public struct Simulation: Equatable, Sendable {
             }
             state.encounters[id] = runtime
         }
+    }
+
+    /// D-083 heat reinforcements: the wave's authored members, then the
+    /// `content.heat` Informants for the Detection State resolved at the end
+    /// of the previous tick. Encounters run before this tick's Exposure
+    /// resolution (phases 13–14), so `state.exposure` still holds that state.
+    /// The appended members spawn at the wave's interval under the same
+    /// validation, and the wave cannot complete until they are dead.
+    private func waveQueue(_ wave: WaveSpec, encounter: String) -> [ArchetypeID] {
+        let heat = state.content.heat
+        let added = heat.reinforcements(encounter: encounter, state: state.exposure.detectionState)
+        return flatten(wave.members) + repeatElement(heat.reinforcementArchetype, count: added)
     }
 
     private func flatten(_ members: [WaveMember]) -> [ArchetypeID] {
@@ -1632,6 +1644,12 @@ public struct Simulation: Equatable, Sendable {
                 )
             )
         }
+    }
+
+    /// Empties the pool `testing_fillCivicPool` filled, so injected pulses can
+    /// check out again. Placeholder slots only; no live projectile is touched.
+    mutating func testing_emptyCivicPool() {
+        state.civicPool = ProjectilePool()
     }
 
     mutating func testing_fillCivicPool(count: Int) {

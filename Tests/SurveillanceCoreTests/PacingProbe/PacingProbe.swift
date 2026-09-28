@@ -38,8 +38,29 @@ struct PacingProbe {
         var damageBySource: [String: Int]
         /// `arena.md` § 5 segment starts (D-079), measured by the core.
         var timeline: PacingTimeline
+        /// D-083: every M-A/M-B wave start, the Detection State the director
+        /// read, and the Informants it appended.
+        var waveHeat: [WaveHeat] = []
+        /// First M-C `waveStarted` tick.
+        var mobCStartTick: UInt64?
 
         var seconds: Double { Double(ticks) / 60 }
+        var reinforcements: Int { waveHeat.reduce(0) { $0 + $1.added } }
+    }
+
+    struct WaveHeat: Sendable {
+        var encounter: String
+        var wave: String
+        var tick: UInt64
+        var state: DetectionState
+        var added: Int
+        /// The authoritative spawn queue at the wave-start tick, which the
+        /// presentation-derived `added` must agree with.
+        var queued: Int
+        var authored: Int
+        /// Highest Exposure since the previous M-A/M-B wave start (run start
+        /// for A1). Not a rule input; it is here to test alternatives.
+        var peakExposureSincePreviousWave: Int
     }
 
     /// Hard ceiling: 30 simulated minutes. No accepted target is near this.
@@ -70,6 +91,9 @@ struct PacingProbe {
         var stalledOn: String?
         var damageBySource: [String: Int] = [:]
         var timeline = PacingTimeline()
+        var waveHeat: [WaveHeat] = []
+        var mobCStartTick: UInt64?
+        var peakSinceWave = 0
 
         while !sim.isTerminal, sim.state.tick < tickCeiling {
             let current = PresentationSnapshot(sim.state)
@@ -112,6 +136,31 @@ struct PacingProbe {
                 } ?? "unattributed"
                 damageBySource[source, default: 0] += amount
             }
+            for event in result.events where event.type == .waveStarted {
+                guard case .string(let encounter)? = event.payload["encounterId"],
+                      case .string(let wave)? = event.payload["waveId"] else { continue }
+                if encounter == "M-C" {
+                    if mobCStartTick == nil { mobCStartTick = event.tick }
+                    continue
+                }
+                let state = HeatCaptionProjector.stateAtWaveStart(
+                    events: result.events, current: sim.state.exposure.detectionState
+                )
+                let authored = sim.state.content.encounters[encounter]?.waves
+                    .first { $0.id == wave }?.members.reduce(0) { $0 + $1.count } ?? 0
+                waveHeat.append(WaveHeat(
+                    encounter: encounter,
+                    wave: wave,
+                    tick: event.tick,
+                    state: state,
+                    added: sim.state.content.heat.reinforcements(encounter: encounter, state: state),
+                    queued: sim.state.encounters[encounter]?.spawnQueue.count ?? 0,
+                    authored: authored,
+                    peakExposureSincePreviousWave: peakSinceWave
+                ))
+                peakSinceWave = 0
+            }
+            peakSinceWave = max(peakSinceWave, sim.state.exposure.exposure)
             for event in result.events where milestoneEvents.contains(event.type) {
                 var key = event.type.rawValue
                 if event.type == .mobEncounterCompleted {
@@ -148,7 +197,9 @@ struct PacingProbe {
             camerasDestroyed: sim.state.destructions.count,
             lockdownEntered: sim.state.exposure.lockdownEntered,
             damageBySource: damageBySource,
-            timeline: timeline
+            timeline: timeline,
+            waveHeat: waveHeat,
+            mobCStartTick: mobCStartTick
         )
     }
 
@@ -192,6 +243,9 @@ struct PacingProbe {
             + "\"ticks\":\(r.ticks),\"digest\":\"\(r.digest)\",\"replayDigests\":[\(digests)],"
             + "\"playerIntegrity\":\(r.playerIntegrity),\"camerasDestroyed\":\(r.camerasDestroyed),"
             + "\"lockdownEntered\":\(r.lockdownEntered),"
+            + "\"reinforcements\":\(r.reinforcements),"
+            + "\"mobCStartTick\":\(r.mobCStartTick.map(String.init) ?? "null"),"
+            + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave)}" }.joined(separator: ","))],"
             + "\"damageBySource\":\(map(r.damageBySource)),"
             + "\"zoneEntry\":\(map(r.zoneEntry)),\"milestones\":\(map(r.milestones)),"
             + "\"segmentStarts\":\(map(Dictionary(uniqueKeysWithValues: r.timeline.starts.map { ($0.key.rawValue, $0.value) }))),"

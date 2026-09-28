@@ -46,7 +46,7 @@ struct ReplayMatrixTests {
 
     @Test func replayT901B005UnknownVersionFailsBeforeTickOne() throws {
         let json = """
-        {"schemaVersion":"runtime-kernel-001","rulesetVersion":"unknown","contentVersion":"civic-seam-content-001","arenaVersion":"civic-seam-arena-001","seed":1,"commands":[]}
+        {"schemaVersion":"runtime-kernel-001","rulesetVersion":"unknown","contentVersion":"civic-seam-content-002","arenaVersion":"civic-seam-arena-001","seed":1,"commands":[]}
         """.data(using: .utf8)!
         let result = ReplayEnvelope.load(json: json)
         guard case .failure(.incompatibleIdentity) = result else {
