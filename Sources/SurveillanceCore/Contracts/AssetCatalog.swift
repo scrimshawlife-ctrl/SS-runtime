@@ -340,3 +340,21 @@ enum AssetCatalogLoader {
         return nil
     }
 }
+
+extension AssetCatalog {
+    /// Asset ID to bundled file for every playable cue and bed: admitted legacy
+    /// audio and accepted originals alike. `AudioEngine` plays exactly this.
+    public var deliveredAudioPaths: [String: String] {
+        var paths: [String: String] = [:]
+        for entry in entries
+        where (entry.admissionDecision == .adaptedAdmitted || entry.admissionDecision == .originalAccepted)
+            && entry.record.productionStatus == .accepted
+            && (entry.record.kind == .audio || entry.record.kind == .music)
+        {
+            if let path = entry.record.runtimePath {
+                paths[entry.record.assetId] = path
+            }
+        }
+        return paths
+    }
+}
