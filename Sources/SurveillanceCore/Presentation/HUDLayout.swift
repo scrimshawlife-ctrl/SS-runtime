@@ -231,11 +231,43 @@ public enum HUDLayout {
         )
     }
 
-    public static let terminalPanelWidth = 420
-    public static let terminalPanelHeight = 190
+    /// `run-shell.md` § 4 / § 11: the Share control, beside Restart.
+    ///
+    /// Restart stays the primary control and stays centred on the safe
+    /// rectangle; Share takes the space to its right on the same row. Neither
+    /// moves with handedness. Sized at or above `minimumTouchTargetPoints`.
+    public static func terminalShare(safeWidth: Int, safeHeight: Int) -> HUDRect {
+        let panel = terminalPanel(safeWidth: safeWidth, safeHeight: safeHeight)
+        let restart = terminalRestart(safeWidth: safeWidth, safeHeight: safeHeight)
+        return HUDRect(
+            x: restart.x + restart.width + terminalButtonGap,
+            y: restart.y,
+            width: panel.x + panel.width - terminalButtonInset - (restart.x + restart.width + terminalButtonGap),
+            height: terminalButtonHeight
+        )
+    }
+
+    /// Vertical centre of the outcome title, in safe-rectangle points.
+    public static func terminalTitleCentreY(safeWidth: Int, safeHeight: Int) -> Int {
+        terminalPanel(safeWidth: safeWidth, safeHeight: safeHeight).y + 34
+    }
+
+    /// Vertical centre of run card row `index` (§ 11), in safe-rectangle points.
+    public static func terminalCardRowCentreY(_ index: Int, safeWidth: Int, safeHeight: Int) -> Int {
+        terminalPanel(safeWidth: safeWidth, safeHeight: safeHeight).y + 68 + index * terminalCardRowHeight
+    }
+
+    /// Room for every § 11 row: date, time, cameras, peak detection, ghost.
+    public static let terminalCardRowCapacity = 5
+    public static let terminalCardRowHeight = 22
+    public static let terminalCardInset = 48
+
+    public static let terminalPanelWidth = 460
+    public static let terminalPanelHeight = 262
     public static let terminalButtonWidth = 200
     public static let terminalButtonHeight = 52
     static let terminalButtonInset = 20
+    static let terminalButtonGap = 12
 
     /// Copy for a finished run.
     ///

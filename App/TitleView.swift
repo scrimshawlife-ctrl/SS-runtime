@@ -1,3 +1,4 @@
+import SurveillanceCore
 import SwiftUI
 
 /// `run-shell-001` §8: the surface the app presents on launch.
@@ -53,6 +54,21 @@ struct TitleView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: 520)
                     .accessibilityLabel("Surveillance Survivor")
+
+                // `run-shell.md` § 5 / § 8: the Daily Run label under the
+                // wordmark. Presentation only; Start reads the date again, so
+                // a title left open across midnight UTC re-labels itself here
+                // and Start still plays the date it is pressed on.
+                TimelineView(.everyMinute) { context in
+                    Text(DailyRun.titleLabel(for: DailyRun.Day(utc: context.date)))
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .kerning(1.5)
+                        .foregroundStyle(Color(white: 0.92))
+                        .padding(.top, 12)
+                        .accessibilityLabel(
+                            "Daily run, \(DailyRun.Day(utc: context.date).label)"
+                        )
+                }
 
                 Spacer(minLength: 24)
 

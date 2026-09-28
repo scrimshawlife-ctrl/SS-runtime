@@ -37,7 +37,7 @@ struct GameContainerView: View {
             game
             if !started {
                 TitleView(
-                    onStart: { started = true },
+                    onStart: startDailyRun,
                     onSettings: { showSettings = true }
                 )
                 .transition(.opacity)
@@ -54,6 +54,14 @@ struct GameContainerView: View {
         .onChange(of: started) { _, running in
             scene.setPaused(!running || showSettings)
         }
+    }
+
+    /// `run-shell.md` § 10.1: the date is read once, when Start is pressed,
+    /// and only here. The simulation receives a seed, never a date.
+    private func startDailyRun() {
+        guard let run = try? DailyRun(day: DailyRun.Day(utc: Date())) else { return }
+        scene.beginDailyRun(run)
+        started = true
     }
 
     private var game: some View {

@@ -23,6 +23,10 @@ public struct PresentationSettings: Equatable, Sendable, Codable {
     /// `hud-tutorial-001`: tutorial completion is a local setting, and the
     /// receipt records whether tutorials were enabled.
     public var tutorialsEnabled: Bool
+    /// `run-shell.md` § 10.2: the Daily Run ghost is on by default and can be
+    /// turned off. Presentation only; not receipt metadata, because the ghost
+    /// cannot change what happened in a run (RS-014).
+    public var ghostEnabled: Bool
 
     public init(
         mix: MixLevels = .defaults,
@@ -31,7 +35,8 @@ public struct PresentationSettings: Equatable, Sendable, Codable {
         hudScale: HUDScaleSetting = .standard,
         handedness: Handedness = .right,
         pinCameraCounter: Bool = false,
-        tutorialsEnabled: Bool = true
+        tutorialsEnabled: Bool = true,
+        ghostEnabled: Bool = true
     ) {
         self.mix = mix
         self.audio = audio
@@ -40,6 +45,24 @@ public struct PresentationSettings: Equatable, Sendable, Codable {
         self.handedness = handedness
         self.pinCameraCounter = pinCameraCounter
         self.tutorialsEnabled = tutorialsEnabled
+        self.ghostEnabled = ghostEnabled
+    }
+
+    /// Settings saved before the ghost existed have no `ghostEnabled` key. They
+    /// keep every stored choice and take the § 10.2 default for the new one,
+    /// rather than failing to decode and losing the player's settings.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            mix: try container.decode(MixLevels.self, forKey: .mix),
+            audio: try container.decode(PresentationAudioSettings.self, forKey: .audio),
+            vfx: try container.decode(PresentationVFXSettings.self, forKey: .vfx),
+            hudScale: try container.decode(HUDScaleSetting.self, forKey: .hudScale),
+            handedness: try container.decode(Handedness.self, forKey: .handedness),
+            pinCameraCounter: try container.decode(Bool.self, forKey: .pinCameraCounter),
+            tutorialsEnabled: try container.decode(Bool.self, forKey: .tutorialsEnabled),
+            ghostEnabled: try container.decodeIfPresent(Bool.self, forKey: .ghostEnabled) ?? true
+        )
     }
 
     public static let defaults = PresentationSettings()
