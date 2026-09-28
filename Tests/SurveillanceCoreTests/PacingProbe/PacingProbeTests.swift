@@ -13,7 +13,7 @@ struct PacingProbeTests {
     /// Pulse, competent profile. Thousands of ticks through the encounter
     /// graph, against the pinned fixtures' 5 (`replay-smoke-001`) and 302
     /// (`complete-run-vectors-001`) ticks.
-    private static let pilotedRun: PacingProbe.Result? = try? PacingProbe.run(
+    static let pilotedRun: PacingProbe.Result? = try? PacingProbe.run(
         seed: 1, upgrade: .ricochetPulse, profile: .competent
     )
 
