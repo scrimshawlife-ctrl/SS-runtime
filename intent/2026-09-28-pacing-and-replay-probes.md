@@ -2,7 +2,7 @@
 
 Author: Claude (agent), for prabu
 Date: 2026-09-28
-Status: draft
+Status: accepted (owner, 2026-09-28)
 Product: Surveillance Survivor Runtime (`scrimshawlife-ctrl/SS-runtime`)
 
 This file is a proto-spec. It comes **before** specify.
