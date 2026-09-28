@@ -71,7 +71,7 @@ struct RuntimeBundleTests {
         let registry = try PresentationAssetRegistry.bundled()
         #expect(registry.bundleAssetIds == projection.bundleAssetIds)
         #expect(registry.requiredVisualAssetIds.count == 28)
-        #expect(registry.audioEventIds.count == 24)
+        #expect(registry.audioEventIds.count == 32)
         #expect(registry.contains("hud_exposure_bar"))
         #expect(registry.contains("legacy_san_francisco_decal_cable_groove_01") == false)
         #expect(try registry.require("control_dodge") == "control_dodge")

@@ -55,7 +55,7 @@ public enum RuntimeBundleFilter {
     }
 
     public static func reachableAssetIds() throws -> Set<String> {
-        try reachableAssetIds(presentationJSON: SpecBundle.contract("presentation-assets-001"))
+        try reachableAssetIds(presentationJSON: SpecBundle.contract("presentation-assets-002"))
             .union(reachableClipFrameIds(clipJSON: SpecBundle.contract("clip-metadata-001")))
     }
 

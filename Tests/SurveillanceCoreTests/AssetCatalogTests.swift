@@ -31,10 +31,10 @@ struct AssetCatalogTests {
         }
 
         let presentation = try JSONSerialization.jsonObject(
-            with: SpecBundle.contract("presentation-assets-001")
+            with: SpecBundle.contract("presentation-assets-002")
         ) as! [String: Any]
         let required = (presentation["requiredAssetIds"] as! [String]) + (presentation["audioEventIds"] as! [String])
-        #expect(required.count == 52)
+        #expect(required.count == 60)
         // Every required presentation ID is accounted for, either by a planned
         // original still to be produced or by an admitted legacy asset.
         for id in required {
@@ -68,13 +68,13 @@ struct AssetCatalogTests {
             sfVisual.first { $0.record.assetId == "legacy_san_francisco_landmark_bridge_distant_01" }
         )
         #expect(bridge.admissionDecision == .rejected)
-        // D-074: nine rejected for having no SS-001 role; the AV shell (P1),
-        // damp asphalt (P2), and fog band remain candidates at this pin.
+        // D-074: nine rejected for having no SS-001 role, and the fog band
+        // rejected because runtime fog is a seamless 512x512 tile (SS-specs #41);
+        // the AV shell (P1) and damp asphalt (P2) remain candidates.
         #expect(
             Set(sfVisual.filter { $0.admissionDecision == .sfCandidate }.map(\.record.assetId)) == [
                 "legacy_san_francisco_prop_av_shell_01",
-                "legacy_san_francisco_decal_damp_asphalt_01",
-                "legacy_san_francisco_overlay_fog_band_01"
+                "legacy_san_francisco_decal_damp_asphalt_01"
             ]
         )
 
@@ -95,7 +95,7 @@ struct AssetCatalogTests {
         let good = try JSONSerialization.jsonObject(
             with: SpecBundle.contract("asset-catalog-001")
         ) as! [String: Any]
-        let presentation = SpecBundle.contract("presentation-assets-001")
+        let presentation = SpecBundle.contract("presentation-assets-002")
 
         func encode(_ object: [String: Any]) throws -> Data {
             try JSONSerialization.data(withJSONObject: object)

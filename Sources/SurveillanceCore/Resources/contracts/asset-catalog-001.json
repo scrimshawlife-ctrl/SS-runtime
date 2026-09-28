@@ -2,7 +2,7 @@
   "schemaVersion": "asset-catalog-001",
   "legacyRepository": "scrimshawlife-ctrl/Surveillance-Survivor",
   "legacyCommit": "3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
-  "specificationCommit": "878cb9f07ee70efc6d717f4fc2bfa338a9bdff6e",
+  "specificationCommit": "8a5d07bceab91db7f70b8d441bd422354167c6ea",
   "entries": [
     {
       "admissionDecision": "excluded",
@@ -6963,12 +6963,12 @@
       }
     },
     {
-      "admissionDecision": "sfCandidate",
+      "admissionDecision": "rejected",
       "record": {
         "schemaVersion": "asset-record-001",
         "assetId": "legacy_san_francisco_overlay_fog_band_01",
         "kind": "sprite",
-        "productionStatus": "review",
+        "productionStatus": "rejected",
         "runtimeRequired": false,
         "provenance": "adaptedLegacy",
         "license": null,
@@ -6982,7 +6982,7 @@
         "colorSpace": "sRGB",
         "alpha": "straight",
         "ownerContract": "civic-seam-visual-001",
-        "notes": "D-074 ADMIT (candidate) \u2192 `env_fog_low` under LC-009. Same role: a fog overlay in legacy, a fog layer in SS-001. Soft band, 32% coverage, mean alpha 81/255. Fills one of the two P0 fog layers T800 records as missing. Condition: drawn under the fog readability floor \u2014 never concealing collision, lethal telegraphs, or Camera boundaries (fog-layers intent, `visual-assets.md` \u00a77). Intake still needs the frozen-commit digest and resample. `env_fog_high` stays an original. Remains sfCandidate until intake records the frozen-commit digest; not runtime eligible."
+        "notes": "D-074 REJECT under LC-009: SS-runtime draws each fog layer as a seamless 512x512 tile; this band is 256x256 and not tileable, so it would seam. Tone reference only for env_fog_low/env_fog_high originals. Evidence only; not runtime eligible."
       }
     },
     {
@@ -27510,7 +27510,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as control_dodge."
       }
     },
@@ -27533,7 +27533,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as control_pause."
       }
     },
@@ -27556,7 +27556,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as control_stick_base."
       }
     },
@@ -27579,7 +27579,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as control_stick_knob."
       }
     },
@@ -27602,7 +27602,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_boss_bar."
       }
     },
@@ -27625,7 +27625,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_camera_counter."
       }
     },
@@ -27648,7 +27648,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_camera_notch_empty."
       }
     },
@@ -27671,7 +27671,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_camera_notch_full."
       }
     },
@@ -27694,7 +27694,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_detection_hidden."
       }
     },
@@ -27717,7 +27717,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_detection_hunted."
       }
     },
@@ -27740,7 +27740,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_detection_lockdown."
       }
     },
@@ -27763,7 +27763,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_detection_observed."
       }
     },
@@ -27786,7 +27786,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_detection_tracked."
       }
     },
@@ -27809,7 +27809,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_exposure_bar."
       }
     },
@@ -27832,7 +27832,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_extraction_ring."
       }
     },
@@ -27855,7 +27855,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_integrity_frame."
       }
     },
@@ -27878,7 +27878,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_upgrade_ghost_step."
       }
     },
@@ -27901,7 +27901,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_upgrade_ricochet_pulse."
       }
     },
@@ -27924,7 +27924,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as hud_upgrade_signal_jammer."
       }
     },
@@ -27947,7 +27947,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as objective_phoenix_network_blackout."
       }
     },
@@ -27970,7 +27970,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as objective_phoenix_steps_armed."
       }
     },
@@ -27993,7 +27993,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as objective_phoenix_steps_locked."
       }
     },
@@ -28016,7 +28016,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as telegraph_daemon_dash."
       }
     },
@@ -28039,7 +28039,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as telegraph_daemon_query."
       }
     },
@@ -28062,7 +28062,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as telegraph_independent_review."
       }
     },
@@ -28085,7 +28085,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as telegraph_narrow_tailoring."
       }
     },
@@ -28108,7 +28108,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as telegraph_safety_rationale."
       }
     },
@@ -28131,7 +28131,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original interface asset. Delivered as telegraph_temporary_order."
       }
     },
@@ -31412,6 +31412,166 @@
       }
     },
     {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "boss_phase_publicSafety",
+        "kind": "audio",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Runtime/sfx_boss_activated.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "sfx_boss_activated.m4a",
+        "sha256": "c724600ade8d5d05f7ad1bb21213e344932e3eb04141df8978fc341d2fc1fc58",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT (D-075). Frozen manifest intent: \"Boss activation stinger: municipal PA power-up without intelligible speech, binder slam, security shutters, synchronized camera servos, industrial percussion rise, absurd institutional authority, strong transition into combat.\" Public Safety is entered by the bossPhaseChanged the runtime emits on the tick the boss activates (before null), so this is the activation stinger on the activation event. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "boss_phase_civilLiberties",
+        "kind": "audio",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Runtime/sfx_boss_activated.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "sfx_boss_activated.m4a",
+        "sha256": "c724600ade8d5d05f7ad1bb21213e344932e3eb04141df8978fc341d2fc1fc58",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT (D-075). Frozen manifest intent: \"Boss activation stinger: municipal PA power-up without intelligible speech, binder slam, security shutters, synchronized camera servos, industrial percussion rise, absurd institutional authority, strong transition into combat.\" The later phases share one event type with Public Safety, so one bossPhaseChanged sound is used for all four; each is the authority re-asserting itself with new rules. Shares its file with lockdown_enter. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "boss_phase_temporarySafeguard",
+        "kind": "audio",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Runtime/sfx_boss_activated.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "sfx_boss_activated.m4a",
+        "sha256": "c724600ade8d5d05f7ad1bb21213e344932e3eb04141df8978fc341d2fc1fc58",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT (D-075). Frozen manifest intent: \"Boss activation stinger: municipal PA power-up without intelligible speech, binder slam, security shutters, synchronized camera servos, industrial percussion rise, absurd institutional authority, strong transition into combat.\" The later phases share one event type with Public Safety, so one bossPhaseChanged sound is used for all four; each is the authority re-asserting itself with new rules. Shares its file with lockdown_enter. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "boss_phase_independentReview",
+        "kind": "audio",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Runtime/sfx_boss_activated.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "sfx_boss_activated.m4a",
+        "sha256": "c724600ade8d5d05f7ad1bb21213e344932e3eb04141df8978fc341d2fc1fc58",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT (D-075). Frozen manifest intent: \"Boss activation stinger: municipal PA power-up without intelligible speech, binder slam, security shutters, synchronized camera servos, industrial percussion rise, absurd institutional authority, strong transition into combat.\" The later phases share one event type with Public Safety, so one bossPhaseChanged sound is used for all four; each is the authority re-asserting itself with new rules. Shares its file with lockdown_enter. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "adaptedAdmitted",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "boss_telegraph_temporaryOrder",
+        "kind": "audio",
+        "productionStatus": "accepted",
+        "runtimeRequired": true,
+        "provenance": "adaptedLegacy",
+        "license": "ElevenLabs commercial license (owner account), recorded on the frozen audio manifest",
+        "source": "legacy://Resources/Audio/Delivery/Shared/sfx_camera_scan_sweep.caf@3b20d88d6a6e1fe8f07f45f581359d371fa65d98",
+        "runtimePath": "sfx_camera_scan_sweep.m4a",
+        "sha256": "b156b0016193084cf8288b25c938ac7e3f678f89a363fc3989127435f610ca15",
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "LC-010 bounded ADAPT (D-075). Frozen manifest intent: \"Directional license-plate camera scan sweep: precise servo pan, optical focus, narrow synthetic doppler texture, brief data capture click, dry and readable, no sci-fi laser.\" Temporary Order telegraphs at an authored Captain Camera emitter that opens a fixed directional field, which is a camera scan sweep. Shares its file with camera_hit_02. Delivered as AAC; sha256 is the digest of the PCM source at the frozen commit. Priority, coalescence, and captions remain with AudioProjector."
+      }
+    },
+    {
+      "admissionDecision": "plannedOriginal",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "boss_telegraph_safetyRationale",
+        "kind": "audio",
+        "productionStatus": "planned",
+        "runtimeRequired": true,
+        "provenance": "projectOriginal",
+        "license": null,
+        "source": null,
+        "runtimePath": null,
+        "sha256": null,
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "Planned original (D-075). No legacy one-shot carries a cone of rationale resolved from the boss; the scan sweep already carries Temporary Order's camera field, and approximate substitution is closed (legacy-admission.md). Until delivered, AudioProjector still emits the cue and its warning haptic and caption; only the sound is absent."
+      }
+    },
+    {
+      "admissionDecision": "plannedOriginal",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "boss_telegraph_narrowTailoring",
+        "kind": "audio",
+        "productionStatus": "planned",
+        "runtimeRequired": true,
+        "provenance": "projectOriginal",
+        "license": null,
+        "source": null,
+        "runtimePath": null,
+        "sha256": null,
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "Planned original (D-075). No legacy one-shot carries a three-projectile aimed volley from the boss; sfx_weapon_fire is the player's own shot and would invert the vocabulary. Until delivered, AudioProjector still emits the cue and its warning haptic and caption; only the sound is absent."
+      }
+    },
+    {
+      "admissionDecision": "plannedOriginal",
+      "record": {
+        "schemaVersion": "asset-record-001",
+        "assetId": "boss_telegraph_independentReview",
+        "kind": "audio",
+        "productionStatus": "planned",
+        "runtimeRequired": true,
+        "provenance": "projectOriginal",
+        "license": null,
+        "source": null,
+        "runtimePath": null,
+        "sha256": null,
+        "dimensions": null,
+        "colorSpace": null,
+        "alpha": null,
+        "ownerContract": "audio-haptics-001",
+        "notes": "Planned original (D-075). No legacy one-shot carries a six-lane radial volley with a safe gap; the nearest (sfx_wichita_zoning_corridor_activate, lanes lighting in sequence) is authored as a corridor activation, not an attack. Until delivered, AudioProjector still emits the cue and its warning haptic and caption; only the sound is absent."
+      }
+    },
+    {
       "admissionDecision": "originalAccepted",
       "record": {
         "schemaVersion": "asset-record-001",
@@ -31430,7 +31590,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31453,7 +31613,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31476,7 +31636,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31499,7 +31659,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31522,7 +31682,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31545,7 +31705,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31568,7 +31728,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31591,7 +31751,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31614,7 +31774,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31637,7 +31797,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31660,7 +31820,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31683,7 +31843,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31706,7 +31866,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31729,7 +31889,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31752,7 +31912,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31775,7 +31935,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31798,7 +31958,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31821,7 +31981,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31844,7 +32004,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31867,7 +32027,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31890,7 +32050,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31913,7 +32073,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31936,7 +32096,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31959,7 +32119,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -31982,7 +32142,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32005,7 +32165,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32028,7 +32188,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32051,7 +32211,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32074,7 +32234,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32097,7 +32257,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32120,7 +32280,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32143,7 +32303,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32166,7 +32326,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32189,7 +32349,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32212,7 +32372,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32235,7 +32395,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32258,7 +32418,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32281,7 +32441,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32304,7 +32464,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32327,7 +32487,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32350,7 +32510,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32373,7 +32533,7 @@
         },
         "colorSpace": "sRGB",
         "alpha": "straight",
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "Original environment art. Solid sizes are verified against civic-seam-arena-001 rather than resampled: art that does not match its collision box is refused, because stretching a building to fit is how a player is blocked by something that looks passable."
       }
     },
@@ -32393,7 +32553,7 @@
         "dimensions": null,
         "colorSpace": null,
         "alpha": null,
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "D-073 planned original. The low fog layer declared in presentation-assets-001 environmentAssetIds; no file admitted. SS-runtime keeps fog off until it lands."
       }
     },
@@ -32413,7 +32573,7 @@
         "dimensions": null,
         "colorSpace": null,
         "alpha": null,
-        "ownerContract": "presentation-assets-001",
+        "ownerContract": "presentation-assets-002",
         "notes": "D-073 planned original. The high fog layer declared in presentation-assets-001 environmentAssetIds; no file admitted. SS-runtime keeps fog off until it lands."
       }
     }

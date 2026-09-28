@@ -123,15 +123,15 @@ struct EnvironmentContractTests {
     /// never be backed. This is the renderer/contract agreement, asserted at
     /// the contract so a regression fails here rather than as missing fog.
     @Test func fogIDsResolveThroughThePresentationContract() throws {
-        let presentation = try SpecBundle.contract("presentation-assets-001")
+        let presentation = try SpecBundle.contract("presentation-assets-002")
         let root = try #require(
             try JSONSerialization.jsonObject(with: presentation) as? [String: Any]
         )
         let environment = Set(root["environmentAssetIds"] as? [String] ?? [])
         #expect(environment.contains("env_fog_low"),
-                "presentation-assets-001 does not declare env_fog_low")
+                "presentation-assets-002 does not declare env_fog_low")
         #expect(environment.contains("env_fog_high"),
-                "presentation-assets-001 does not declare env_fog_high")
+                "presentation-assets-002 does not declare env_fog_high")
 
         // The two runtime consumers of that array must see the fog pair:
         // the library that decides whether the fog group is backed, and the
@@ -153,7 +153,7 @@ struct CameraHousingArtTests {
     /// simply never be backed and every Camera would silently lose its housing,
     /// which is exactly the failure this asserts against.
     @Test func everyHousingFamilyNamesADeclaredAsset() throws {
-        let presentation = try SpecBundle.contract("presentation-assets-001")
+        let presentation = try SpecBundle.contract("presentation-assets-002")
         let root = try #require(
             try JSONSerialization.jsonObject(with: presentation) as? [String: Any]
         )
@@ -227,7 +227,7 @@ struct CameraMountSolidTests {
 /// Declared and shipped is not the same as drawn.
 ///
 /// `RuntimeBundleFilter` unions the ID lists the contracts name, so anything
-/// `presentation-assets-001` declares is "reachable" *by construction* — the
+/// `presentation-assets-002` declares is "reachable" *by construction* — the
 /// filter cannot tell the difference between art the renderer draws and art
 /// nobody wired up. `env_camera_*` sat in the bundle unused for exactly that
 /// reason and no test noticed.

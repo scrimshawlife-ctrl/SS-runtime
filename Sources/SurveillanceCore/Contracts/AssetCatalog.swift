@@ -83,7 +83,7 @@ public struct AssetCatalog: Equatable, Sendable {
     public static func bundled() throws -> AssetCatalog {
         try AssetCatalogLoader.decodeAndValidate(
             catalogJSON: BundledResource.data(name: "asset-catalog-001", subdirectory: "contracts"),
-            presentationJSON: BundledResource.data(name: "presentation-assets-001", subdirectory: "contracts")
+            presentationJSON: BundledResource.data(name: "presentation-assets-002", subdirectory: "contracts")
         )
     }
 

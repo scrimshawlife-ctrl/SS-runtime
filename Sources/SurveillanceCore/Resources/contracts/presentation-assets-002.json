@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "presentation-assets-001",
+  "schemaVersion": "presentation-assets-002",
   "contract": "hud-tutorial-001",
   "requiredAssetIds": [
     "hud_integrity_frame",
@@ -49,6 +49,14 @@
     "upgrade_selected_ghostStep",
     "daemon_query",
     "daemon_dash",
+    "boss_phase_publicSafety",
+    "boss_phase_civilLiberties",
+    "boss_phase_temporarySafeguard",
+    "boss_phase_independentReview",
+    "boss_telegraph_safetyRationale",
+    "boss_telegraph_narrowTailoring",
+    "boss_telegraph_temporaryOrder",
+    "boss_telegraph_independentReview",
     "boss_defeated",
     "extraction_armed",
     "extraction_tick",

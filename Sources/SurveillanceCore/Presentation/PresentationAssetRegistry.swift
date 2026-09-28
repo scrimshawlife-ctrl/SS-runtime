@@ -24,7 +24,7 @@ public struct PresentationAssetRegistry: Equatable, Sendable {
         let reachable = try RuntimeBundleFilter.reachableAssetIds()
         let projection = RuntimeBundleFilter.project(catalog: catalog, reachable: reachable)
         guard let presentation = try? JSONSerialization.jsonObject(
-            with: SpecBundle.contract("presentation-assets-001")
+            with: SpecBundle.contract("presentation-assets-002")
         ) as? [String: Any],
             let visuals = presentation["requiredAssetIds"] as? [String],
             let audio = presentation["audioEventIds"] as? [String],
