@@ -36,6 +36,8 @@ struct PacingProbe {
         var lockdownEntered: Bool
         /// Integrity lost, by the archetype of the damaging entity.
         var damageBySource: [String: Int]
+        /// `arena.md` § 5 segment starts (D-079), measured by the core.
+        var timeline: PacingTimeline
 
         var seconds: Double { Double(ticks) / 60 }
     }
@@ -67,6 +69,7 @@ struct PacingProbe {
         var history: [PresentationSnapshot] = []
         var stalledOn: String?
         var damageBySource: [String: Int] = [:]
+        var timeline = PacingTimeline()
 
         while !sim.isTerminal, sim.state.tick < tickCeiling {
             let current = PresentationSnapshot(sim.state)
@@ -124,6 +127,8 @@ struct PacingProbe {
             for zone in sim.state.arena.zones where zoneEntry[zone.id] == nil {
                 if zone.aabb.contains(position) { zoneEntry[zone.id] = sim.state.tick }
             }
+            let playerZone = sim.state.arena.zones.first { $0.aabb.contains(position) }?.id
+            timeline.observe(tick: sim.state.tick, events: result.events, playerZone: playerZone)
         }
 
         return Result(
@@ -142,7 +147,8 @@ struct PacingProbe {
             playerIntegrity: sim.state.player.integrity,
             camerasDestroyed: sim.state.destructions.count,
             lockdownEntered: sim.state.exposure.lockdownEntered,
-            damageBySource: damageBySource
+            damageBySource: damageBySource,
+            timeline: timeline
         )
     }
 
@@ -187,6 +193,8 @@ struct PacingProbe {
             + "\"playerIntegrity\":\(r.playerIntegrity),\"camerasDestroyed\":\(r.camerasDestroyed),"
             + "\"lockdownEntered\":\(r.lockdownEntered),"
             + "\"damageBySource\":\(map(r.damageBySource)),"
-            + "\"zoneEntry\":\(map(r.zoneEntry)),\"milestones\":\(map(r.milestones))}"
+            + "\"zoneEntry\":\(map(r.zoneEntry)),\"milestones\":\(map(r.milestones)),"
+            + "\"segmentStarts\":\(map(Dictionary(uniqueKeysWithValues: r.timeline.starts.map { ($0.key.rawValue, $0.value) }))),"
+            + "\"segmentsOffTarget\":[\(r.timeline.segmentsOffTarget.map { "\"\($0.rawValue)\"" }.joined(separator: ","))]}"
     }
 }
