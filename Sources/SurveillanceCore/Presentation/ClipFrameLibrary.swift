@@ -129,8 +129,9 @@ public struct ClipFrameLibrary: Sendable {
 
     /// Compass direction for a facing vector, using the clip contract's letters.
     ///
-    /// Authoritative headings are clockwise-positive with `+y` toward the south
-    /// of the sprite sheet, so a positive `y` component faces `s`.
+    /// World `+y` is north (up the screen, and `Cordic.headingUnit(270_000)`),
+    /// so a positive `y` component faces `n` and shows the back view; `s` is
+    /// the front view. Matches `ClipAlignment.cardinalDirection(headingMilli:)`.
     public static func direction(forFacing facing: VecQ8) -> String {
         let x = facing.x.raw
         let y = facing.y.raw
@@ -138,6 +139,6 @@ public struct ClipFrameLibrary: Sendable {
         if abs(x) >= abs(y) {
             return x > 0 ? "e" : "w"
         }
-        return y > 0 ? "s" : "n"
+        return y > 0 ? "n" : "s"
     }
 }
