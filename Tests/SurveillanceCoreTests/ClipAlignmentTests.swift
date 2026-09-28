@@ -139,32 +139,38 @@ struct ClipAlignmentTests {
         #expect(complete.isTerminal)
     }
 
+    /// D-072: the Informant's commit is its contact hit, so its marker is
+    /// `playerDamaged`. The other four commits are state transitions and carry
+    /// no marker at all.
     @Test func clipT605CommitAlignsToEventMarkerNotFrameId() throws {
         let catalog = try ClipCatalog.bundled()
-        let pulse = AuthoritativeEvent(
+        let hit = AuthoritativeEvent(
             tick: 12,
             phase: 11,
-            type: .exposureChanged,
-            payload: ["after": .integer(100)],
+            type: .playerDamaged,
+            payload: ["amount": .integer(6)],
             insertion: 0
         )
         let playback = ClipAlignment.project(
             query: ClipPlaybackQuery(
-                actorRole: "fogAnalyticsCloud",
-                currentClipId: "fogAnalyticsCloud_anticipate",
+                actorRole: "autonomousInformant",
+                currentClipId: "autonomousInformant_anticipate",
                 headingMilli: 0
             ),
-            events: [pulse],
+            events: [hit],
             catalog: catalog
         )
         let clipId = playback.clipId
         let aligned = playback.eventAligned
-        let framesLookLikeEvent = playback.frameIds.contains("exposureChanged")
+        let framesLookLikeEvent = playback.frameIds.contains("playerDamaged")
         let marker = catalog.eventType(forClipId: clipId)
-        #expect(clipId == "fogAnalyticsCloud_commit")
+        #expect(clipId == "autonomousInformant_commit")
         #expect(aligned)
         #expect(framesLookLikeEvent == false)
-        #expect(marker == .exposureChanged)
+        #expect(marker == .playerDamaged)
+        for role in ["fogAnalyticsCloud", "cableCarCorrelator", "sutroSignalWitch", "victorianVendor"] {
+            #expect(catalog.eventType(forClipId: "\(role)_commit") == nil, "\(role)")
+        }
     }
 
     @Test func clipT605CameraFieldOffStartsWithDestroyAndLocksHousing() throws {

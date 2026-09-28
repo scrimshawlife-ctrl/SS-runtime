@@ -5,10 +5,15 @@
 /// never a guess made by the renderer.
 ///
 /// A state with no clip returns `nil` and the actor keeps its authored
-/// blockout. That is not an oversight here: `clip-metadata-001` defines only
-/// anticipate and commit clips for the five standard enemies, and only attack,
-/// transition, stagger, and defeat clips for the Captain. Neither has a
-/// locomotion clip, so both fall back to blockout while simply moving.
+/// blockout. The standard enemies present every state (D-071): their attack
+/// pair, `idle` at zero velocity, `move` otherwise, and the Cable-Car
+/// Correlator's `recover`. The Captain has no locomotion clip and keeps its
+/// blockout while simply moving. Hurt, stagger, and defeat are events, not
+/// states, and are layered on by `ReactionClipTracker`.
+///
+/// A returned clip may still be unbacked: D-071's frames are planned
+/// originals until delivered, and the renderer keeps the blockout for any
+/// direction that is not fully backed.
 public enum ActorClipProjection {
     /// Clip for a standard or elite enemy, or nil when its state has none.
     public static func clipId(for enemy: EnemyBody, bossRuntime: BossRuntime?) -> String? {
@@ -19,7 +24,7 @@ public enum ActorClipProjection {
             return daemonClipId(enemy.state)
         case .fogAnalyticsCloud, .cableCarCorrelator, .sutroSignalWitch,
              .autonomousInformant, .victorianVendor:
-            return standardClipId(role: enemy.archetype, state: enemy.state)
+            return standardClipId(role: enemy.archetype, state: enemy.state, velocity: enemy.velocity)
         }
     }
 
@@ -50,8 +55,9 @@ public enum ActorClipProjection {
     }
 
     /// Each standard enemy has one anticipation clip and one commit clip, and
-    /// the state that reaches each differs by role.
-    static func standardClipId(role: ArchetypeID, state: EnemyAIState) -> String? {
+    /// the state that reaches each differs by role. Every other state is
+    /// locomotion or standing (D-071).
+    static func standardClipId(role: ArchetypeID, state: EnemyAIState, velocity: VecQ8) -> String? {
         switch (role, state) {
         case (.fogAnalyticsCloud, .telegraph): return "fogAnalyticsCloud_anticipate"
         case (.fogAnalyticsCloud, .resolve): return "fogAnalyticsCloud_commit"
@@ -62,17 +68,27 @@ public enum ActorClipProjection {
         case (.sutroSignalWitch, .telegraph): return "sutroSignalWitch_anticipate"
         case (.sutroSignalWitch, .fire): return "sutroSignalWitch_commit"
 
-        // The Informant has no special attack; its pursuit is its whole
-        // presentation, so the anticipation clip carries the chase.
-        case (.autonomousInformant, .pursue): return "autonomousInformant_anticipate"
         case (.autonomousInformant, .charge): return "autonomousInformant_commit"
 
         case (.victorianVendor, .telegraph): return "victorianVendor_anticipate"
         case (.victorianVendor, .throwMine): return "victorianVendor_commit"
 
-        default: return nil
+        // enemies-and-encounters.md: only the Correlator has a RECOVER.
+        case (.cableCarCorrelator, .recover): return "cableCarCorrelator_recover"
+
+        default: break
         }
+        guard locomotionStates.contains(state) else { return nil }
+        if velocity == .zero { return "\(role.rawValue)_idle" }
+        // The Informant has no special attack; its pursuit is its whole
+        // presentation, so the anticipation clip carries the chase and it has
+        // no move clip (D-071).
+        if role == .autonomousInformant { return "autonomousInformant_anticipate" }
+        return "\(role.rawValue)_move"
     }
+
+    /// States in which a standard enemy is only moving or standing.
+    static let locomotionStates: Set<EnemyAIState> = [.pursue, .orbit, .keepRange, .cooldown]
 
     /// Compass direction an actor faces, from its velocity, falling back to
     /// south when it is still.

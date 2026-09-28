@@ -45,11 +45,14 @@ public struct ClipCatalog: Equatable, Sendable {
     public static let requiredClipIds: [String] = [
         "player_idle", "player_move", "player_dodge", "player_recover",
         "player_hurt", "player_defeat", "player_extraction", "player_complete",
-        "fogAnalyticsCloud_anticipate", "fogAnalyticsCloud_commit",
-        "cableCarCorrelator_anticipate", "cableCarCorrelator_commit",
-        "sutroSignalWitch_anticipate", "sutroSignalWitch_commit",
-        "autonomousInformant_anticipate", "autonomousInformant_commit",
-        "victorianVendor_anticipate", "victorianVendor_commit",
+        // Standard enemies in contract order: the delivered attack pair, then the
+        // D-071 family (T602) — planned originals until delivered. The
+        // Informant has no move: its pursuit clip is its locomotion.
+        "fogAnalyticsCloud_anticipate", "fogAnalyticsCloud_commit", "fogAnalyticsCloud_idle", "fogAnalyticsCloud_move", "fogAnalyticsCloud_hurt", "fogAnalyticsCloud_defeat",
+        "cableCarCorrelator_anticipate", "cableCarCorrelator_commit", "cableCarCorrelator_idle", "cableCarCorrelator_move", "cableCarCorrelator_recover", "cableCarCorrelator_hurt", "cableCarCorrelator_defeat",
+        "sutroSignalWitch_anticipate", "sutroSignalWitch_commit", "sutroSignalWitch_idle", "sutroSignalWitch_move", "sutroSignalWitch_hurt", "sutroSignalWitch_defeat",
+        "autonomousInformant_anticipate", "autonomousInformant_commit", "autonomousInformant_idle", "autonomousInformant_hurt", "autonomousInformant_defeat",
+        "victorianVendor_anticipate", "victorianVendor_commit", "victorianVendor_idle", "victorianVendor_move", "victorianVendor_hurt", "victorianVendor_defeat",
         // animation-civic-seam-001: the elite's clips map one-to-one onto the
         // authoritative state sequence in bosses.md.
         "improperSearchDaemon_pursuit", "improperSearchDaemon_queryTelegraph",

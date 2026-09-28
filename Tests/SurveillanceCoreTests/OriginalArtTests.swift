@@ -143,14 +143,20 @@ struct OriginalArtTests {
         }
     }
 
-    /// Every standard enemy renders.
-    @Test func everyStandardEnemyIsFullyBacked() throws {
+    /// Every standard enemy's delivered attack art renders. The D-071 family
+    /// (idle, move, hurt, defeat, Correlator recover) is planned, not delivered,
+    /// and is covered by `everyClipFrameIsAdmittedOrPlanned` instead.
+    @Test func everyStandardEnemyAttackClipIsFullyBacked() throws {
         let library = try ClipFrameLibrary.bundled()
         let roles = [
             "fogAnalyticsCloud", "cableCarCorrelator", "sutroSignalWitch",
             "autonomousInformant", "victorianVendor"
         ]
-        for clip in library.clips.values where roles.contains(clip.actorRole) {
+        let attackClips = library.clips.values.filter {
+            roles.contains($0.actorRole) && ($0.clipId.hasSuffix("_anticipate") || $0.clipId.hasSuffix("_commit"))
+        }
+        #expect(attackClips.count == 10)
+        for clip in attackClips {
             for direction in clip.directions {
                 #expect(
                     library.isBacked(clipId: clip.clipId, direction: direction),
@@ -160,15 +166,42 @@ struct OriginalArtTests {
         }
     }
 
-    /// Every clip is now backed, so no actor falls back to a blockout.
-    @Test func everyClipIsFullyBacked() throws {
+    /// No clip frame is unaccounted for: each one is either admitted art or a
+    /// planned original awaiting delivery. A frame ID in the clip contract with
+    /// no catalog record would be a typo or an orphan, and would stay a
+    /// blockout forever without anyone noticing.
+    @Test func everyClipFrameIsAdmittedOrPlanned() throws {
         let library = try ClipFrameLibrary.bundled()
+        let catalog = try AssetCatalog.bundled()
+        let decisions = Dictionary(uniqueKeysWithValues: catalog.entries.map { ($0.record.assetId, $0.admissionDecision) })
+        for clip in library.clips.values {
+            for frame in clip.frameIds {
+                let decision = decisions[frame]
+                #expect(
+                    decision == .originalAccepted || decision == .adaptedAdmitted || decision == .plannedOriginal,
+                    "\(frame) in \(clip.clipId) has no admitted or planned record"
+                )
+            }
+        }
+    }
+
+    /// Every direction whose frames are all admitted is backed, so delivered
+    /// art can never silently fail to reach the renderer. Directions still
+    /// waiting on planned originals keep their blockout by design.
+    @Test func everyFullyAdmittedDirectionIsBacked() throws {
+        let library = try ClipFrameLibrary.bundled()
+        let catalog = try AssetCatalog.bundled()
+        let admitted = Set(catalog.entries
+            .filter { $0.admissionDecision == .originalAccepted || $0.admissionDecision == .adaptedAdmitted }
+            .map(\.record.assetId))
         for clip in library.clips.values {
             let directions = clip.directions.isEmpty ? [nil] : clip.directions.map { Optional($0) }
             for direction in directions {
+                let frames = library.frameIds(clipId: clip.clipId, direction: direction)
+                guard frames.allSatisfy(admitted.contains) else { continue }
                 #expect(
                     library.isBacked(clipId: clip.clipId, direction: direction),
-                    "\(clip.clipId) [\(direction ?? "-")] is not backed"
+                    "\(clip.clipId) [\(direction ?? "-")] is admitted but not backed"
                 )
             }
         }
@@ -207,7 +240,8 @@ struct OriginalArtTests {
     @Test func coverageIsWhatTheRecordSays() throws {
         let library = try ClipFrameLibrary.bundled()
         let coverage = library.coverage
-        #expect(coverage.total == 588)
+        // 588 delivered, plus the 368 D-071 frames (T602) still planned.
+        #expect(coverage.total == 956)
         #expect(coverage.backed == 588)
     }
 }
