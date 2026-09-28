@@ -240,8 +240,8 @@ struct OriginalArtTests {
     @Test func coverageIsWhatTheRecordSays() throws {
         let library = try ClipFrameLibrary.bundled()
         let coverage = library.coverage
-        // 588 delivered, plus the 368 D-071 frames (T602) still planned.
+        // 588 delivered earlier plus the 368 D-071 frames (T602): full coverage.
         #expect(coverage.total == 956)
-        #expect(coverage.backed == 588)
+        #expect(coverage.backed == 956)
     }
 }
