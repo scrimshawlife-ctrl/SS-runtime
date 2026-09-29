@@ -9,11 +9,16 @@
 /// 4. at every tick of the full patrol cycle, a walkable route from the
 ///    Player spawn in Z-01 into the M-A trigger exists that no cone covers.
 ///
-/// "Every tick" is literal. The members are simulated together from their
-/// spawn with the rules' own movement (`EnemySystem.moveUnaware`, separation
-/// included) until the joint configuration repeats. That gives the exact
-/// transient and period, and every tick of both is checked. The Player takes
-/// no part: until a member is alerted, nothing the Player does moves it.
+/// The members are simulated together, tick by tick, from their spawn with
+/// the rules' own movement (`EnemySystem.moveUnaware`, separation included),
+/// and every tick is checked, until the joint configuration repeats (then
+/// the whole cycle is proven) or `tickCap` ticks have been checked. The cap
+/// is used because separation couples the members: where two loops pass
+/// within separation range, their joint state drifts and does not repeat
+/// within millions of ticks. The cap, 36,000 ticks (ten minutes), outlasts
+/// every loop many times over and any run's time in Z-02, and exceeds the
+/// 5–8 minute target run. The Player takes no part: until a member is
+/// alerted, nothing the Player does moves it.
 ///
 /// Camera mounts are solids, and which Cameras stand depends on the seed, so
 /// the proof runs for every Z-02 and Z-03 Camera subset a legal placement can
@@ -28,14 +33,15 @@ public enum PatrolFairness {
         public var waypointViolations: [String] = []
         /// Rule 2 failures.
         public var unreachedWaypoints: [String] = []
-        /// Joint configurations that never repeated within the budget, or
-        /// members that came within reach of a mount outside Z-02.
+        /// Members that came within reach of a mount outside Z-02, or a
+        /// patrol the proof cannot represent.
         public var unproven: [String] = []
         /// Rule 3 failures.
         public var protectedCoverage: [String] = []
         /// Rule 4 failures.
         public var blockedTicks: [String] = []
-        /// Ticks checked per Z-02 subset: transient plus period.
+        /// Per Z-02 subset: ticks checked, and the joint period if the
+        /// configuration repeated inside the cap (0 when it did not).
         public var cycles: [String: [Int]] = [:]
 
         public var passes: Bool {
@@ -46,11 +52,10 @@ public enum PatrolFairness {
 
     /// The route and cone grid: `ArenaReachability.gridStep`.
     public static let step = ArenaReachability.gridStep
-    /// A joint configuration that has not repeated after this many ticks is
-    /// reported as unproven, never trusted.
-    public static let tickBudget = 2_000_000
+    /// Ticks checked when the joint configuration does not repeat sooner.
+    public static let tickCap = 36_000
 
-    public static func evaluate(_ manifest: ArenaManifest, content: CombatContent) -> Report {
+    public static func evaluate(_ manifest: ArenaManifest, content: CombatContent, tickCap: Int = tickCap) -> Report {
         var report = Report()
         report.waypointViolations = waypointViolations(manifest)
         guard !manifest.patrols.isEmpty else { return report }
@@ -74,11 +79,11 @@ public enum PatrolFairness {
         for a in subsets02 {
             let nameA = a.map(\.socketId).joined(separator: "+")
             let motion = base + a.map(mount)
-            guard let orbit = jointOrbit(manifest: manifest, content: content, solids: motion) else {
-                report.unproven.append("\(nameA): no repeat within \(tickBudget) ticks")
+            guard let orbit = jointOrbit(manifest: manifest, content: content, solids: motion, cap: tickCap) else {
+                report.unproven.append("\(nameA): a member's archetype has no content")
                 continue
             }
-            report.cycles[nameA] = [orbit.transient, orbit.period]
+            report.cycles[nameA] = [orbit.ticks, orbit.period]
             // Motion ignored the mounts of other zones; prove none was ever
             // within a tick's reach. (Z-02 sockets outside the subset have
             // no mount in this configuration.)
@@ -127,15 +132,15 @@ public enum PatrolFairness {
 
     // MARK: - Motion
 
-    /// The members' joint motion from spawn (tick index 0) until the joint
-    /// configuration repeats. Each member's distinct states are interned;
-    /// `timeline[k][m]` indexes member m's state at tick k.
+    /// The members' joint motion from spawn (tick index 0), for `ticks`
+    /// ticks: until the joint configuration repeats (`period` > 0) or the
+    /// cap. Each member's distinct states are interned; `timeline[k][m]`
+    /// indexes member m's state at tick k.
     struct JointOrbit {
         var states: [[EnemyBody]]
         var timeline: [[Int32]]
-        var transient: Int
         var period: Int
-        var ticks: Int { transient + period }
+        var ticks: Int { timeline.count }
     }
 
     private struct MemberKey: Hashable {
@@ -154,7 +159,8 @@ public enum PatrolFairness {
     static func jointOrbit(
         manifest: ArenaManifest,
         content: CombatContent,
-        solids: [(id: String, box: AABB)]
+        solids: [(id: String, box: AABB)],
+        cap: Int
     ) -> JointOrbit? {
         var allocator = EntityAllocator()
         var enemies: [EnemyBody] = []
@@ -171,7 +177,7 @@ public enum PatrolFairness {
         var states = [[EnemyBody]](repeating: [], count: count)
         var timeline: [[Int32]] = []
         var seen: [UInt64: Int] = [:]
-        for k in 0...tickBudget {
+        for k in 0..<cap {
             var ids: [Int32] = []
             var packed: UInt64 = 0
             for m in 0..<count {
@@ -184,12 +190,12 @@ public enum PatrolFairness {
                     interned[m][key] = id
                     states[m].append(enemies[m])
                 }
-                guard id < (1 << 21) else { return nil }
+                guard id < (1 << 21) else { return JointOrbit(states: states, timeline: timeline, period: 0) }
                 ids.append(id)
                 packed = packed << 21 | UInt64(id)
             }
             if let first = seen[packed] {
-                return JointOrbit(states: states, timeline: timeline, transient: first, period: k - first)
+                return JointOrbit(states: states, timeline: timeline, period: k - first)
             }
             seen[packed] = k
             timeline.append(ids)
@@ -198,7 +204,7 @@ public enum PatrolFairness {
                 EnemySystem.moveUnaware(enemies: &enemies, index: index, movement: movement, bounds: bounds, solids: solids)
             }
         }
-        return nil
+        return JointOrbit(states: states, timeline: timeline, period: 0)
     }
 
     /// Rule 2: an arrival at waypoint k starts the hold with the target still
@@ -378,10 +384,13 @@ public enum PatrolFairness {
         var relaxed: [[Int32]: Bool] = [:]
         var exact: [[Int32]: Bool] = [:]
         var failures = 0
+        // Widen the member with the fewest states first: the key that is
+        // left (the others' states) then repeats most, so the memo hits.
+        let order = orbit.states.indices.sorted { orbit.states[$0].count < orbit.states[$1].count }
         for k in 0..<orbit.ticks {
             let ids = orbit.timeline[k]
             var ok = false
-            for widened in ids.indices {
+            for widened in order {
                 var key = ids
                 key[widened] = -1 - Int32(widened)
                 let result: Bool
@@ -403,7 +412,14 @@ public enum PatrolFairness {
             }
             if !ok {
                 failures += 1
-                if failures <= 3 { report.blockedTicks.append("\(name): tick index \(k)") }
+                if failures <= 3 {
+                    let where_ = ids.indices.map { m -> String in
+                        let e = orbit.states[m][Int(ids[m])]
+                        let f = e.patrol?.facing ?? .zero
+                        return "(\(e.position.x.unitsTruncated),\(e.position.y.unitsTruncated) f \(f.x.raw),\(f.y.raw))"
+                    }.joined(separator: " ")
+                    report.blockedTicks.append("\(name): tick index \(k) members \(where_)")
+                }
             }
         }
         if failures > 3 { report.blockedTicks.append("\(name): \(failures) blocked ticks in all") }

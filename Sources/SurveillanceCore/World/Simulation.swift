@@ -1721,7 +1721,8 @@ public struct Simulation: Equatable, Sendable {
         integrity: Int? = nil,
         speed: Int? = nil,
         awareness: EnemyAwareness = .aware,
-        nextSpecialTick: UInt64 = 0
+        nextSpecialTick: UInt64 = 0,
+        encounter: String = "test"
     ) -> EntityID {
         let stats = state.content.standardEnemies[archetype]!
         let id = state.allocator.next()
@@ -1740,7 +1741,7 @@ public struct Simulation: Equatable, Sendable {
                 spawnTick: state.tick,
                 nextSpecialTick: nextSpecialTick,
                 lockPosition: nil,
-                encounterId: "test",
+                encounterId: encounter,
                 awareness: awareness
             )
         )

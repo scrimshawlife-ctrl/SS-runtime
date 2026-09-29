@@ -63,6 +63,13 @@ struct PacingProbe {
         var spawnedAwareBy: [String: Int] = [:]
         /// Integrity lost before the first M-C wave started.
         var damageBeforeMobC = 0
+        /// D-091: each Transit Patrol member's outcome, fixed when the first
+        /// M-A wave starts (the Player has left the corridor): `ambushed` (its
+        /// first damage was an ambush), `fought` (alerted before any ambush),
+        /// or `sneakedPast` (still unaware, never hit).
+        var patrolOutcomes: [String: Int] = [:]
+        /// `enemyAlerted` causes for patrol members only.
+        var patrolAlertsByCause: [String: Int] = [:]
 
         var seconds: Double { Double(ticks) / 60 }
         var damageTaken: Int { damageBySource.values.reduce(0, +) }
@@ -127,6 +134,9 @@ struct PacingProbe {
         var spawnedAwareBy: [String: Int] = [:]
         var damageBeforeMobC = 0
         let standard = Set(sim.state.content.awareness.appliesTo)
+        var patrolAlerted: Set<EntityID> = []
+        var patrolOutcomes: [String: Int] = [:]
+        var patrolAlertsByCause: [String: Int] = [:]
 
         while !sim.isTerminal, sim.state.tick < tickCeiling {
             let current = PresentationSnapshot(sim.state)
@@ -176,6 +186,10 @@ struct PacingProbe {
                 switch event.type {
                 case .enemyAlerted:
                     if case .string(let cause)? = event.payload["cause"] { alertsByCause[cause, default: 0] += 1 }
+                    if let id = event.primaryEntityId, sim.state.enemies.first(where: { $0.id == id })?.patrol != nil {
+                        patrolAlerted.insert(id)
+                        if case .string(let cause)? = event.payload["cause"] { patrolAlertsByCause[cause, default: 0] += 1 }
+                    }
                 case .entityDamaged:
                     guard let id = event.primaryEntityId, firstHitAmbush[id] == nil,
                           let enemy = sim.state.enemies.first(where: { $0.id == id }),
@@ -210,6 +224,14 @@ struct PacingProbe {
             for event in result.events where event.type == .waveStarted {
                 guard case .string(let encounter)? = event.payload["encounterId"],
                       case .string(let wave)? = event.payload["waveId"] else { continue }
+                if encounter == "M-A", patrolOutcomes.isEmpty {
+                    for member in sim.state.enemies where member.patrol != nil {
+                        let outcome = firstHitAmbush[member.id] == true ? "ambushed"
+                            : patrolAlerted.contains(member.id) || firstHitAmbush[member.id] == false ? "fought"
+                            : "sneakedPast"
+                        patrolOutcomes[outcome, default: 0] += 1
+                    }
+                }
                 if encounter == "M-C" {
                     if mobCStartTick == nil { mobCStartTick = event.tick }
                     continue
@@ -280,7 +302,9 @@ struct PacingProbe {
             spawnedUnaware: spawnedUnaware,
             standardSpawned: standardSpawned,
             spawnedAwareBy: spawnedAwareBy,
-            damageBeforeMobC: damageBeforeMobC
+            damageBeforeMobC: damageBeforeMobC,
+            patrolOutcomes: patrolOutcomes,
+            patrolAlertsByCause: patrolAlertsByCause
         )
     }
 
@@ -331,6 +355,7 @@ struct PacingProbe {
             + "\"standardSpawned\":\(r.standardSpawned),\"spawnedUnaware\":\(r.spawnedUnaware),"
             + "\"damageTaken\":\(r.damageTaken),\"damageBeforeMobC\":\(r.damageBeforeMobC),"
             + "\"spawnedAwareBy\":\(map(r.spawnedAwareBy)),"
+            + "\"patrolOutcomes\":\(map(r.patrolOutcomes)),\"patrolAlertsByCause\":\(map(r.patrolAlertsByCause)),"
             + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave),\"camerasBefore\":\($0.camerasDestroyedBefore)}" }.joined(separator: ","))],"
             + "\"damageBySource\":\(map(r.damageBySource)),"
             + "\"zoneEntry\":\(map(r.zoneEntry)),\"milestones\":\(map(r.milestones)),"

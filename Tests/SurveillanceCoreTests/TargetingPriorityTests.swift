@@ -183,7 +183,7 @@ extension TargetingPriorityTests {
     /// anchor lies inside its own mount box, which would block every shot
     /// without D-085. Walking at it targets it, and three hits destroy it.
     @Test func cameraCD019DiagonalSocketIsTargetedAndDestroyed() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         let index = try #require(sim.state.cameras.indices.first {
             sim.state.cameras[$0].headingMilliDegrees % 90_000 == 45_000
         }, "seed 1 selects a diagonal socket")

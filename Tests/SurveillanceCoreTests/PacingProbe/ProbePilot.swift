@@ -20,11 +20,18 @@ import SurveillanceCore
 /// - **Hazard reading.** It steps out of receipt-mine reach, sidesteps
 ///   projected elite and boss telegraphs (`lane`, `cone`) and hostile bolts on
 ///   a collision course, and presses Dodge only as a hit lands.
-/// - **Ambush (stealth, D-089).** Unaware enemies hold and never attack, so
-///   the stealth pilot does not flee them. It stands where some enemy is in
+/// - **Ambush (stealth, D-089).** Unaware enemies never attack, so the
+///   stealth pilot does not flee them. It stands where some enemy is in
 ///   weapon range (512) with a clear shot and no unaware enemy can see it
-///   (beyond 192 units, or behind a solid), and lets the weapon open.
-///   `competent` and `loud` play as before and simply walk into sight.
+///   (beyond sight plus a margin, or behind a solid), and lets the weapon
+///   open. `competent` and `loud` play as before and simply walk into sight.
+/// - **Transit Patrol (stealth, D-091).** A patrol member sees only in its
+///   cone, which the snapshot projects. The stealth pilot treats a widened
+///   cone as sight, never steps into one, and waits (or backs out) when its
+///   next step would enter one; it ambushes from outside the cones.
+/// - **Drift (D-090).** Unaware encounter enemies drift toward their
+///   trigger; the ambush search keys on positions rounded to the grid, so a
+///   drifting target does not force a fresh search every tick.
 ///
 /// Its route knowledge is perfect and its reactions are instant unless the
 /// profile says otherwise. It is a measuring instrument, not a model of a
@@ -95,8 +102,17 @@ struct ProbePilot {
     /// steps outside one.
     private static let fieldStepCost = 12
     /// Stealth (D-089): keep this far from any unaware enemy with a clear
-    /// line: its 160-unit sight plus a margin for a tick's overshoot.
-    private static let stealthStandoff = 192
+    /// line: its sight (320 under D-090) plus a margin for a tick's
+    /// overshoot and a drifting enemy's approach.
+    private static let stealthStandoff = CombatContent.bundled().awareness.sightRangeUnits + 32
+    /// Stealth (D-091): a patrol cone as the pilot fears it: longer and wider
+    /// than the rule's, since the member moves and turns between decisions.
+    private static let wideCone: PatrolSpec = {
+        var spec = CombatContent.bundled().patrol
+        spec.sightUnits += 48
+        spec.sightHalfAngleMilliDegrees = 60_000
+        return spec
+    }()
     /// Loud: a Camera anchor this close with a clear line gets walked at.
     private static let loudReach = 360
 
@@ -212,6 +228,7 @@ struct ProbePilot {
         let objective = destination(for: snapshot)
         let holdingExtraction = snapshot.extractionArmed && arena.extraction.aabb.contains(position)
         let solids = Array(zip(snapshot.solidIds, snapshot.solids)).map { (id: $0.0, box: $0.1) }
+        cones = snapshot.patrolCones
         let contacts = snapshot.enemies.map { enemy -> (point: VecI, d: Int, clear: Bool, unaware: Bool) in
             let point = VecI(x: enemy.x, y: enemy.y)
             let clear = Self.clearShot(from: position, to: point, solids: solids)
@@ -269,7 +286,9 @@ struct ProbePilot {
             // D-089 ambush: stand inside weapon range but outside every
             // unaware enemy's sight, and let the automatic weapon open.
             // Standing still also chooses no Camera (D-082).
-            let seen = contacts.contains { $0.unaware && $0.clear && $0.d <= Self.stealthStandoff }
+            let seen = contacts.contains { contact in
+                contact.unaware && !isPatrolMember(contact.point) && contact.clear && contact.d <= Self.stealthStandoff
+            } || inCone(position)
             if !seen, hasShot { return Command() }
             if let spot = ambushPosition(from: position, snapshot: snapshot, solids: solids) {
                 return navigate(from: position, to: spot)
@@ -422,6 +441,46 @@ struct ProbePilot {
         return Command()
     }
 
+    // MARK: - Patrol cones (stealth, D-091)
+
+    private var cones: [PatrolCone] = []
+
+    private func isPatrolMember(_ point: VecI) -> Bool {
+        cones.contains { $0.x == point.x && $0.y == point.y }
+    }
+
+    /// Whether some unaware patrol member's widened cone, with a clear line,
+    /// covers `p`.
+    private func inCone(_ p: VecI) -> Bool {
+        let q = p.asQ8
+        return cones.contains { cone in
+            let origin = VecI(x: cone.x, y: cone.y).asQ8
+            return PatrolSystem.inCone(origin: origin, facing: cone.facing, point: q, spec: Self.wideCone)
+                && Collision.lineOfFireClear(from: origin, to: q, solids: solidPairs)
+        }
+    }
+
+    /// Stealth: a step that would carry the Player into a cone is replaced
+    /// by waiting; standing in one already, it leaves by the heading that
+    /// clears the cones soonest.
+    private func avoidingCones(_ command: Command, from position: VecI) -> Command {
+        guard profile.cameraStyle == .stealth, !cones.isEmpty, command.moveX != 0 || command.moveY != 0 else {
+            return command
+        }
+        let scale = 12.0 / 32_767.0
+        let next = VecI(
+            x: position.x + Int((Double(command.moveX) * scale).rounded()),
+            y: position.y + Int((Double(command.moveY) * scale).rounded())
+        )
+        if !inCone(next) { return command }
+        if !inCone(position) { return Command(dodge: command.dodge) }
+        for (dx, dy) in Self.headings {
+            let probe = VecI(x: position.x + dx * 2, y: position.y + dy * 2)
+            if isOpen(probe), !inCone(probe) { return vector(dx: dx, dy: dy) }
+        }
+        return command
+    }
+
     private mutating func navigate(from position: VecI, to goal: VecI) -> Command {
         ticksSincePlan += 1
         if pathGoal.map({ distance($0, goal) > Self.step * 2 }) ?? true
@@ -436,9 +495,9 @@ struct ProbePilot {
             path.removeFirst()
         }
         guard let waypoint = path.first else {
-            return vector(dx: goal.x - position.x, dy: goal.y - position.y)
+            return avoidingCones(vector(dx: goal.x - position.x, dy: goal.y - position.y), from: position)
         }
-        return vector(dx: waypoint.x - position.x, dy: waypoint.y - position.y)
+        return avoidingCones(vector(dx: waypoint.x - position.x, dy: waypoint.y - position.y), from: position)
     }
 
     /// A line of fire that stays clear when either end moves two units. The
@@ -513,9 +572,13 @@ struct ProbePilot {
         solids: [(id: String, box: AABB)]
     ) -> VecI? {
         let enemies = snapshot.enemies.map { VecI(x: $0.x, y: $0.y) }
-        let unaware = snapshot.enemies.filter(\.unaware).map { VecI(x: $0.x, y: $0.y) }
+        let unaware = snapshot.enemies.filter { $0.unaware && !isPatrolMember(VecI(x: $0.x, y: $0.y)) }
+            .map { VecI(x: $0.x, y: $0.y) }
+        // Keyed on grid cells, so a drifting or patrolling enemy does not
+        // force a fresh search every tick.
+        let key = enemies.map { VecI(x: $0.x / Self.step, y: $0.y / Self.step) }
         ambushTicks += 1
-        if let cached = ambushCache, cached.key == enemies, ambushTicks < Self.replanTicks {
+        if let cached = ambushCache, cached.key == key, ambushTicks < Self.replanTicks {
             return cached.goal
         }
         ambushTicks = 0
@@ -533,7 +596,7 @@ struct ProbePilot {
             let p = point(current % cols, current / cols)
             let hidden = !unaware.contains { u in
                 distance(p, u) <= Self.stealthStandoff && Collision.lineOfFireClear(from: p.asQ8, to: u.asQ8, solids: solids)
-            }
+            } && !inCone(p)
             if hidden, enemies.contains(where: { distance(p, $0) <= Self.fireRange && Self.clearShot(from: p, to: $0, solids: solids) }) {
                 if !preferUnseen || !inField[current] {
                     goal = p
@@ -547,7 +610,7 @@ struct ProbePilot {
             }
         }
         goal = goal ?? fallback
-        ambushCache = (key: enemies, goal: goal)
+        ambushCache = (key: key, goal: goal)
         return goal
     }
 

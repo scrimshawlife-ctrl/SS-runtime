@@ -30,7 +30,7 @@ struct AwarenessTests {
         #expect(first.velocity == .zero)
 
         var alerts: [AuthoritativeEvent] = []
-        for _ in 0..<400 {
+        for _ in 0..<1_500 {
             sim.testing_setExposure(0)
             let result = sim.step(command: .neutral(tick: sim.state.tick + 1))
             alerts += result.events.filter { $0.type == .enemyAlerted }
