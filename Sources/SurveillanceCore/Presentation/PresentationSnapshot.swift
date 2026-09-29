@@ -15,6 +15,10 @@ public struct PresentationSnapshot: Equatable, Sendable {
         /// `ReactionClipTracker`. The renderer tries it before `clipId` and falls
         /// back, so an unbacked reaction never hides the state clip.
         public var reactionClipId: String? = nil
+        /// D-089: a standard enemy that has not been alerted. The renderer
+        /// draws the `?` marker above it (animation.md § 8a); its shape, not
+        /// its colour, carries the state. Presentation only.
+        public var unaware: Bool = false
     }
 
     public struct CameraSprite: Equatable, Sendable {
@@ -223,7 +227,8 @@ public struct PresentationSnapshot: Equatable, Sendable {
                 role: enemy.archetype.rawValue,
                 silhouette: ActorSilhouette.enemy(enemy.archetype),
                 clipId: ActorClipProjection.clipId(for: enemy, bossRuntime: state.bossRuntime),
-                direction: ActorClipProjection.direction(for: enemy.velocity)
+                direction: ActorClipProjection.direction(for: enemy.velocity),
+                unaware: enemy.isUnaware
             )
         }
         extraction = state.arena.extraction.aabb

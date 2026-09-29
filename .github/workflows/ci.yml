@@ -8,10 +8,16 @@ on:
 jobs:
   swift:
     runs-on: macos-15
+    # Build with the Swift 6.2+ generation developers use. The runner default
+    # (Xcode 16.4, Swift 6.1) needs over 5x the debug stack for a simulation
+    # tick and overflowed Swift Testing's 512 KB worker threads (SIGBUS) on
+    # SS-runtime #104; the same code needs ~96 KB under Swift 6.3.
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
       - name: Verify pinned specification
-        run: grep -q "b79df6692415a2e5fc9976c7e07ba5af70ca1474" SPEC_BASELINE.md
+        run: grep -q "eefd5a06efdd82c5e91992c49e98c9670bd07699" SPEC_BASELINE.md
       - name: Test deterministic core
         run: swift test --skip CameraPlacementTests --skip CameraFairnessTests --parallel --num-workers 1
       - name: Test camera placement
@@ -32,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify pinned specification
-        run: grep -q "b79df6692415a2e5fc9976c7e07ba5af70ca1474" SPEC_BASELINE.md
+        run: grep -q "eefd5a06efdd82c5e91992c49e98c9670bd07699" SPEC_BASELINE.md
       - name: Byte-compare bundled contracts and fixtures against the pinned SS-specs
         run: bash scripts/spec_parity.sh
 

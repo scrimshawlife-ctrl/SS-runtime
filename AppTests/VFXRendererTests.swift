@@ -3,7 +3,7 @@ import Testing
 @testable import SSRuntime
 @testable import SurveillanceCore
 
-/// D-088: every `procedural-vfx-002` recipe reaches the screen, shake moves
+/// D-088: every `procedural-vfx-003` recipe reaches the screen, shake moves
 /// the world camera and never the HUD, hit-stop freezes the world, and the
 /// Reduced Flash Blackout changes no luminance.
 @Suite(.serialized)
@@ -56,7 +56,8 @@ struct VFXRendererTests {
             event(.cameraDestroyed, camera),
             event(.allCamerasDestroyed),
             event(.bossPhaseChanged, EntityID(700), ["before": .string("publicSafety"), "after": .string("civilLiberties")]),
-            event(.waveStarted, nil, ["encounterId": .string("M-A"), "waveId": .string("w1")])
+            event(.waveStarted, nil, ["encounterId": .string("M-A"), "waveId": .string("w1")]),
+            event(.enemyAlerted, EntityID(502), ["entityId": .string("502"), "cause": .string("sight")])
         ]
     }
 

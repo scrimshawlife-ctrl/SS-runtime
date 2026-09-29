@@ -20,6 +20,11 @@ import SurveillanceCore
 /// - **Hazard reading.** It steps out of receipt-mine reach, sidesteps
 ///   projected elite and boss telegraphs (`lane`, `cone`) and hostile bolts on
 ///   a collision course, and presses Dodge only as a hit lands.
+/// - **Ambush (stealth, D-089).** Unaware enemies hold and never attack, so
+///   the stealth pilot does not flee them. It stands where some enemy is in
+///   weapon range (512) with a clear shot and no unaware enemy can see it
+///   (beyond 192 units, or behind a solid), and lets the weapon open.
+///   `competent` and `loud` play as before and simply walk into sight.
 ///
 /// Its route knowledge is perfect and its reactions are instant unless the
 /// profile says otherwise. It is a measuring instrument, not a model of a
@@ -89,6 +94,9 @@ struct ProbePilot {
     /// Stealth: one step into a Camera field costs as much as this many
     /// steps outside one.
     private static let fieldStepCost = 12
+    /// Stealth (D-089): keep this far from any unaware enemy with a clear
+    /// line: its 160-unit sight plus a margin for a tick's overshoot.
+    private static let stealthStandoff = 192
     /// Loud: a Camera anchor this close with a clear line gets walked at.
     private static let loudReach = 360
 
@@ -119,6 +127,8 @@ struct ProbePilot {
     private var detourOverrideTicks = 0
     private var lastDetourPosition: VecI?
     private var huntTicks = 0
+    private var ambushCache: (key: [VecI], goal: VecI?)?
+    private var ambushTicks = 0
 
     /// Receipt mines, armed or arming, as circles to keep out of.
     private var hazards: [(center: VecI, radius: Int)] = []
@@ -141,7 +151,10 @@ struct ProbePilot {
 
     mutating func command(_ snapshot: PresentationSnapshot) -> Command {
         let command = decide(snapshot)
-        guard profile.cameraStyle == .stealth else { return command }
+        // Under Lockdown Exposure is latched at 1000, so a Camera the weapon
+        // chooses costs nothing more; filtering headings for it only rocked
+        // the Player in place at M-C (seen under ss-rules-003).
+        guard profile.cameraStyle == .stealth, snapshot.detection != .lockdown else { return command }
         if detourOverrideTicks > 0 {
             // Every Camera-free heading was blocked: walking past the Camera
             // is the only way on, and a careful player would take it too.
@@ -151,15 +164,25 @@ struct ProbePilot {
         let filtered = withoutChosenCamera(command, snapshot: snapshot)
         let position = VecI(x: snapshot.player.x, y: snapshot.player.y)
         if filtered.moveX != command.moveX || filtered.moveY != command.moveY {
-            detourStuckTicks = lastDetourPosition == position ? detourStuckTicks + 1 : 0
-            lastDetourPosition = position
+            // Stuck means not getting anywhere, not standing exactly still:
+            // the filter can alternate two headings and rock the Player in
+            // place (seen at M-B under ss-rules-003, beside cam-z04-d).
+            if let anchor = lastDetourPosition, distance(anchor, position) < 12 {
+                detourStuckTicks += 1
+            } else {
+                detourStuckTicks = 0
+                lastDetourPosition = position
+            }
             if detourStuckTicks >= 15 {
                 detourStuckTicks = 0
                 detourOverrideTicks = 60
                 return command
             }
-        } else {
+        } else if let anchor = lastDetourPosition, distance(anchor, position) >= 12 {
+            // Only real progress clears the count: an unfiltered tick inside
+            // a rocking cycle does not.
             detourStuckTicks = 0
+            lastDetourPosition = position
         }
         return filtered
     }
@@ -189,18 +212,21 @@ struct ProbePilot {
         let objective = destination(for: snapshot)
         let holdingExtraction = snapshot.extractionArmed && arena.extraction.aabb.contains(position)
         let solids = Array(zip(snapshot.solidIds, snapshot.solids)).map { (id: $0.0, box: $0.1) }
-        let contacts = snapshot.enemies.map { enemy -> (point: VecI, d: Int, clear: Bool) in
+        let contacts = snapshot.enemies.map { enemy -> (point: VecI, d: Int, clear: Bool, unaware: Bool) in
             let point = VecI(x: enemy.x, y: enemy.y)
             let clear = Self.clearShot(from: position, to: point, solids: solids)
             // The elite and the boss hit hardest on contact; keep them further off
             // by treating them as closer than they are.
             let heavy = enemy.role == "improperSearchDaemon" || enemy.role == "algorithmicModerate"
-            return (point, distance(position, point) - (heavy ? Self.heavyMargin : 0), clear)
+            return (point, distance(position, point) - (heavy ? Self.heavyMargin : 0), clear, enemy.unaware)
         }
         let nearest = contacts.min { $0.d < $1.d }
+        // D-089: an unaware enemy holds and never attacks, so the stealth
+        // pilot does not flee it; it keeps out of its sight instead (below).
+        let threats = profile.cameraStyle == .stealth ? contacts.filter { !$0.unaware } : contacts
         // Only a contact with a clear line can close on the Player directly;
         // one wedged behind a solid is hunted, not fled from.
-        let nearestClear = contacts.filter(\.clear).min { $0.d < $1.d }
+        let nearestClear = threats.filter(\.clear).min { $0.d < $1.d }
         let hasShot = contacts.contains { $0.clear && $0.d <= Self.fireRange }
         let kiteRange = snapshot.playerIntegrity <= Self.woundedIntegrity
             ? Self.woundedKiteRange
@@ -232,11 +258,22 @@ struct ProbePilot {
             return vector(dx: camera.x - position.x, dy: camera.y - position.y)
         }
         if profile.cameraStyle == .stealth, contacts.isEmpty, snapshot.detection != .hidden,
-           snapshot.detection != .lockdown
+           snapshot.detection != .lockdown,
+           snapshot.exposure > Self.hideAbove(camerasDestroyed: snapshot.camerasDestroyed)
         {
             // Seen with nothing to fight: get out of every field and wait for
             // Exposure to fall back to hidden before the next wave can start.
             return hide(from: position)
+        }
+        if profile.cameraStyle == .stealth, contacts.contains(where: \.unaware) {
+            // D-089 ambush: stand inside weapon range but outside every
+            // unaware enemy's sight, and let the automatic weapon open.
+            // Standing still also chooses no Camera (D-082).
+            let seen = contacts.contains { $0.unaware && $0.clear && $0.d <= Self.stealthStandoff }
+            if !seen, hasShot { return Command() }
+            if let spot = ambushPosition(from: position, snapshot: snapshot, solids: solids) {
+                return navigate(from: position, to: spot)
+            }
         }
         if let nearest {
             if !hasShot {
@@ -465,6 +502,55 @@ struct ProbePilot {
         return goal
     }
 
+    /// Stealth (D-089): the nearest cell, by path, from which some enemy is
+    /// in weapon range with a clear shot while no unaware enemy can see it
+    /// (beyond `stealthStandoff`, or a solid between). Prefers a cell no
+    /// Camera field covers. Nil when none is near; the caller then hunts as
+    /// before. Cached while the enemies stand still.
+    private mutating func ambushPosition(
+        from position: VecI,
+        snapshot: PresentationSnapshot,
+        solids: [(id: String, box: AABB)]
+    ) -> VecI? {
+        let enemies = snapshot.enemies.map { VecI(x: $0.x, y: $0.y) }
+        let unaware = snapshot.enemies.filter(\.unaware).map { VecI(x: $0.x, y: $0.y) }
+        ambushTicks += 1
+        if let cached = ambushCache, cached.key == enemies, ambushTicks < Self.replanTicks {
+            return cached.goal
+        }
+        ambushTicks = 0
+        guard let s = nearestWalkable(position) else { return nil }
+        var seen = Array(repeating: false, count: cols * rows)
+        seen[s] = true
+        var queue = [s]
+        var head = 0
+        let preferUnseen = inField.count == cols * rows
+        var goal: VecI?
+        var fallback: VecI?
+        while head < queue.count, head < 6_000 {
+            let current = queue[head]
+            head += 1
+            let p = point(current % cols, current / cols)
+            let hidden = !unaware.contains { u in
+                distance(p, u) <= Self.stealthStandoff && Collision.lineOfFireClear(from: p.asQ8, to: u.asQ8, solids: solids)
+            }
+            if hidden, enemies.contains(where: { distance(p, $0) <= Self.fireRange && Self.clearShot(from: p, to: $0, solids: solids) }) {
+                if !preferUnseen || !inField[current] {
+                    goal = p
+                    break
+                }
+                if fallback == nil { fallback = p }
+            }
+            for n in neighbours(current) where !seen[n] {
+                seen[n] = true
+                queue.append(n)
+            }
+        }
+        goal = goal ?? fallback
+        ambushCache = (key: enemies, goal: goal)
+        return goal
+    }
+
     // MARK: - Cameras (stealth and loud)
 
     /// Live Cameras from the snapshot, located on their arena sockets, and
@@ -531,6 +617,22 @@ struct ProbePilot {
             }
             .min { q.distanceSquared(to: $0.anchor) < q.distanceSquared(to: $1.anchor) }
             .map { VecI(x: $0.anchor.x.unitsTruncated, y: $0.anchor.y.unitsTruncated) }
+    }
+
+    /// Stealth: the Exposure above which the pilot stops to recover.
+    ///
+    /// D-084: recovery stops at the Tamper floor, 150 per Camera destroyed.
+    /// Below 200 the floor still lets Exposure fall to `hidden`. At 200 or
+    /// more `hidden` is out of reach, so the pilot only keeps clear of
+    /// `tracked` (450), with room to walk on; waiting for the floor itself
+    /// and then stepping back into a field rocked it at M-C forever (seen
+    /// under ss-rules-003). From 450 up it cannot leave `tracked`, and it
+    /// never stops.
+    static func hideAbove(camerasDestroyed: Int) -> Int {
+        let floor = ExposureState.tamperFloorPerCamera * camerasDestroyed
+        if floor < 200 { return floor }
+        if floor < 450 { return max(floor + 24, 400) }
+        return Int.max
     }
 
     /// Stealth: walk to the nearest cell no field covers, then stand still

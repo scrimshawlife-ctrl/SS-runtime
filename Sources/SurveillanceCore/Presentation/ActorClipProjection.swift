@@ -24,6 +24,8 @@ public enum ActorClipProjection {
             return daemonClipId(enemy.state)
         case .fogAnalyticsCloud, .cableCarCorrelator, .sutroSignalWitch,
              .autonomousInformant, .victorianVendor:
+            // D-089 (animation.md § 8a): an unaware enemy presents its idle clip.
+            if enemy.isUnaware { return "\(enemy.archetype.rawValue)_idle" }
             return standardClipId(role: enemy.archetype, state: enemy.state, velocity: enemy.velocity)
         }
     }

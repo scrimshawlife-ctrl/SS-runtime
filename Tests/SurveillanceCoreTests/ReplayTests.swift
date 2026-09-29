@@ -17,7 +17,7 @@ struct ReplayTests {
 
     @Test func duplicateCommandTickIsRejected() throws {
         let json = """
-        {"schemaVersion":"runtime-kernel-001","rulesetVersion":"ss-rules-002","contentVersion":"civic-seam-content-002","arenaVersion":"civic-seam-arena-002","seed":1,"commands":[{"tick":1,"moveX":0,"moveY":0,"dodgePressed":false},{"tick":1,"moveX":0,"moveY":0,"dodgePressed":false}]}
+        {"schemaVersion":"runtime-kernel-001","rulesetVersion":"ss-rules-003","contentVersion":"civic-seam-content-003","arenaVersion":"civic-seam-arena-002","seed":1,"commands":[{"tick":1,"moveX":0,"moveY":0,"dodgePressed":false},{"tick":1,"moveX":0,"moveY":0,"dodgePressed":false}]}
         """.data(using: .utf8)!
         let result = ReplayEnvelope.load(json: json)
         guard case .failure(.duplicateCommandTick(1)) = result else {

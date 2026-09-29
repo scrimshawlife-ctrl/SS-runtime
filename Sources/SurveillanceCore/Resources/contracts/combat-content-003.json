@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "combat-content-002",
+  "schemaVersion": "combat-content-003",
   "contracts": {"enemies": "enemies-encounters-001", "upgrades": "upgrades-001", "bosses": "bosses-001"},
   "standardEnemies": {
     "fogAnalyticsCloud": {"hp":20,"radius":18,"speed":84,"contactDps":4,"pulse":{"first":120,"cooldown":180,"telegraph":45,"range":220,"exposure":20}},
@@ -42,5 +42,6 @@
     "ricochetPulse":{"index":1,"continuations":1,"range":160,"enemyDamage":10,"cameraDamage":1},
     "ghostStep":{"index":2,"dodgeSpeed":540,"dodgeTicks":12,"cooldown":90,"postDodgeCameraImmunity":18}
   },
-  "heat": {"reinforcementArchetype":"autonomousInformant","encounters":["M-A","M-B"],"byDetectionState":{"hidden":0,"observed":0,"tracked":1,"hunted":2,"lockdown":2}}
+  "heat": {"reinforcementArchetype":"autonomousInformant","encounters":["M-A","M-B"],"byDetectionState":{"hidden":0,"observed":0,"tracked":1,"hunted":2,"lockdown":2}},
+  "awareness": {"appliesTo":["fogAnalyticsCloud","cableCarCorrelator","sutroSignalWitch","autonomousInformant","victorianVendor"],"sightRangeUnits":160,"allyAlertRadiusUnits":128,"surveillanceAlertState":"tracked","ambushDamageMultiplier":2,"awareEncounters":["M-C"],"heatReinforcementsSpawnAware":true}
 }

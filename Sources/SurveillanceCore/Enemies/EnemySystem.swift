@@ -73,11 +73,20 @@ public enum EnemySystem {
         projectiles: inout [ProjectileBody],
         mines: inout [MineBody],
         exposurePulses: inout [Int],
-        playerDamage: inout [(EntityID, Int)]
+        playerDamage: inout [(EntityID, Int)],
+        alertedThisTick: Set<EntityID> = []
     ) {
         let ordered = enemies.indices.sorted { enemies[$0].id < enemies[$1].id }
         for index in ordered {
             guard enemies[index].alive else { continue }
+            // D-089: an unaware enemy holds its spawn position with zero
+            // velocity and runs no state machine, so it never telegraphs,
+            // attacks, pulses, charges, throws, or mines. One alerted this
+            // tick begins its state machine on the next tick.
+            if enemies[index].isUnaware || alertedThisTick.contains(enemies[index].id) {
+                enemies[index].velocity = .zero
+                continue
+            }
             var damage = 0
             think(
                 &enemies[index],

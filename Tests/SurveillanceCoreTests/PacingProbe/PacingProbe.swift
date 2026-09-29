@@ -45,8 +45,27 @@ struct PacingProbe {
         var waveHeat: [WaveHeat] = []
         /// First M-C `waveStarted` tick.
         var mobCStartTick: UInt64?
+        /// D-089: `enemyAlerted` events by cause.
+        var alertsByCause: [String: Int] = [:]
+        /// D-089: standard enemies killed, and those of them whose first hit
+        /// was an ambush (it was unaware when first hit, whether or not that
+        /// hit killed it).
+        var standardKills = 0
+        var ambushKills = 0
+        /// Standard enemies whose first hit was an ambush, killed or not.
+        var ambushes = 0
+        /// Standard enemies spawned unaware.
+        var spawnedUnaware = 0
+        var standardSpawned = 0
+        /// Standard enemies that spawned aware, by the spawning rule that made
+        /// them so: `awareEncounter` (M-C), `surveillance` (`tracked` or above
+        /// when the director read it), or `reinforcement` (D-083 heat).
+        var spawnedAwareBy: [String: Int] = [:]
+        /// Integrity lost before the first M-C wave started.
+        var damageBeforeMobC = 0
 
         var seconds: Double { Double(ticks) / 60 }
+        var damageTaken: Int { damageBySource.values.reduce(0, +) }
         var reinforcements: Int { waveHeat.reduce(0) { $0 + $1.added } }
     }
 
@@ -98,6 +117,16 @@ struct PacingProbe {
         var waveHeat: [WaveHeat] = []
         var mobCStartTick: UInt64?
         var peakSinceWave = 0
+        var alertsByCause: [String: Int] = [:]
+        var firstHitAmbush: [EntityID: Bool] = [:]
+        var seenEnemies: Set<EntityID> = []
+        var standardKills = 0
+        var ambushKills = 0
+        var spawnedUnaware = 0
+        var standardSpawned = 0
+        var spawnedAwareBy: [String: Int] = [:]
+        var damageBeforeMobC = 0
+        let standard = Set(sim.state.content.awareness.appliesTo)
 
         while !sim.isTerminal, sim.state.tick < tickCeiling {
             let current = PresentationSnapshot(sim.state)
@@ -123,8 +152,45 @@ struct PacingProbe {
                 )
             }
             commands.append(command)
+            let detectionBefore = sim.state.exposure.detectionState
             let result = sim.step(command: command)
             if sustained, !sim.isTerminal { sim.testing_setPlayerIntegrity(PlayerBody.maxIntegrity) }
+
+            // D-089 measurement. Awareness moves to `struck` only in damage
+            // resolution and to `aware` only at the next enemy phase, so an
+            // enemy first damaged this tick and now `struck` was ambushed.
+            for enemy in sim.state.enemies where standard.contains(enemy.archetype) && !seenEnemies.contains(enemy.id) {
+                seenEnemies.insert(enemy.id)
+                standardSpawned += 1
+                guard enemy.spawnTick == sim.state.tick else { continue }
+                if enemy.awareness != .aware {
+                    spawnedUnaware += 1
+                } else {
+                    let rules = sim.state.content.awareness
+                    let cause = rules.awareEncounters.contains(enemy.encounterId) ? "awareEncounter"
+                        : rules.surveillanceAlerts(detectionBefore) ? "surveillance" : "reinforcement"
+                    spawnedAwareBy[cause, default: 0] += 1
+                }
+            }
+            for event in result.events {
+                switch event.type {
+                case .enemyAlerted:
+                    if case .string(let cause)? = event.payload["cause"] { alertsByCause[cause, default: 0] += 1 }
+                case .entityDamaged:
+                    guard let id = event.primaryEntityId, firstHitAmbush[id] == nil,
+                          let enemy = sim.state.enemies.first(where: { $0.id == id }),
+                          standard.contains(enemy.archetype) else { continue }
+                    firstHitAmbush[id] = enemy.awareness == .struck
+                case .entityDied:
+                    guard let id = event.primaryEntityId,
+                          let enemy = sim.state.enemies.first(where: { $0.id == id }),
+                          standard.contains(enemy.archetype) else { continue }
+                    standardKills += 1
+                    if firstHitAmbush[id] == true { ambushKills += 1 }
+                default:
+                    break
+                }
+            }
 
             for event in result.events where event.type == .playerDamaged {
                 var amount = 0
@@ -139,6 +205,7 @@ struct PacingProbe {
                     return owner + "Projectile"
                 } ?? "unattributed"
                 damageBySource[source, default: 0] += amount
+                if mobCStartTick == nil { damageBeforeMobC += amount }
             }
             for event in result.events where event.type == .waveStarted {
                 guard case .string(let encounter)? = event.payload["encounterId"],
@@ -205,7 +272,15 @@ struct PacingProbe {
             damageBySource: damageBySource,
             timeline: timeline,
             waveHeat: waveHeat,
-            mobCStartTick: mobCStartTick
+            mobCStartTick: mobCStartTick,
+            alertsByCause: alertsByCause,
+            standardKills: standardKills,
+            ambushKills: ambushKills,
+            ambushes: firstHitAmbush.values.filter { $0 }.count,
+            spawnedUnaware: spawnedUnaware,
+            standardSpawned: standardSpawned,
+            spawnedAwareBy: spawnedAwareBy,
+            damageBeforeMobC: damageBeforeMobC
         )
     }
 
@@ -251,6 +326,11 @@ struct PacingProbe {
             + "\"lockdownEntered\":\(r.lockdownEntered),\"networkBlackout\":\(r.networkBlackout),"
             + "\"reinforcements\":\(r.reinforcements),"
             + "\"mobCStartTick\":\(r.mobCStartTick.map(String.init) ?? "null"),"
+            + "\"alertsByCause\":\(map(r.alertsByCause)),\"standardKills\":\(r.standardKills),"
+            + "\"ambushKills\":\(r.ambushKills),\"ambushes\":\(r.ambushes),"
+            + "\"standardSpawned\":\(r.standardSpawned),\"spawnedUnaware\":\(r.spawnedUnaware),"
+            + "\"damageTaken\":\(r.damageTaken),\"damageBeforeMobC\":\(r.damageBeforeMobC),"
+            + "\"spawnedAwareBy\":\(map(r.spawnedAwareBy)),"
             + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave),\"camerasBefore\":\($0.camerasDestroyedBefore)}" }.joined(separator: ","))],"
             + "\"damageBySource\":\(map(r.damageBySource)),"
             + "\"zoneEntry\":\(map(r.zoneEntry)),\"milestones\":\(map(r.milestones)),"

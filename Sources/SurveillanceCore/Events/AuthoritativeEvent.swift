@@ -27,6 +27,8 @@ public enum EventType: String, Equatable, Sendable, CaseIterable {
     case runSucceeded
     case runFailed
     case diagnosticFailure
+    /// D-089, appended under D-058: an unaware standard enemy became alerted.
+    case enemyAlerted
 
     public var ordinal: Int {
         switch self {
@@ -58,6 +60,7 @@ public enum EventType: String, Equatable, Sendable, CaseIterable {
         case .runSucceeded: 260
         case .runFailed: 270
         case .diagnosticFailure: 280
+        case .enemyAlerted: 290
         }
     }
 }

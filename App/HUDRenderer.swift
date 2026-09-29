@@ -73,6 +73,7 @@ final class HUDRenderer {
         if !snap.outcome.isTerminal { drawTutorial(snap, projector) }
         drawCameraNotches(cameraHUD, projector)
         drawReinforcements(projector)
+        if !snap.outcome.isTerminal { drawAwarenessHint(projector) }
         drawCaptions(projector)
         drawControls(snap, projector, paused: paused)
         if snap.upgradePending {
@@ -473,6 +474,21 @@ final class HUDRenderer {
         )
     }
 
+    /// `UNSEEN ENEMIES HOLD • STRIKE FIRST FOR DOUBLE DAMAGE` (hud-tutorial.md,
+    /// D-089) in the row `AwarenessHintProjector.referenceRect` names. A
+    /// tutorial hint, so the tutorial setting hides it.
+    private func drawAwarenessHint(_ projector: HUDProjector) {
+        guard tutorialsEnabled, let copy = awarenessHintCopy else { return }
+        let mapped = projector.mapped(AwarenessHintProjector.referenceRect, hudScale: hudScale, informational: true)
+        label(
+            key: "awareness-hint",
+            text: copy,
+            at: projector.sceneCentre(of: mapped),
+            size: 11,
+            colour: HUDPalette.text
+        )
+    }
+
     /// Caption history in a right-hand column, newest at the bottom.
     ///
     /// The layout table does not place captions, so they take the free strip
@@ -604,6 +620,8 @@ final class HUDRenderer {
     var captions: [String] = []
     /// D-083 heat caption from `HeatCaptionProjector`, or nil. This only draws it.
     var reinforcementCopy: String?
+    /// D-089 tutorial copy from `AwarenessHintProjector`, or nil. This only draws it.
+    var awarenessHintCopy: String?
     /// camera-destruction.md: the Camera counter may be pinned through settings.
     var pinCameraCounter = false
     /// hud-tutorial-001: "Tutorial completion is a local setting." It governs
