@@ -82,6 +82,8 @@ public struct PresentationSnapshot: Equatable, Sendable {
     public var outcome: RunOutcome
     public var player: CircleSprite
     public var playerIntegrity: Int
+    /// The Integrity bar's full value (D-092): `player.integrity` from content.
+    public var playerMaxIntegrity: Int = 0
     public var exposure: Int
     public var detection: DetectionState
     public var solids: [AABB]
@@ -196,6 +198,7 @@ public struct PresentationSnapshot: Equatable, Sendable {
             direction: ClipFrameLibrary.direction(forFacing: state.player.facing)
         )
         playerIntegrity = state.player.integrity
+        playerMaxIntegrity = state.player.maxIntegrity
         exposure = state.exposure.exposure
         detection = state.exposure.detectionState
         let live = state.liveSolids

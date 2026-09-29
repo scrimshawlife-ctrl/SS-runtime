@@ -10,7 +10,7 @@ struct TargetingPriorityTests {
     private static let east = VecQ8(unitsX: 4, unitsY: 0)
 
     @Test func combatCB002EqualDistanceEnemiesPreferLowerID() {
-        let player = PlayerBody(id: EntityID(1), spawn: VecI(x: 0, y: 0))
+        let player = PlayerBody(id: EntityID(1), spawn: VecI(x: 0, y: 0), integrity: 150)
         let a = enemy(id: 11, at: VecI(x: 64, y: 0))
         let b = enemy(id: 7, at: VecI(x: 0, y: 64))
         let chosen = Targeting.select(player: player, enemies: [a, b], cameras: [], solids: [])
@@ -30,7 +30,7 @@ struct TargetingPriorityTests {
 
     /// CD-015: standing still, a detecting Camera in range is not a target.
     @Test func cameraCD015StandingPlayerChoosesNoCamera() {
-        let player = PlayerBody(id: EntityID(1), spawn: VecI(x: 0, y: 0))
+        let player = PlayerBody(id: EntityID(1), spawn: VecI(x: 0, y: 0), integrity: 150)
         #expect(player.velocity == .zero)
         let detecting = camera(id: 5, anchor: VecI(x: 40, y: 0), detecting: true)
         let chosen = Targeting.select(player: player, enemies: [], cameras: [detecting], solids: [])
@@ -237,7 +237,7 @@ extension TargetingPriorityTests {
 }
 
 private func moving(_ velocity: VecQ8) -> PlayerBody {
-    var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 0, y: 0))
+    var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 0, y: 0), integrity: 150)
     player.velocity = velocity
     return player
 }

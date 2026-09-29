@@ -110,11 +110,14 @@ struct PacingProbeTests {
             var upgrade: UpgradeID
             var sustained: Bool
         }
+        // Legal runs may use more seeds than sustained ones
+        // (`SS_HEAT_LEGAL_SEEDS`), for a usable win-rate sample.
+        let legalSeedCount = environment["SS_HEAT_LEGAL_SEEDS"].flatMap(UInt64.init) ?? seedCount
         var jobs: [Job] = []
-        for seed in 1...seedCount {
+        for seed in 1...max(seedCount, legalSeedCount) {
             for profile in [ProbePilot.Profile.stealth, .loud, .competent] {
                 for upgrade in UpgradeID.allCases {
-                    for sustained in [false, true] {
+                    for sustained in [false, true] where seed <= (sustained ? seedCount : legalSeedCount) {
                         jobs.append(Job(seed: seed, profile: profile, upgrade: upgrade, sustained: sustained))
                     }
                 }

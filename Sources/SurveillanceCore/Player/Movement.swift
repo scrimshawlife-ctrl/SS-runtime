@@ -1,6 +1,5 @@
 public struct PlayerBody: Equatable, Sendable {
     public static let radiusUnits = 18
-    public static let maxIntegrity = 100
     public static let maxSpeedUnitsPerTick = 4
     public static let dodgeSpeedUnitsPerTick = 8
     public static let dodgeDurationTicks = 12
@@ -13,6 +12,9 @@ public struct PlayerBody: Equatable, Sendable {
     public var position: VecQ8
     public var facing: VecQ8
     public var integrity: Int
+    /// Spawn Integrity and the clamp's ceiling: `player.integrity` in
+    /// `combat-content-004` (150, D-092).
+    public var maxIntegrity: Int
     public var dodgeActiveRemaining: Int
     public var dodgeStartedAt: UInt64?
     public var dodgeReadyTick: UInt64
@@ -36,11 +38,12 @@ public struct PlayerBody: Equatable, Sendable {
     /// it carries nothing across ticks and stays out of the digest.
     public var velocity: VecQ8 = .zero
 
-    public init(id: EntityID, spawn: VecI) {
+    public init(id: EntityID, spawn: VecI, integrity: Int) {
         self.id = id
         self.position = spawn.asQ8
         self.facing = VecQ8(unitsX: 1, unitsY: 0)
-        self.integrity = Self.maxIntegrity
+        self.maxIntegrity = integrity
+        self.integrity = integrity
         self.dodgeActiveRemaining = 0
         self.dodgeStartedAt = nil
         self.dodgeReadyTick = 1

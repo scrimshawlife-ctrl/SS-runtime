@@ -175,7 +175,7 @@ struct PacingProbe {
             commands.append(command)
             let detectionBefore = sim.state.exposure.detectionState
             let result = sim.step(command: command)
-            if sustained, !sim.isTerminal { sim.testing_setPlayerIntegrity(PlayerBody.maxIntegrity) }
+            if sustained, !sim.isTerminal { sim.testing_setPlayerIntegrity(sim.state.player.maxIntegrity) }
 
             // D-089 measurement. Awareness moves to `struck` only in damage
             // resolution and to `aware` only at the next enemy phase, so an

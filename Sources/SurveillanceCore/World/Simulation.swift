@@ -48,7 +48,8 @@ public struct Simulation: Equatable, Sendable {
             terminalDigest: nil,
             player: PlayerBody(
                 id: playerID,
-                spawn: VecI(x: arena.playerSpawn.x, y: arena.playerSpawn.y)
+                spawn: VecI(x: arena.playerSpawn.x, y: arena.playerSpawn.y),
+                integrity: content.player.integrity
             ),
             cameras: cameras,
             enemies: [],
@@ -356,7 +357,8 @@ public struct Simulation: Equatable, Sendable {
             player: state.player,
             enemies: state.enemies,
             cameras: state.cameras,
-            solids: state.liveSolids
+            solids: state.liveSolids,
+            unawarePatrolRange: state.content.patrol.sightUnits
         ) else { return }
 
         if state.cameras.contains(where: { $0.entityId == target.0 && $0.isDamageable }) {
@@ -1393,7 +1395,7 @@ public struct Simulation: Equatable, Sendable {
     }
 
     mutating func testing_setPlayerIntegrity(_ value: Int) {
-        state.player.integrity = max(0, value)
+        state.player.integrity = min(max(0, value), state.player.maxIntegrity)
     }
 
     mutating func testing_keepOnlyCamera(at index: Int, integrity: Int) {

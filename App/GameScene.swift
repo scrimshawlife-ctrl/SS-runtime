@@ -141,7 +141,8 @@ final class GameSession {
             player: state.player,
             enemies: state.enemies,
             cameras: state.cameras,
-            solids: state.liveSolids
+            solids: state.liveSolids,
+            unawarePatrolRange: state.content.patrol.sightUnits
         )
         var query = CameraHUDQuery.none
         if let selected, let camera = state.cameras.first(where: { $0.entityId == selected.0 }) {

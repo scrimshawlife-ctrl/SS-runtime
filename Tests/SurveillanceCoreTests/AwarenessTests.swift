@@ -43,7 +43,7 @@ struct AwarenessTests {
         #expect(held.velocity == .zero, "stopped")
         #expect(held.state == .pursue, "no telegraph, charge, or attack state")
         #expect(alerts.isEmpty)
-        #expect(sim.state.player.integrity == PlayerBody.maxIntegrity)
+        #expect(sim.state.player.integrity == sim.state.player.maxIntegrity)
         #expect(sim.state.mines.isEmpty)
         #expect(!sim.state.projectiles.contains { $0.alive && ($0.kind == .sutroBolt || $0.kind == .bossBolt) })
         #expect(sim.state.enemies.filter { $0.encounterId == "M-A" }.allSatisfy { $0.awareness == .unaware })
@@ -75,7 +75,7 @@ struct AwarenessTests {
         enterTrigger("M-C", sim: &sim)
         var spawned: [EnemyBody] = []
         for _ in 0..<400 where spawned.count < 3 {
-            sim.testing_setPlayerIntegrity(PlayerBody.maxIntegrity)
+            sim.testing_setPlayerIntegrity(sim.state.player.maxIntegrity)
             _ = sim.step(command: .neutral(tick: sim.state.tick + 1))
             spawned = sim.state.enemies.filter { $0.encounterId == "M-C" }
         }
@@ -309,7 +309,7 @@ struct AwarenessTests {
             // Speed zero so the aware one stays in contact.
             let id = sim.testing_spawnStandard(.cableCarCorrelator, at: VecI(x: 170, y: 192), speed: 0, awareness: awareness, nextSpecialTick: 10_000)
             for tick in 1...60 { _ = sim.step(command: .neutral(tick: UInt64(tick))) }
-            #expect((sim.state.player.integrity < PlayerBody.maxIntegrity) == damaged, "\(awareness)")
+            #expect((sim.state.player.integrity < sim.state.player.maxIntegrity) == damaged, "\(awareness)")
             #expect(sim.state.enemies.first { $0.id == id }?.awareness == awareness)
         }
     }

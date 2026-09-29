@@ -97,6 +97,10 @@ struct ProbePilot {
     private static let arrivalRadius = 40
     private static let heavyMargin = 100
     private static let fireRange = Targeting.civicPulseRange - 24
+    /// D-092: the weapon takes an unaware patrol member only within its
+    /// 240-unit sight range, so that is the pilot's reach for one (less a
+    /// margin, since the member walks).
+    private static let patrolFireRange = CombatContent.bundled().patrol.sightUnits - 16
     private static let replanTicks = 30
     /// Stealth: one step into a Camera field costs as much as this many
     /// steps outside one.
@@ -262,13 +266,14 @@ struct ProbePilot {
         let holdingExtraction = snapshot.extractionArmed && arena.extraction.aabb.contains(position)
         let solids = Array(zip(snapshot.solidIds, snapshot.solids)).map { (id: $0.0, box: $0.1) }
         cones = snapshot.patrolCones
-        let contacts = snapshot.enemies.map { enemy -> (point: VecI, d: Int, clear: Bool, unaware: Bool) in
+        let contacts = snapshot.enemies.map { enemy -> (point: VecI, d: Int, clear: Bool, unaware: Bool, reach: Int) in
             let point = VecI(x: enemy.x, y: enemy.y)
             let clear = Self.clearShot(from: position, to: point, solids: solids)
             // The elite and the boss hit hardest on contact; keep them further off
             // by treating them as closer than they are.
             let heavy = enemy.role == "improperSearchDaemon" || enemy.role == "algorithmicModerate"
-            return (point, distance(position, point) - (heavy ? Self.heavyMargin : 0), clear, enemy.unaware)
+            let reach = enemy.unaware && isPatrolMember(point) ? Self.patrolFireRange : Self.fireRange
+            return (point, distance(position, point) - (heavy ? Self.heavyMargin : 0), clear, enemy.unaware, reach)
         }
         let nearest = contacts.min { $0.d < $1.d }
         // D-089: an unaware enemy holds and never attacks, so the stealth
@@ -277,7 +282,7 @@ struct ProbePilot {
         // Only a contact with a clear line can close on the Player directly;
         // one wedged behind a solid is hunted, not fled from.
         let nearestClear = threats.filter(\.clear).min { $0.d < $1.d }
-        let hasShot = contacts.contains { $0.clear && $0.d <= Self.fireRange }
+        let hasShot = contacts.contains { $0.clear && $0.d <= $0.reach }
         let kiteRange = snapshot.playerIntegrity <= Self.woundedIntegrity
             ? Self.woundedKiteRange
             : Self.kiteRange
@@ -337,7 +342,7 @@ struct ProbePilot {
                 // at the enemy itself deadlocks when it is wedged behind a
                 // solid and pursues along the far side (seen at M-A under
                 // ss-rules-002).
-                return navigate(from: position, to: firingPosition(from: position, at: nearest.point) ?? nearest.point)
+                return navigate(from: position, to: firingPosition(from: position, at: nearest.point, reach: nearest.reach) ?? nearest.point)
             }
             return orbit(position: position, around: (nearestClear ?? nearest).point)
         }
@@ -553,7 +558,7 @@ struct ProbePilot {
     /// Nearest walkable cell, by path, with a clear line of fire to `target`
     /// inside fire range and outside kiting range. Cached for `replanTicks`
     /// while the target stays within two grid steps.
-    private mutating func firingPosition(from position: VecI, at target: VecI) -> VecI? {
+    private mutating func firingPosition(from position: VecI, at target: VecI, reach: Int = fireRange) -> VecI? {
         huntTicks += 1
         if let cached = huntCache, distance(cached.target, target) <= Self.step * 2, huntTicks < Self.replanTicks {
             return cached.goal
@@ -574,7 +579,7 @@ struct ProbePilot {
             head += 1
             let p = point(current % cols, current / cols)
             let d = distance(p, target)
-            if d <= Self.fireRange, d >= Self.kiteRange,
+            if d <= reach, d >= min(Self.kiteRange, reach / 2),
                Self.clearShot(from: p, to: target, solids: solidPairs)
             {
                 if !preferUnseen || !inField[current] {
@@ -609,6 +614,8 @@ struct ProbePilot {
         solids: [(id: String, box: AABB)]
     ) -> VecI? {
         let enemies = snapshot.enemies.map { VecI(x: $0.x, y: $0.y) }
+        // D-092: an unaware patrol member is only in reach within 240.
+        let reaches = snapshot.enemies.map { $0.unaware && isPatrolMember(VecI(x: $0.x, y: $0.y)) ? Self.patrolFireRange : Self.fireRange }
         let unaware = snapshot.enemies.filter { $0.unaware && !isPatrolMember(VecI(x: $0.x, y: $0.y)) }
             .map { VecI(x: $0.x, y: $0.y) }
         // Keyed on grid cells, so a drifting or patrolling enemy does not
@@ -634,7 +641,7 @@ struct ProbePilot {
             let hidden = !unaware.contains { u in
                 distance(p, u) <= Self.stealthStandoff && Collision.lineOfFireClear(from: p.asQ8, to: u.asQ8, solids: solids)
             } && !inCone(p)
-            if hidden, enemies.contains(where: { distance(p, $0) <= Self.fireRange && Self.clearShot(from: p, to: $0, solids: solids) }) {
+            if hidden, enemies.indices.contains(where: { distance(p, enemies[$0]) <= reaches[$0] && Self.clearShot(from: p, to: enemies[$0], solids: solids) }) {
                 if !preferUnseen || !inField[current] {
                     goal = p
                     break

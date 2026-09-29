@@ -140,8 +140,9 @@ final class HUDRenderer {
             key: "integrity",
             element: .playerIntegrity,
             projector: projector,
-            ratio: CGFloat(snap.playerIntegrity) / 100,
-            fillColour: snap.playerIntegrity <= 25 ? HUDPalette.critical : HUDPalette.integrity,
+            ratio: CGFloat(snap.playerIntegrity) / CGFloat(max(1, snap.playerMaxIntegrity)),
+            // Critical at a quarter of full (25 of 100 before D-092).
+            fillColour: snap.playerIntegrity * 4 <= snap.playerMaxIntegrity ? HUDPalette.critical : HUDPalette.integrity,
             assetId: RuntimeAssetRegistry.HUD.integrityFrame
         )
         label(

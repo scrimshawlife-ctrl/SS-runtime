@@ -228,6 +228,105 @@ struct TransitPatrolTests {
         #expect(later.awareness == .aware)
     }
 
+    // MARK: - EN-032 / EN-033 targeting (D-092)
+
+    /// A member at (1500, 300) facing +x and the Player `offset` behind it
+    /// (outside the cone, so it stays unaware), with only the weapon's first
+    /// opportunity (tick 30) to look at.
+    private static func targetingCase(distance: Int) throws -> (fired: [AuthoritativeEvent], damage: [AuthoritativeEvent], member: EnemyBody) {
+        var sim = try Self.sim(route: Self.route([VecI(x: 1500, y: 300), VecI(x: 1900, y: 300)]))
+        sim.testing_emptyCivicPool()
+        _ = Self.step(&sim)
+        let id = try #require(Self.member(sim)).id
+        var fired: [AuthoritativeEvent] = []
+        var damage: [AuthoritativeEvent] = []
+        while sim.state.tick < 75 {
+            // Hold the Player a fixed distance behind the walking member.
+            let member = try #require(sim.state.enemies.first { $0.id == id })
+            sim.testing_setPlayerPosition(VecI(x: member.position.x.unitsTruncated - distance, y: 300))
+            let result = Self.step(&sim)
+            fired += result.events.filter { $0.type == .weaponFired }
+            damage += result.events.filter { $0.type == .entityDamaged && $0.primaryEntityId == id }
+        }
+        return (fired, damage, try #require(sim.state.enemies.first { $0.id == id }))
+    }
+
+    /// EN-032: an unaware patrol member 300 units away, nothing else in
+    /// range: not targeted, no projectile, still unaware.
+    @Test func patrolEN032UnawareMemberBeyond240IsNotATarget() throws {
+        let (fired, damage, member) = try Self.targetingCase(distance: 300)
+        #expect(fired.isEmpty)
+        #expect(damage.isEmpty)
+        #expect(member.awareness == .unaware)
+    }
+
+    /// EN-033: the same member at 230 units is targeted, and the ambush
+    /// applies (x3 kills the 30-Integrity Fog Cloud).
+    @Test func patrolEN033UnawareMemberWithin240IsTargetedAndAmbushed() throws {
+        let (fired, damage, member) = try Self.targetingCase(distance: 230)
+        #expect(fired.count == 1)
+        #expect(fired.first?.secondaryEntityId == member.id)
+        #expect(damage.first?.payload["amount"] == .integer(30))
+        #expect(!member.alive)
+    }
+
+    /// The limit is inclusive at 240, applies only while unaware, and only to
+    /// patrol members.
+    @Test func patrolTargetingLimitIsInclusiveAndUnawareOnly() throws {
+        let player = PlayerBody(id: EntityID(1), spawn: VecI(x: 0, y: 0), integrity: 150)
+        func body(_ x: Int, awareness: EnemyAwareness, patrol: Bool) -> EnemyBody {
+            var e = EnemyBody(
+                id: EntityID(9), archetype: .fogAnalyticsCloud, position: VecI(x: x, y: 0).asQ8, velocity: .zero,
+                integrity: 30, radius: 18, speedUnitsPerSecond: 84, contactDps: 4, state: .pursue, stateTicks: 0,
+                spawnTick: 0, nextSpecialTick: 0, lockPosition: nil, encounterId: "t", awareness: awareness
+            )
+            if patrol { e.patrol = PatrolState(route: 0, target: 1, dwellRemaining: 0, facing: VecI(x: 1, y: 0).asQ8) }
+            return e
+        }
+        func chosen(_ e: EnemyBody) -> Bool {
+            Targeting.select(player: player, enemies: [e], cameras: [], solids: [], unawarePatrolRange: 240) != nil
+        }
+        #expect(chosen(body(240, awareness: .unaware, patrol: true)))
+        #expect(!chosen(body(241, awareness: .unaware, patrol: true)))
+        #expect(chosen(body(400, awareness: .aware, patrol: true)), "an alerted member is a normal target")
+        #expect(chosen(body(400, awareness: .unaware, patrol: false)), "encounter enemies keep the 512 reach")
+    }
+
+    // MARK: - Integrity (D-092)
+
+    /// The Player spawns with `player.integrity` (150) and clamps there; the
+    /// snapshot carries the bar's full value, and the receipt the Integrity
+    /// actually removed.
+    @Test func playerIntegrityComesFromContent() throws {
+        var sim = try Simulation.withoutPatrol(seed: 1)
+        #expect(sim.state.content.player.integrity == 150)
+        #expect(sim.state.player.integrity == 150)
+        #expect(sim.state.player.maxIntegrity == 150)
+        #expect(PresentationSnapshot(sim.state).playerMaxIntegrity == 150)
+        sim.testing_setPlayerIntegrity(999)
+        #expect(sim.state.player.integrity == 150, "clamps to 0...player.integrity")
+
+        var content = CombatContent.bundled()
+        content.player.integrity = 60
+        let other = try Simulation.withoutPatrol(seed: 1, content: content)
+        #expect(other.state.player.integrity == 60)
+        let standard = try Simulation.withoutPatrol(seed: 1)
+        #expect(other.state.digest() != standard.state.digest())
+
+        // A lethal run: 300 bolt damage at 50% is exactly the 150 pool.
+        var lethal = try Simulation.withoutPatrol(seed: 1)
+        lethal.testing_fillCivicPool(count: Targeting.activeCeiling)
+        lethal.testing_injectHostileBolt(damage: 299)
+        _ = Self.step(&lethal)
+        #expect(lethal.state.player.integrity == 1)
+        #expect(lethal.state.outcome == .playing)
+        lethal.testing_injectHostileBolt(damage: 1)
+        _ = Self.step(&lethal)
+        #expect(lethal.state.player.integrity == 0)
+        #expect(lethal.state.outcome == .failure)
+        #expect(RunReceipt(lethal.state).damageTaken == 150)
+    }
+
     // MARK: - EN-029 scope
 
     /// EN-029: a member's death counts in the receipt, completes no
@@ -444,16 +543,16 @@ struct TransitPatrolTests {
         sim.testing_injectHostileBolt(damage: 1)
         let first = Self.step(&sim)
         #expect(!first.events.contains { $0.type == .playerDamaged }, "0.5 removes no whole point")
-        #expect(sim.state.player.integrity == 100)
+        #expect(sim.state.player.integrity == 150)
         #expect(sim.state.player.damageRemainderHundredths == 50)
         sim.testing_injectHostileBolt(damage: 1)
         let second = Self.step(&sim)
         #expect(second.events.first { $0.type == .playerDamaged }?.payload["amount"] == .integer(1))
-        #expect(sim.state.player.integrity == 99)
+        #expect(sim.state.player.integrity == 149)
         #expect(sim.state.player.damageRemainderHundredths == 0)
         sim.testing_injectHostileBolt(damage: 9)
         _ = Self.step(&sim)
-        #expect(sim.state.player.integrity == 95)
+        #expect(sim.state.player.integrity == 145)
         #expect(sim.state.player.damageRemainderHundredths == 50)
         #expect(sim.state.player.damageTaken == 5, "receipts record Integrity actually removed")
 
@@ -463,7 +562,7 @@ struct TransitPatrolTests {
         contact.testing_fillCivicPool(count: Targeting.activeCeiling)
         contact.testing_spawnStandard(.victorianVendor, at: VecI(x: 170, y: 192), speed: 0, nextSpecialTick: 10_000)
         for _ in 0..<60 { _ = Self.step(&contact) }
-        #expect(contact.state.player.integrity == 95)
+        #expect(contact.state.player.integrity == 145)
     }
 
     /// The remainder is authoritative, so it is in the state digest.

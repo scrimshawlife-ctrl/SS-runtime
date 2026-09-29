@@ -24,6 +24,7 @@ struct CombatContentFailClosedTests {
             speedPercent: 40, dwellTicks: 30, sightUnits: 240, sightHalfAngleMilliDegrees: 45_000, arrivalUnits: 4
         ))
         #expect(content.player.damageTakenPercent == 50)
+        #expect(content.player.integrity == 150)
         #expect(content.encounters["M-A"]?.totals == 14)
         #expect(content.encounters["M-B"]?.totals == 17)
         #expect(content.encounters["M-C"]?.totals == 25)
@@ -123,6 +124,11 @@ struct CombatContentFailClosedTests {
         #expect(Self.withKey("player", "damageTakenPercent", 50.5) == .wrongType("player.damageTakenPercent"))
         #expect(Self.withKey("player", "damageTakenPercent", true) == .wrongType("player.damageTakenPercent"))
         #expect(Self.withKey("player", "invulnerable", false) == .wrongType("player.invulnerable"))
+        // D-092 `player.integrity`: required, a strict integer, at least 1.
+        #expect(Self.withKey("player", "integrity", nil) == .missingField("player.integrity"))
+        #expect(Self.withKey("player", "integrity", 0) == .wrongType("player.integrity"))
+        #expect(Self.withKey("player", "integrity", "150") == .wrongType("player.integrity"))
+        #expect(Self.withKey("player", "integrity", 150.5) == .wrongType("player.integrity"))
     }
 
     /// bosses.md phase bands come from `boss.phases[].minHp`: four phases in

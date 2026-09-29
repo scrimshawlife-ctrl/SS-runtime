@@ -1,4 +1,7 @@
 public enum IsolatedKernel {
+    /// Spawn Integrity for the isolated vectors, from content (D-092).
+    static let playerIntegrity = CombatContent.bundled().player.integrity
+
     public static let openBounds = AABB(center: VecI(x: 1152, y: 768), halfSize: VecI(x: 1152, y: 768))
 
     public static func move(
@@ -8,7 +11,7 @@ public enum IsolatedKernel {
         start: VecI = VecI(x: 256, y: 256),
         dodge: Bool = false
     ) -> VecQ8 {
-        var player = PlayerBody(id: EntityID(1), spawn: start)
+        var player = PlayerBody(id: EntityID(1), spawn: start, integrity: Self.playerIntegrity)
         var events = EventBuffer()
         for tick in 1...UInt64(ticks) {
             let command = PlayerCommand(
@@ -35,7 +38,7 @@ public enum IsolatedKernel {
     }
 
     public static func dodgeOnce(ticks: Int = 12, moveX: Int16 = PlayerCommand.axisMaximum) -> (PlayerBody, EventBuffer) {
-        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256))
+        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256), integrity: Self.playerIntegrity)
         var events = EventBuffer()
         for tick in 1...UInt64(ticks) {
             Movement.apply(
@@ -52,7 +55,7 @@ public enum IsolatedKernel {
     }
 
     public static func rejectedDodgeDuringCooldown() -> Int {
-        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256))
+        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256), integrity: Self.playerIntegrity)
         var events = EventBuffer()
         Movement.apply(
             player: &player,
@@ -141,7 +144,7 @@ public enum IsolatedKernel {
 
     public static func slideIntoVerticalWall() -> VecQ8 {
         let wall = AABB(center: VecI(x: 400, y: 256), halfSize: VecI(x: 8, y: 400))
-        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256))
+        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256), integrity: Self.playerIntegrity)
         var events = EventBuffer()
         for tick in 1...UInt64(60) {
             Movement.apply(
@@ -183,7 +186,7 @@ public enum IsolatedKernel {
             lockPosition: nil,
             encounterId: "elite"
         )
-        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256))
+        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256), integrity: Self.playerIntegrity)
         var allocator = EntityAllocator()
         _ = allocator.next()
         _ = allocator.next()
@@ -220,7 +223,7 @@ public enum IsolatedKernel {
     }
 
     public static func ghostStepImmunityTick() -> UInt64 {
-        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256))
+        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 256, y: 256), integrity: Self.playerIntegrity)
         var events = EventBuffer()
         Movement.apply(
             player: &player,
@@ -368,7 +371,7 @@ public enum IsolatedKernel {
         BossSystem.step(
             boss: &boss,
             runtime: &runtime,
-            player: PlayerBody(id: EntityID(1), spawn: VecI(x: 160, y: 192)),
+            player: PlayerBody(id: EntityID(1), spawn: VecI(x: 160, y: 192), integrity: Self.playerIntegrity),
             tick: 1,
             emitters: [],
             solids: [],

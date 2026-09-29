@@ -199,6 +199,8 @@ public struct PatrolSpec: Equatable, Sendable {
 /// `combat-content-004` `player` (D-090, `player-controller.md` § Damage
 /// response).
 public struct PlayerDamageSpec: Equatable, Sendable {
+    /// Spawn Integrity, and the clamp's ceiling (D-092, 150).
+    public var integrity: Int
     /// Every Integrity loss the Player would take is scaled by this percent,
     /// with an exact remainder in hundredths carried forward.
     public var damageTakenPercent: Int
@@ -394,12 +396,13 @@ public struct CombatContent: Equatable, Sendable {
         )
     }
 
-    /// `player` (D-090): the damage-taken percent, 0 through 100.
+    /// `player`: Integrity (D-092, at least 1) and the damage-taken percent
+    /// (D-090, 0 through 100).
     private static func parsePlayer(_ raw: Any?) throws -> PlayerDamageSpec {
-        let values = try strictInts(raw, block: "player", minimums: ["damageTakenPercent": 0])
+        let values = try strictInts(raw, block: "player", minimums: ["integrity": 1, "damageTakenPercent": 0])
         let percent = values["damageTakenPercent"]!
         guard percent <= 100 else { throw CombatContentError.wrongType("player.damageTakenPercent") }
-        return PlayerDamageSpec(damageTakenPercent: percent)
+        return PlayerDamageSpec(integrity: values["integrity"]!, damageTakenPercent: percent)
     }
 
     private static let awarenessKeys: Set<String> = [

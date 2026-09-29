@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify pinned specification
-        run: grep -q "476548aa9a048812aeb24d5f158b0969823f07cd" SPEC_BASELINE.md
+        run: grep -q "02a293ada0995af91bb58802168cea9b9540b75d" SPEC_BASELINE.md
       - name: Test deterministic core
         run: swift test --skip CameraPlacementTests --skip CameraFairnessTests --parallel --num-workers 1
       - name: Test camera placement
@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify pinned specification
-        run: grep -q "476548aa9a048812aeb24d5f158b0969823f07cd" SPEC_BASELINE.md
+        run: grep -q "02a293ada0995af91bb58802168cea9b9540b75d" SPEC_BASELINE.md
       - name: Byte-compare bundled contracts and fixtures against the pinned SS-specs
         run: bash scripts/spec_parity.sh
 
