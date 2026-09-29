@@ -33,7 +33,9 @@ public struct ProceduralVFXCatalog: Equatable, Sendable {
         "cameraAcquire", "exposureThreshold", "playerHit", "enemyHit", "enemyDefeat",
         "ghostStep", "ricochet", "lockdown", "captainTelegraph", "extraction",
         // procedural-vfx-002, animation.md § 8a (D-088): the four big moments.
-        "cameraDestroyed", "networkBlackout", "bossPhaseBreak", "heatReinforcements"
+        "cameraDestroyed", "networkBlackout", "bossPhaseBreak", "heatReinforcements",
+        // procedural-vfx-003, animation.md § 8a (D-089): the `!` pop.
+        "enemyAlerted"
     ]
 
     /// animation.md § 8: hit-stop is capped at 50 ms for standard impacts and
@@ -41,7 +43,7 @@ public struct ProceduralVFXCatalog: Equatable, Sendable {
     public static let captainClassRecipeIds: Set<String> = ["captainTelegraph", "bossPhaseBreak"]
 
     public static func bundled() throws -> ProceduralVFXCatalog {
-        try ProceduralVFXLoader.decode(SpecBundle.contract("procedural-vfx-002"))
+        try ProceduralVFXLoader.decode(SpecBundle.contract("procedural-vfx-003"))
     }
 
     /// The hit-stop cap that applies to `recipeId`.
@@ -262,7 +264,7 @@ public struct VFXProjector: Equatable, Sendable {
         "networkBlackout": 0, "bossPhaseBreak": 1,
         "lockdown": 1, "captainTelegraph": 2, "extraction": 2, "cameraDestroyed": 2,
         "playerHit": 3, "exposureThreshold": 3, "cameraAcquire": 4, "heatReinforcements": 4,
-        "enemyDefeat": 5, "ghostStep": 6, "ricochet": 6, "enemyHit": 7
+        "enemyDefeat": 5, "enemyAlerted": 5, "ghostStep": 6, "ricochet": 6, "enemyHit": 7
     ]
 
     static func rank(_ recipeId: String) -> Int { priorityRank[recipeId] ?? 9 }

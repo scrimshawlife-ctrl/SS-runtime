@@ -28,6 +28,7 @@
     {"ordinal":250,"type":"extractionReset","payload":{"required":["previousRemainingTicks"],"fields":{"previousRemainingTicks":"int"}}},
     {"ordinal":260,"type":"runSucceeded","payload":{"required":["finalDigest"],"fields":{"finalDigest":"sha256"}}},
     {"ordinal":270,"type":"runFailed","payload":{"required":["reason"],"fields":{"reason":"failureReason"}}},
-    {"ordinal":280,"type":"diagnosticFailure","payload":{"required":["code"],"fields":{"code":"diagnosticCode"}}}
+    {"ordinal":280,"type":"diagnosticFailure","payload":{"required":["code"],"fields":{"code":"diagnosticCode"}}},
+    {"ordinal":290,"type":"enemyAlerted","payload":{"required":["entityId","cause"],"fields":{"entityId":"entityId","cause":"alertCause"}}}
   ]
 }

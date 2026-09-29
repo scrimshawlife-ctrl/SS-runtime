@@ -98,7 +98,9 @@ public enum StateDigest {
                     "archetype": .string(enemy.archetype.rawValue),
                     "x": .integer(enemy.position.x.raw),
                     "y": .integer(enemy.position.y.raw),
-                    "integrity": .integer(Int64(enemy.integrity))
+                    "integrity": .integer(Int64(enemy.integrity)),
+                    // D-089: authoritative, so digested.
+                    "awareness": .string(enemy.awareness.rawValue)
                 ])
             }),
             "exposure": .object([

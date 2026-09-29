@@ -95,7 +95,7 @@ public struct WaveSpec: Equatable, Sendable {
     public var members: [WaveMember]
 }
 
-/// `combat-content-002` `heat` (D-083): Autonomous Informants appended to an
+/// `combat-content-003` `heat` (D-083): Autonomous Informants appended to an
 /// M-A or M-B wave by the Detection State read when the wave starts.
 public struct HeatSpec: Equatable, Sendable {
     public var reinforcementArchetype: ArchetypeID
@@ -109,6 +109,54 @@ public struct HeatSpec: Equatable, Sendable {
     public func reinforcements(encounter: String, state: DetectionState) -> Int {
         guard encounters.contains(encounter) else { return 0 }
         return byDetectionState[state] ?? 0
+    }
+}
+
+/// `combat-content-003` `awareness` (D-089, `enemies-and-encounters.md`
+/// § Awareness): which standard enemies can be unaware, how they become
+/// alerted, and the ambush multiplier.
+public struct AwarenessSpec: Equatable, Sendable {
+    /// The archetypes that can spawn unaware. Never the elite or the boss.
+    public var appliesTo: [ArchetypeID]
+    /// Sight radius, inclusive, in arena units.
+    public var sightRangeUnits: Int
+    /// One-hop ally alert radius, inclusive, in arena units.
+    public var allyAlertRadiusUnits: Int
+    /// The Detection State at or above which surveillance alerts every
+    /// unaware enemy, and at or above which a standard enemy spawns aware.
+    public var surveillanceAlertState: DetectionState
+    /// The first damage an unaware enemy takes is multiplied by this.
+    public var ambushDamageMultiplier: Int
+    /// Encounters whose enemies always spawn aware (M-C).
+    public var awareEncounters: [String]
+    /// Heat reinforcements (D-083) spawn aware.
+    public var heatReinforcementsSpawnAware: Bool
+
+    /// True when `state` is `surveillanceAlertState` or above.
+    public func surveillanceAlerts(_ state: DetectionState) -> Bool {
+        Self.rank(state) >= Self.rank(surveillanceAlertState)
+    }
+
+    /// Detection States in escalation order.
+    static let order: [DetectionState] = [.hidden, .observed, .tracked, .hunted, .lockdown]
+
+    static func rank(_ state: DetectionState) -> Int {
+        order.firstIndex(of: state)!
+    }
+
+    /// Whether a standard enemy spawned now starts aware
+    /// (`enemies-and-encounters.md` § Awareness, Spawning). `state` is the
+    /// Detection State resolved after the previous tick.
+    public func spawnsAware(
+        archetype: ArchetypeID,
+        encounter: String,
+        state: DetectionState,
+        heatReinforcement: Bool
+    ) -> Bool {
+        !appliesTo.contains(archetype)
+            || surveillanceAlerts(state)
+            || awareEncounters.contains(encounter)
+            || (heatReinforcement && heatReinforcementsSpawnAware)
     }
 }
 
@@ -166,9 +214,10 @@ public struct CombatContent: Equatable, Sendable {
     public var bossContactDps: Int
     public var bossInitialDelay: Int
     public var heat: HeatSpec
+    public var awareness: AwarenessSpec
 
     public static func bundled() -> CombatContent {
-        let data = BundledResource.data(name: "combat-content-002", subdirectory: "contracts")
+        let data = BundledResource.data(name: "combat-content-003", subdirectory: "contracts")
         return try! decode(data)
     }
 
@@ -200,8 +249,77 @@ public struct CombatContent: Equatable, Sendable {
             bossSpeed: try boss.int("baseSpeed", within: "boss"),
             bossContactDps: try boss.int("baseContactDps", within: "boss"),
             bossInitialDelay: try boss.int("initialDelay", within: "boss"),
-            heat: try parseHeat(root["heat"])
+            heat: try parseHeat(root["heat"]),
+            awareness: try parseAwareness(root["awareness"])
         )
+    }
+
+    private static let awarenessKeys: Set<String> = [
+        "appliesTo", "sightRangeUnits", "allyAlertRadiusUnits", "surveillanceAlertState",
+        "ambushDamageMultiplier", "awareEncounters", "heatReinforcementsSpawnAware"
+    ]
+
+    /// Every field is required and exactly typed; an unknown key, a
+    /// non-standard archetype (the elite and the boss are always aware), a
+    /// JSON boolean where a number belongs, or a number where a boolean
+    /// belongs fails closed.
+    private static func parseAwareness(_ raw: Any?) throws -> AwarenessSpec {
+        let block = try decodeObject(raw, path: "awareness")
+        for key in block.keys.sorted() where !awarenessKeys.contains(key) {
+            throw CombatContentError.wrongType("awareness.\(key)")
+        }
+        for key in awarenessKeys.sorted() where block[key] == nil {
+            throw CombatContentError.missingField("awareness.\(key)")
+        }
+        guard let names = block["appliesTo"] as? [String] else {
+            throw CombatContentError.wrongType("awareness.appliesTo")
+        }
+        var appliesTo: [ArchetypeID] = []
+        for name in names {
+            guard let archetype = ArchetypeID(rawValue: name) else {
+                throw CombatContentError.unknownArchetype(name)
+            }
+            guard archetype != .improperSearchDaemon, archetype != .algorithmicModerate else {
+                throw CombatContentError.wrongType("awareness.appliesTo")
+            }
+            appliesTo.append(archetype)
+        }
+        func strictInt(_ key: String, minimum: Int) throws -> Int {
+            let value = block[key]
+            guard !isJSONBool(value), let number = value as? Int, number >= minimum else {
+                throw CombatContentError.wrongType("awareness.\(key)")
+            }
+            return number
+        }
+        guard let stateName = block["surveillanceAlertState"] as? String,
+              let alertState = DetectionState(rawValue: stateName)
+        else {
+            throw CombatContentError.wrongType("awareness.surveillanceAlertState")
+        }
+        guard let encounters = block["awareEncounters"] as? [String] else {
+            throw CombatContentError.wrongType("awareness.awareEncounters")
+        }
+        let spawnAware = block["heatReinforcementsSpawnAware"]
+        guard isJSONBool(spawnAware), let reinforcementsAware = spawnAware as? Bool else {
+            throw CombatContentError.wrongType("awareness.heatReinforcementsSpawnAware")
+        }
+        return AwarenessSpec(
+            appliesTo: appliesTo,
+            sightRangeUnits: try strictInt("sightRangeUnits", minimum: 1),
+            allyAlertRadiusUnits: try strictInt("allyAlertRadiusUnits", minimum: 0),
+            surveillanceAlertState: alertState,
+            ambushDamageMultiplier: try strictInt("ambushDamageMultiplier", minimum: 1),
+            awareEncounters: encounters,
+            heatReinforcementsSpawnAware: reinforcementsAware
+        )
+    }
+
+    /// `JSONSerialization` bridges both JSON booleans and numbers to
+    /// `NSNumber`, so `as? Int` accepts `true` and `as? Bool` accepts `1`.
+    /// The CoreFoundation type tells them apart.
+    private static func isJSONBool(_ value: Any?) -> Bool {
+        guard let number = value as? NSNumber else { return false }
+        return CFGetTypeID(number) == CFBooleanGetTypeID()
     }
 
     /// All five Detection States are required; any other key fails closed.

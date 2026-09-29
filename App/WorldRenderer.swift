@@ -181,6 +181,12 @@ final class WorldRenderer {
     /// as a second Player.
     static let ghostAlpha: CGFloat = 0.35
 
+    /// How far above an enemy's centre its `?` marker (and the `!` pop that
+    /// replaces it) sits: clear of the body, whatever the sprite box.
+    nonisolated static func unawareMarkerLift(radius: Int) -> CGFloat {
+        CGFloat(radius + 10)
+    }
+
     private var ghost: Ghost?
 
     func render(_ snap: PresentationSnapshot, reducedMotion: Bool = false, ghost: Ghost? = nil) {
@@ -788,6 +794,21 @@ final class WorldRenderer {
 
     private func renderMarkers(_ snap: PresentationSnapshot) {
         beginLayer(.markers)
+        // D-089 (animation.md § 8a): a `?` above every unaware enemy, from
+        // the snapshot's `unaware` flag. The glyph's shape carries the state,
+        // so it does not rely on colour.
+        for enemy in snap.enemies where enemy.unaware {
+            let marker = node(.markers, "unaware-\(enemy.id.raw)") {
+                let label = SKLabelNode(fontNamed: "Menlo-Bold")
+                label.text = "?"
+                label.fontSize = 18
+                label.fontColor = Palette.unawareMarker
+                label.verticalAlignmentMode = .bottom
+                label.horizontalAlignmentMode = .center
+                return label
+            }
+            marker.position = CGPoint(x: CGFloat(enemy.x), y: CGFloat(enemy.y) + Self.unawareMarkerLift(radius: enemy.radius))
+        }
         for (index, marker) in snap.queryMarkers.enumerated() {
             let ring = node(.markers, "query-\(marker.id.raw)-\(index)") {
                 let shape = SKShapeNode(circleOfRadius: CGFloat(marker.radius))
@@ -906,6 +927,8 @@ enum Palette {
     static let captainField = SKColor(white: 0.75, alpha: 0.18)
     static let spawnSocket = SKColor(white: 0.45, alpha: 0.5)
     static let queryMarker = SKColor(white: 0.8, alpha: 0.7)
+    /// D-089 `?` marker. Neutral: the glyph, not the colour, carries the state.
+    static let unawareMarker = SKColor(white: 0.92, alpha: 0.95)
     static let playerProjectile = SKColor(white: 0.98, alpha: 1)
     static let playerProjectileTrail = SKColor(white: 0.85, alpha: 0.35)
     static let hostileProjectile = SKColor(red: 0.95, green: 0.45, blue: 0.30, alpha: 1)

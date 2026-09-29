@@ -11,6 +11,9 @@ final class GameSession {
     private var heatCaption = HeatCaptionProjector()
     /// D-083 heat caption, derived from the tick's events; nil when none shows.
     private(set) var reinforcementCopy: String?
+    /// D-089 "first unaware enemy on screen" copy, derived from the snapshot.
+    private var awarenessHint = AwarenessHintProjector()
+    private(set) var awarenessHintCopy: String?
     private var audioProjector = AudioProjector()
     /// Hurt, stagger, and defeat clips driven by authoritative events.
     private var reactions = (try? ReactionClipTracker.bundled()) ?? .empty
@@ -91,6 +94,7 @@ final class GameSession {
             heat: simulation.state.content.heat
         )
         applyAudio(result)
+        awarenessHintCopy = awarenessHint.project(PresentationSnapshot(simulation.state))
         persistTerminalReceiptIfNeeded()
     }
 
@@ -110,6 +114,8 @@ final class GameSession {
         audioProjector.reset()
         heatCaption.reset()
         reinforcementCopy = nil
+        awarenessHint.reset()
+        awarenessHintCopy = nil
         reactions.reset()
         audio = AudioProjection.silent
         pendingUpgradeChoice = nil
@@ -671,6 +677,7 @@ final class GameScene: SKScene {
         hud.dodgePressed = controller.dodgeTouch != nil
         hud.captions = session.audio.captions
         hud.reinforcementCopy = session.reinforcementCopy
+        hud.awarenessHintCopy = session.awarenessHintCopy
         hud.render(snap, cameraHUD: session.cameraHUDProjection, paused: runPaused)
     }
 }

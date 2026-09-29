@@ -1,8 +1,8 @@
 import SpriteKit
 import SurveillanceCore
 
-/// D-088: draws every `procedural-vfx-002` recipe, and owns hit-stop and
-/// screen shake.
+/// D-088: draws every `procedural-vfx` recipe (`-003` adds D-089's
+/// `enemyAlerted`), and owns hit-stop and screen shake.
 ///
 /// Before D-088 the core projected these recipes (`VFXProjector`) and nothing
 /// drew them. This is the device layer for that projection, the way
@@ -250,6 +250,9 @@ final class VFXRenderer {
             node = phaseBreak(p, at: source ?? bossPosition(snap), seconds: seconds)
         case "heatReinforcements":
             node = reinforcementChevrons(snap, seconds: seconds, reduced: p.reduced)
+        case "enemyAlerted":
+            let radius = p.sourceEntityId.flatMap { id in snap.enemies.first { $0.id == id }?.radius } ?? 18
+            node = alertPop(at: source ?? player, radius: radius, seconds: seconds, reduced: p.reduced)
         default:
             return
         }
@@ -755,6 +758,33 @@ final class VFXRenderer {
             screen.addChild(chevron)
         }
         return root
+    }
+}
+
+extension VFXRenderer {
+    // enemyAlerted: exclamationPopAboveActor / staticExclamationAboveActor
+    // (animation.md § 8a, D-089). A `!` where the `?` marker was; the marker
+    // itself goes because the snapshot no longer calls the enemy unaware.
+    func alertPop(at point: CGPoint, radius: Int, seconds: TimeInterval, reduced: Bool) -> SKNode {
+        let label = SKLabelNode(fontNamed: "Menlo-Bold")
+        label.text = "!"
+        label.fontSize = 20
+        label.fontColor = VFXPalette.warning
+        label.verticalAlignmentMode = .bottom
+        label.horizontalAlignmentMode = .center
+        label.position = CGPoint(x: point.x, y: point.y + WorldRenderer.unawareMarkerLift(radius: radius))
+        if reduced {
+            // Static: no scale, no motion; it simply leaves with its pool slot.
+            return label
+        }
+        label.setScale(0.4)
+        label.run(.sequence([
+            .scale(to: 1.25, duration: 0.08),
+            .scale(to: 1.0, duration: 0.06),
+            .wait(forDuration: max(0, seconds - 0.14 - 0.12)),
+            .fadeOut(withDuration: 0.12)
+        ]))
+        return label
     }
 }
 

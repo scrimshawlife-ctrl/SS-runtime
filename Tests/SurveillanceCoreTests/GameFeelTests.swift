@@ -2,17 +2,19 @@ import Foundation
 import Testing
 @testable import SurveillanceCore
 
-/// D-088 game feel: `procedural-vfx-002`'s four big moments, the reduced
+/// D-088 game feel: the four big moments (`procedural-vfx-002`, carried into
+/// `-003`), the reduced
 /// variants, the live effect pool, hit-stop, shake, the Blackout music drop,
 /// and the proof that none of it reaches the simulation.
 @Suite(.serialized)
 struct GameFeelTests {
     // MARK: - Contract
 
-    @Test func catalog002CarriesTheFourBigMoments() throws {
+    @Test func catalogCarriesTheFourBigMoments() throws {
         let catalog = try ProceduralVFXCatalog.bundled()
-        #expect(catalog.schemaVersion == "procedural-vfx-002")
-        #expect(catalog.recipes.count == 14)
+        #expect(catalog.schemaVersion == "procedural-vfx-003")
+        // Fourteen D-088 recipes plus D-089's `enemyAlerted`.
+        #expect(catalog.recipes.count == 15)
         let byId = catalog.recipesById
         let kill = try #require(byId["cameraDestroyed"])
         let blackout = try #require(byId["networkBlackout"])
@@ -50,7 +52,7 @@ struct GameFeelTests {
     }
 
     @Test func the001SchemaIsNoLongerAccepted() throws {
-        var root = try JSONSerialization.jsonObject(with: SpecBundle.contract("procedural-vfx-002")) as! [String: Any]
+        var root = try JSONSerialization.jsonObject(with: SpecBundle.contract("procedural-vfx-003")) as! [String: Any]
         root["schemaVersion"] = "procedural-vfx-001"
         let json = try JSONSerialization.data(withJSONObject: root)
         #expect(throws: ProceduralVFXError.schemaVersion) { try ProceduralVFXLoader.decode(json) }
@@ -464,7 +466,7 @@ struct GameFeelTests {
     }
 
     private func mutated(recipe id: String, _ mutate: (inout [String: Any]) -> Void) throws -> Data {
-        var root = try JSONSerialization.jsonObject(with: SpecBundle.contract("procedural-vfx-002")) as! [String: Any]
+        var root = try JSONSerialization.jsonObject(with: SpecBundle.contract("procedural-vfx-003")) as! [String: Any]
         var recipes = root["recipes"] as! [[String: Any]]
         let index = recipes.firstIndex { $0["id"] as? String == id }!
         var variant = recipes[index]["default"] as! [String: Any]

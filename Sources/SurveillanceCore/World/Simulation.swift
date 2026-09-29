@@ -145,6 +145,29 @@ public struct Simulation: Equatable, Sendable {
         state.player.movedUnitsLastTick = displacement
         state.tutorial.noteDisplacement(displacement)
 
+        // Phase 5 begins with awareness (D-089): the Detection State resolved
+        // after the previous tick, the previous tick's damage, sight, then a
+        // one-hop ally alert, in ascending entity ID.
+        let alerts = AwarenessSystem.resolve(
+            enemies: &state.enemies,
+            player: state.player.position,
+            detection: state.exposure.detectionState,
+            spec: state.content.awareness,
+            solids: state.liveSolids
+        )
+        for alert in alerts {
+            events.emit(
+                tick: tick,
+                phase: 5,
+                type: .enemyAlerted,
+                primary: alert.entityId,
+                payload: [
+                    "entityId": .string(alert.entityId.decimalString),
+                    "cause": .string(alert.cause.rawValue)
+                ]
+            )
+        }
+
         var fogPulses: [Int] = []
         var enemyPlayerDamage: [(EntityID, Int)] = []
         EnemySystem.step(
@@ -158,7 +181,8 @@ public struct Simulation: Equatable, Sendable {
             projectiles: &state.projectiles,
             mines: &state.mines,
             exposurePulses: &fogPulses,
-            playerDamage: &enemyPlayerDamage
+            playerDamage: &enemyPlayerDamage,
+            alertedThisTick: Set(alerts.map(\.entityId))
         )
         for (source, amount) in enemyPlayerDamage {
             applyPlayerDamage(source, amount: amount, tick: tick)
@@ -492,7 +516,15 @@ public struct Simulation: Equatable, Sendable {
             }
             if let eIndex = state.enemies.firstIndex(where: { $0.id == hit.target }) {
                 guard state.enemies[eIndex].alive else { continue }
-                let amount = min(state.projectiles[hit.index].damage, state.enemies[eIndex].integrity)
+                // D-089 ambush: the first damage to an unaware enemy, in this
+                // ordered collection, is multiplied; it is then `struck`, so
+                // later hits this tick are normal.
+                let dealt = AwarenessSystem.hitDamage(
+                    base: state.projectiles[hit.index].damage,
+                    awareness: &state.enemies[eIndex].awareness,
+                    multiplier: state.content.awareness.ambushDamageMultiplier
+                )
+                let amount = min(dealt.amount, state.enemies[eIndex].integrity)
                 state.enemies[eIndex].integrity -= amount
                 state.combat.damageDealt += amount
                 events.emit(
@@ -805,7 +837,8 @@ public struct Simulation: Equatable, Sendable {
 
     private mutating func resolvePlayerDeathAndContact(tick: UInt64) {
         var threats: [(dps: Int, id: EntityID)] = []
-        for enemy in state.enemies where enemy.alive {
+        // D-089: an unaware enemy deals no contact damage.
+        for enemy in state.enemies where enemy.alive && !enemy.isUnaware {
             let combined = Int64(PlayerBody.radiusUnits + enemy.radius) * Q8.scale
             if state.player.position.distanceSquared(to: enemy.position) <= combined * combined {
                 threats.append((enemy.contactDps, enemy.id))
@@ -876,7 +909,7 @@ public struct Simulation: Equatable, Sendable {
                 runtime.activated = true
                 if id == "M-C" { forceLockdown = true }
                 if let spec = state.content.encounters[id], let first = spec.waves.first {
-                    runtime.spawnQueue = waveQueue(first, encounter: id)
+                    (runtime.spawnQueue, runtime.queuedReinforcements) = waveQueue(first, encounter: id)
                     runtime.nextSpawnTick = tick + UInt64(first.delay)
                     events.emit(
                         tick: tick,
@@ -896,8 +929,11 @@ public struct Simulation: Equatable, Sendable {
                 if runtime.deferTicks >= SpawnFairness.timeoutTicks {
                     invalidate(.spawnFairnessTimeout)
                 } else {
+                    // Reinforcements are the queue's tail (D-083).
+                    let reinforcement = runtime.spawnQueue.count <= runtime.queuedReinforcements
                     let archetype = runtime.spawnQueue.removeFirst()
-                    if spawnEnemy(archetype, encounter: id, tick: tick) {
+                    if spawnEnemy(archetype, encounter: id, tick: tick, heatReinforcement: reinforcement) {
+                        if reinforcement { runtime.queuedReinforcements -= 1 }
                         runtime.spawned += 1
                         runtime.living += 1
                         runtime.deferTicks = 0
@@ -914,7 +950,7 @@ public struct Simulation: Equatable, Sendable {
                 if runtime.waveIndex + 1 < spec.waves.count {
                     runtime.waveIndex += 1
                     let wave = spec.waves[runtime.waveIndex]
-                    runtime.spawnQueue = waveQueue(wave, encounter: id)
+                    (runtime.spawnQueue, runtime.queuedReinforcements) = waveQueue(wave, encounter: id)
                     runtime.nextSpawnTick = tick + UInt64(wave.delay)
                     events.emit(
                         tick: tick,
@@ -947,10 +983,10 @@ public struct Simulation: Equatable, Sendable {
     /// resolution (phases 13–14), so `state.exposure` still holds that state.
     /// The appended members spawn at the wave's interval under the same
     /// validation, and the wave cannot complete until they are dead.
-    private func waveQueue(_ wave: WaveSpec, encounter: String) -> [ArchetypeID] {
+    private func waveQueue(_ wave: WaveSpec, encounter: String) -> (queue: [ArchetypeID], reinforcements: Int) {
         let heat = state.content.heat
         let added = heat.reinforcements(encounter: encounter, state: state.exposure.detectionState)
-        return flatten(wave.members) + repeatElement(heat.reinforcementArchetype, count: added)
+        return (flatten(wave.members) + repeatElement(heat.reinforcementArchetype, count: added), added)
     }
 
     private func flatten(_ members: [WaveMember]) -> [ArchetypeID] {
@@ -961,7 +997,12 @@ public struct Simulation: Equatable, Sendable {
         return result
     }
 
-    private mutating func spawnEnemy(_ archetype: ArchetypeID, encounter: String, tick: UInt64) -> Bool {
+    private mutating func spawnEnemy(
+        _ archetype: ArchetypeID,
+        encounter: String,
+        tick: UInt64,
+        heatReinforcement: Bool = false
+    ) -> Bool {
         guard let stats = state.content.standardEnemies[archetype] else { return false }
         guard let sockets = state.arena.enemySpawnSockets[encounter] else { return false }
         let closed = Set(state.gates.filter(\.closed).map(\.id))
@@ -1005,7 +1046,16 @@ public struct Simulation: Equatable, Sendable {
                 spawnTick: tick,
                 nextSpecialTick: nextSpecial,
                 lockPosition: nil,
-                encounterId: encounter
+                encounterId: encounter,
+                // D-089 spawning: the Detection State resolved after the
+                // previous tick (encounters run before this tick's Exposure
+                // resolution), the encounter, and whether it is heat.
+                awareness: state.content.awareness.spawnsAware(
+                    archetype: archetype,
+                    encounter: encounter,
+                    state: state.exposure.detectionState,
+                    heatReinforcement: heatReinforcement
+                ) ? .aware : .unaware
             )
         )
         return true
@@ -1436,6 +1486,7 @@ public struct Simulation: Equatable, Sendable {
         runtime.completed = false
         runtime.waveIndex = spec.waves.count - 1
         runtime.spawnQueue = []
+        runtime.queuedReinforcements = 0
         runtime.living = 0
         runtime.deferTicks = 0
         runtime.spawned = spec.totals
@@ -1589,11 +1640,26 @@ public struct Simulation: Equatable, Sendable {
     }
 
     mutating func testing_spawnInformant(at position: VecI, integrity: Int? = nil, speed: Int? = nil) {
-        let stats = state.content.standardEnemies[.autonomousInformant]!
+        testing_spawnStandard(.autonomousInformant, at: position, integrity: integrity, speed: speed)
+    }
+
+    /// A standard enemy at `position`, aware unless told otherwise, with its
+    /// content statistics. Returns its entity ID.
+    @discardableResult
+    mutating func testing_spawnStandard(
+        _ archetype: ArchetypeID,
+        at position: VecI,
+        integrity: Int? = nil,
+        speed: Int? = nil,
+        awareness: EnemyAwareness = .aware,
+        nextSpecialTick: UInt64 = 0
+    ) -> EntityID {
+        let stats = state.content.standardEnemies[archetype]!
+        let id = state.allocator.next()
         state.enemies.append(
             EnemyBody(
-                id: state.allocator.next(),
-                archetype: .autonomousInformant,
+                id: id,
+                archetype: archetype,
                 position: position.asQ8,
                 velocity: .zero,
                 integrity: integrity ?? stats.hp,
@@ -1603,11 +1669,13 @@ public struct Simulation: Equatable, Sendable {
                 state: .pursue,
                 stateTicks: 0,
                 spawnTick: state.tick,
-                nextSpecialTick: 0,
+                nextSpecialTick: nextSpecialTick,
                 lockPosition: nil,
-                encounterId: "test"
+                encounterId: "test",
+                awareness: awareness
             )
         )
+        return id
     }
 
     mutating func testing_setPlayerPosition(_ position: VecI) {
@@ -1622,6 +1690,7 @@ public struct Simulation: Equatable, Sendable {
         runtime.deferTicks = 0
         runtime.living = 0
         runtime.spawned = 0
+        runtime.queuedReinforcements = 0
         if let queue = spawnQueue {
             runtime.spawnQueue = queue
             runtime.nextSpawnTick = state.tick

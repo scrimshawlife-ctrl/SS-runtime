@@ -1,7 +1,7 @@
 {
   "schemaVersion":"runtime-kernel-001",
-  "rulesetVersion":"ss-rules-002",
-  "contentVersion":"civic-seam-content-002",
+  "rulesetVersion":"ss-rules-003",
+  "contentVersion":"civic-seam-content-003",
   "arenaVersion":"civic-seam-arena-002",
   "seed":1,
   "commands":[

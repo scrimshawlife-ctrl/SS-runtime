@@ -15,6 +15,21 @@ public enum EnemyAIState: Equatable, Sendable {
     case dash
 }
 
+/// D-089 awareness of one enemy. Authoritative and digested.
+///
+/// A standard enemy can spawn `unaware`. The first damage it takes is an
+/// ambush (×`ambushDamageMultiplier`) and leaves it `struck`: the ambush is
+/// spent, so later hits are normal, but it is not alerted until the start of
+/// the next enemy phase, where damage is one of the alert causes. Until it is
+/// `aware` it holds position, never attacks, and deals no contact damage. An
+/// alerted enemy never returns to unaware. The elite and the boss are always
+/// `aware`.
+public enum EnemyAwareness: String, Equatable, Sendable {
+    case unaware
+    case struck
+    case aware
+}
+
 public struct EnemyBody: Equatable, Sendable {
     public var id: EntityID
     public var archetype: ArchetypeID
@@ -31,7 +46,11 @@ public struct EnemyBody: Equatable, Sendable {
     public var lockPosition: VecQ8?
     public var encounterId: String
     public var queryMarkers: [VecQ8] = []
+    /// D-089. Defaults to aware: only a standard-enemy spawn can be unaware.
+    public var awareness: EnemyAwareness = .aware
     public var alive: Bool { integrity > 0 }
+    /// Not yet alerted: holds, never attacks, no contact damage.
+    public var isUnaware: Bool { awareness != .aware }
 }
 
 public enum DaemonQuery {
@@ -78,6 +97,10 @@ public struct EncounterRuntime: Equatable, Sendable {
     public var living: Int
     public var spawned: Int
     public var cleanupTick: UInt64?
+    /// D-083 heat reinforcements still queued. They are always the last
+    /// entries of `spawnQueue`, so the head is a reinforcement exactly when
+    /// the queue is no longer than this. D-089 spawns them aware.
+    public var queuedReinforcements: Int = 0
 }
 
 public enum EncounterDirector {
