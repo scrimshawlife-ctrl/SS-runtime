@@ -145,28 +145,10 @@ public struct Simulation: Equatable, Sendable {
         state.player.movedUnitsLastTick = displacement
         state.tutorial.noteDisplacement(displacement)
 
-        // Phase 5 begins with awareness (D-089): the Detection State resolved
-        // after the previous tick, the previous tick's damage, sight, then a
-        // one-hop ally alert, in ascending entity ID.
-        let alerts = AwarenessSystem.resolve(
-            enemies: &state.enemies,
-            player: state.player.position,
-            detection: state.exposure.detectionState,
-            spec: state.content.awareness,
-            solids: state.liveSolids
-        )
-        for alert in alerts {
-            events.emit(
-                tick: tick,
-                phase: 5,
-                type: .enemyAlerted,
-                primary: alert.entityId,
-                payload: [
-                    "entityId": .string(alert.entityId.decimalString),
-                    "cause": .string(alert.cause.rawValue)
-                ]
-            )
-        }
+        // Phase 5 begins with awareness (D-089). A separate method, not inline:
+        // `step` is one long function, and every inline temporary costs its
+        // debug stack frame (see `resolveAwareness`).
+        let alertedThisTick = resolveAwareness(tick: tick)
 
         var fogPulses: [Int] = []
         var enemyPlayerDamage: [(EntityID, Int)] = []
@@ -182,7 +164,7 @@ public struct Simulation: Equatable, Sendable {
             mines: &state.mines,
             exposurePulses: &fogPulses,
             playerDamage: &enemyPlayerDamage,
-            alertedThisTick: Set(alerts.map(\.entityId))
+            alertedThisTick: alertedThisTick
         )
         for (source, amount) in enemyPlayerDamage {
             applyPlayerDamage(source, amount: amount, tick: tick)
@@ -983,6 +965,40 @@ public struct Simulation: Equatable, Sendable {
     /// resolution (phases 13–14), so `state.exposure` still holds that state.
     /// The appended members spawn at the wave's interval under the same
     /// validation, and the wave cannot complete until they are dead.
+    /// Phase 5's opening (D-089): the Detection State resolved after the
+    /// previous tick, the previous tick's damage, sight, then a one-hop ally
+    /// alert, in ascending entity ID. Publishes `enemyAlerted` and returns the
+    /// alerted IDs.
+    ///
+    /// Kept out of `step` on purpose. Debug builds give every temporary in a
+    /// function its own stack slot, and older toolchains reuse almost none of
+    /// them: CI's Swift 6.1 needed over 512 KB for a single damage tick once
+    /// this block was inline, against about 96 KB with Swift 6.3, and crashed
+    /// Swift Testing's 512 KB worker threads with SIGBUS (SS-runtime #104).
+    @inline(never)
+    private mutating func resolveAwareness(tick: UInt64) -> Set<EntityID> {
+        let alerts = AwarenessSystem.resolve(
+            enemies: &state.enemies,
+            player: state.player.position,
+            detection: state.exposure.detectionState,
+            spec: state.content.awareness,
+            solids: state.liveSolids
+        )
+        for alert in alerts {
+            events.emit(
+                tick: tick,
+                phase: 5,
+                type: .enemyAlerted,
+                primary: alert.entityId,
+                payload: [
+                    "entityId": .string(alert.entityId.decimalString),
+                    "cause": .string(alert.cause.rawValue)
+                ]
+            )
+        }
+        return Set(alerts.map(\.entityId))
+    }
+
     private func waveQueue(_ wave: WaveSpec, encounter: String) -> (queue: [ArchetypeID], reinforcements: Int) {
         let heat = state.content.heat
         let added = heat.reinforcements(encounter: encounter, state: state.exposure.detectionState)
