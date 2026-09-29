@@ -11,7 +11,7 @@ struct ArenaReachabilityTests {
         #expect(ArenaReachability.spawnAlleyProtected(arena))
         #expect(ArenaReachability.consecutiveZonesConnected(arena))
         #expect(ArenaReachability.diagonalSpine(arena))
-        // Pinned civic-seam-arena-002.json; do not rewrite coordinates (SS-specs authority).
+        // Pinned civic-seam-arena-003.json; do not rewrite coordinates (SS-specs authority).
         #expect(
             ArenaReachability.authoredSolidOverlaps(arena) == [
                 "gate gate-mb-forward overlaps mb-05",
@@ -54,13 +54,13 @@ struct ArenaReachabilityTests {
     @Test func arenaLayoutDocumentsBossGateSidestep() throws {
         let arena = try ArenaManifest.bundled()
         #expect(ArenaReachability.extractionReachable(arena, bossGateClosed: false))
-        // Pinned civic-seam-arena-002.json leaves a 64-unit gap beside gate-boss-extraction
+        // Pinned civic-seam-arena-003.json leaves a 64-unit gap beside gate-boss-extraction
         // (2048,384) half (96,16) vs phoenix solids. SS-specs is authority; do not widen the gate.
         #expect(ArenaReachability.extractionReachable(arena, bossGateClosed: true))
     }
 
     @Test func arenaAR010ManifestJSONRoundTrip() throws {
-        let data = SpecBundle.contract("civic-seam-arena-002")
+        let data = SpecBundle.contract("civic-seam-arena-003")
         let object = try JSONSerialization.jsonObject(with: data)
         let first = try #require(CanonicalJSON.parse(object))
         let encoded = first.serialize()

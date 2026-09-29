@@ -161,6 +161,9 @@ public struct PresentationSnapshot: Equatable, Sendable {
     public var mines: [MineSprite]
     public var boss: BossHUD?
     public var telegraphs: [TelegraphShape]
+    /// D-091: the vision cone of every unaware Transit Patrol member, clipped
+    /// at solids. Empty once each is alerted or dead.
+    public var patrolCones: [PatrolCone] = []
 
     /// Which Player clip the authoritative state calls for. Ordered by
     /// precedence: a terminal outcome outranks Extraction, which outranks
@@ -364,5 +367,6 @@ public struct PresentationSnapshot: Equatable, Sendable {
         playerDirection = ClipFrameLibrary.direction(forFacing: state.player.facing)
         playerClipId = Self.playerClip(state)
         telegraphs = TelegraphProjection.project(state)
+        patrolCones = PatrolConeProjection.project(state)
     }
 }

@@ -99,7 +99,8 @@ struct CompleteRunVectorTests {
         sim.testing_injectHostileBolt()
         let hitTick = sim.state.tick + 1
         _ = sim.step(command: .neutral(tick: hitTick))
-        #expect(sim.state.player.integrity == before - 10)
+        // D-090: 50% of the bolt's 10.
+        #expect(sim.state.player.integrity == before - 5)
     }
 
     @Test func completeRunT706RicochetCannotDoubleHitSameTarget() {

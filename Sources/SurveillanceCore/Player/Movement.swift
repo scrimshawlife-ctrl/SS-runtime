@@ -21,6 +21,10 @@ public struct PlayerBody: Equatable, Sendable {
     public var rejectedDodges: Int
     public var damageTaken: Int
     public var contactAccumulator: Int
+    /// D-090 (`player-controller.md` § Damage response): the carried part of
+    /// every scaled Integrity loss, in hundredths of a point, always 0...99.
+    /// Authoritative and in the state digest.
+    public var damageRemainderHundredths: Int = 0
     /// World units travelled on the last simulated tick. Presentation-supporting
     /// bookkeeping, like `damageTaken`; it is not part of the state digest and
     /// no rule reads it.

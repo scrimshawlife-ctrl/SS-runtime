@@ -30,6 +30,30 @@ public enum EnemyAwareness: String, Equatable, Sendable {
     case aware
 }
 
+/// D-091 patrol state of one Transit Patrol member. Authoritative and
+/// digested. It drives movement and the cone only while the member is
+/// unaware; once alerted the member runs its archetype's state machine and
+/// never resumes patrol.
+public struct PatrolState: Equatable, Sendable {
+    /// Index of the route in `civic-seam-arena-003` `patrols`.
+    public var route: Int
+    /// The waypoint the member is heading for (or holding at).
+    public var target: Int
+    /// Hold ticks left at the waypoint just reached; 0 while travelling.
+    public var dwellRemaining: Int
+    /// The last non-zero travel direction, in Q8 units per tick; initially
+    /// the direction from the first waypoint to the second. The cone points
+    /// along it.
+    public var facing: VecQ8
+
+    public init(route: Int, target: Int, dwellRemaining: Int, facing: VecQ8) {
+        self.route = route
+        self.target = target
+        self.dwellRemaining = dwellRemaining
+        self.facing = facing
+    }
+}
+
 public struct EnemyBody: Equatable, Sendable {
     public var id: EntityID
     public var archetype: ArchetypeID
@@ -48,7 +72,12 @@ public struct EnemyBody: Equatable, Sendable {
     public var queryMarkers: [VecQ8] = []
     /// D-089. Defaults to aware: only a standard-enemy spawn can be unaware.
     public var awareness: EnemyAwareness = .aware
+    /// D-091: set only for a Transit Patrol member.
+    public var patrol: PatrolState? = nil
     public var alive: Bool { integrity > 0 }
+    /// A Transit Patrol member (D-091): outside every encounter, heat, and
+    /// completion; counted in the receipt like any standard enemy.
+    public var isPatrolMember: Bool { patrol != nil }
     /// Not yet alerted: holds, never attacks, no contact damage.
     public var isUnaware: Bool { awareness != .aware }
 }

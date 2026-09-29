@@ -29,7 +29,7 @@ public enum ClipAlignment {
     /// that actor has a dedicated clip in the catalog (T601–T603).
     public static let interruptTokens: Set<String> = ["hurt", "defeat", "dodge"]
 
-    /// Four authored facings. Angles are clockwise from +X (`civic-seam-arena-002`).
+    /// Four authored facings. Angles are clockwise from +X (`civic-seam-arena-003`).
     public static func cardinalDirection(headingMilli: Int) -> String {
         let sector = ((MilliDeg.normalize(headingMilli) + 45_000) / 90_000) % 4
         switch sector {

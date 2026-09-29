@@ -265,7 +265,7 @@ struct EnemyBehaviourTests {
     /// EN-010: a standard enemy death produces no reward entity and no reward
     /// event — no pickup, no drop, no currency.
     @Test func enemyEN010StandardDeathDropsNothing() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         let spot = VecI(
             x: sim.state.player.position.x.unitsTruncated + 120,
             y: sim.state.player.position.y.unitsTruncated

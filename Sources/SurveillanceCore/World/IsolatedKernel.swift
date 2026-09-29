@@ -326,7 +326,8 @@ public enum IsolatedKernel {
             archetype: .algorithmicModerate,
             position: VecI(x: 2048, y: 768).asQ8,
             velocity: .zero,
-            integrity: 390,
+            // Temporary Safeguard under the content bands (400–799 of 1600).
+            integrity: 780,
             radius: 30,
             speedUnitsPerSecond: 120,
             contactDps: 16,
@@ -337,7 +338,7 @@ public enum IsolatedKernel {
             lockPosition: nil,
             encounterId: "boss"
         )
-        var runtime = BossRuntime()
+        var runtime = BossRuntime(bands: CombatContent.bundled().bossPhaseBands)
         runtime.telegraphRemaining = 20
         runtime.currentAttack = .safetyRationale
         var projectiles = [

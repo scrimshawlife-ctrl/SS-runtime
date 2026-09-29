@@ -137,7 +137,7 @@ struct TargetingPriorityTests {
     /// Camera fires at it.
     @Test(arguments: [false, true])
     func cameraCD015CD016ThroughTheSimulation(movingToward: Bool) throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         func start(_ camera: SelectedCamera) -> VecI {
             let unit = Cordic.headingUnit(milliDegrees: camera.headingMilliDegrees)
             return VecI(

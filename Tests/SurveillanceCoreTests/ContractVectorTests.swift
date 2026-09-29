@@ -143,7 +143,8 @@ struct ContractVectorTests {
         let stillImmune = sim.state.player.isCameraInvisible(tick: 2)
         #expect(immuneThrough == 30)
         #expect(stillImmune)
-        #expect(after == before - 10)
+        // D-090: 50% of the bolt's 10.
+        #expect(after == before - 5)
     }
 
     @Test func upgradeUP010RestartClearsSelectedUpgrade() throws {
@@ -187,7 +188,8 @@ struct ContractVectorTests {
         var sim = try Simulation.make(seed: 1)
         sim.testing_installBoss(integrity: 10)
         let bossPosition = sim.state.enemies.first(where: { $0.archetype == .algorithmicModerate })!.position
-        sim.testing_setPlayerIntegrity(10)
+        // D-090: a 10-damage bolt removes 5 Integrity, so 5 is lethal.
+        sim.testing_setPlayerIntegrity(5)
         sim.testing_injectHostileBolt(damage: 10)
         sim.testing_injectPulseHitting(position: bossPosition)
         let result = sim.step(command: .neutral(tick: 1))

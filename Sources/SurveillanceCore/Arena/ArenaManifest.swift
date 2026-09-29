@@ -109,6 +109,70 @@ public struct Decoration: Equatable, Sendable, Codable {
     }
 }
 
+/// One Transit Patrol member (D-091, `civic-seam-arena-003` `patrols`): a
+/// standard archetype and the closed loop of waypoints it walks while
+/// unaware. Decoded strictly, like the schema: every key required, no other
+/// key, integer coordinates.
+public struct PatrolRoute: Equatable, Sendable, Codable {
+    public var id: String
+    public var zoneId: String
+    public var archetype: ArchetypeID
+    public var waypoints: [VecI]
+
+    public init(id: String, zoneId: String, archetype: ArchetypeID, waypoints: [VecI]) {
+        self.id = id
+        self.zoneId = zoneId
+        self.archetype = archetype
+        self.waypoints = waypoints
+    }
+
+    private struct Key: CodingKey {
+        var stringValue: String
+        var intValue: Int? { nil }
+        init(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { nil }
+    }
+
+    private static let keys: Set<String> = ["id", "zoneId", "archetype", "waypoints"]
+    private static let pointKeys: Set<String> = ["x", "y"]
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: Key.self)
+        guard Set(container.allKeys.map(\.stringValue)) == Self.keys else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "patrol keys"))
+        }
+        id = try container.decode(String.self, forKey: Key(stringValue: "id"))
+        zoneId = try container.decode(String.self, forKey: Key(stringValue: "zoneId"))
+        archetype = try container.decode(ArchetypeID.self, forKey: Key(stringValue: "archetype"))
+        var list = try container.nestedUnkeyedContainer(forKey: Key(stringValue: "waypoints"))
+        var points: [VecI] = []
+        while !list.isAtEnd {
+            let point = try list.nestedContainer(keyedBy: Key.self)
+            guard Set(point.allKeys.map(\.stringValue)) == Self.pointKeys else {
+                throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "waypoint keys"))
+            }
+            points.append(VecI(
+                x: try point.decode(Int.self, forKey: Key(stringValue: "x")),
+                y: try point.decode(Int.self, forKey: Key(stringValue: "y"))
+            ))
+        }
+        waypoints = points
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: Key.self)
+        try container.encode(id, forKey: Key(stringValue: "id"))
+        try container.encode(zoneId, forKey: Key(stringValue: "zoneId"))
+        try container.encode(archetype, forKey: Key(stringValue: "archetype"))
+        var list = container.nestedUnkeyedContainer(forKey: Key(stringValue: "waypoints"))
+        for point in waypoints {
+            var entry = list.nestedContainer(keyedBy: Key.self)
+            try entry.encode(point.x, forKey: Key(stringValue: "x"))
+            try entry.encode(point.y, forKey: Key(stringValue: "y"))
+        }
+    }
+}
+
 public struct ArenaManifest: Equatable, Sendable, Codable {
     public var schemaVersion: String
     public var arenaVersion: String
@@ -138,6 +202,8 @@ public struct ArenaManifest: Equatable, Sendable, Codable {
     public var cameraSockets: [CameraSocket]
     public var extraction: ExtractionRegion
     public var viewport: ViewportSpec
+    /// D-091 Transit Patrol members. Required by `civic-seam-arena-003`.
+    public var patrols: [PatrolRoute]
 
     public struct VecIWidthHeight: Equatable, Sendable, Codable {
         public var width: Int
@@ -159,7 +225,7 @@ public struct ArenaManifest: Equatable, Sendable, Codable {
     }
 
     public static func bundled() throws -> ArenaManifest {
-        let data = BundledResource.data(name: "civic-seam-arena-002", subdirectory: "contracts")
+        let data = BundledResource.data(name: "civic-seam-arena-003", subdirectory: "contracts")
         return try ArenaLoader.decodeAndValidate(data)
     }
 
@@ -175,6 +241,10 @@ public enum ArenaValidationError: Equatable, Sendable {
     case bounds
     case duplicateID(String)
     case cameraPlacement
+    /// A `patrols` member is malformed or unfair (D-091): not a standard
+    /// archetype, fewer than two waypoints, an unknown zone, or a waypoint
+    /// outside its zone, inside a solid or gate, or inside an encounter trigger.
+    case patrol(String)
 }
 
 public enum ArenaLoader {
@@ -217,6 +287,8 @@ public enum ArenaLoader {
         for solid in manifest.permanentSolids { try unique(solid.id) }
         for gate in manifest.gates { try unique(gate.id) }
         for socket in manifest.cameraSockets { try unique(socket.socketId) }
+        for route in manifest.patrols { try unique(route.id) }
+        try validatePatrols(manifest)
 
         let enabled = manifest.cameraSockets.filter(\.enabled)
         guard enabled.count == 18 else { throw ArenaValidationError.counts }
@@ -241,6 +313,32 @@ public enum ArenaLoader {
         // Existence only. Full enumeration and fairness BFS stay in content CI (CP-010).
         guard CameraPlacement.hasCompleteCompatibleSet(manifest.cameraSockets) else {
             throw ArenaValidationError.cameraPlacement
+        }
+    }
+}
+
+extension ArenaLoader {
+    /// The data-only fairness rules of `enemies-and-encounters.md` § Transit
+    /// Patrol that need no simulation: each waypoint lies inside its zone,
+    /// outside every permanent solid and gate, and outside every encounter
+    /// trigger. The cone and route rules (EN-030) are proven by
+    /// `PatrolFairness` in the tests.
+    static func validatePatrols(_ manifest: ArenaManifest) throws {
+        let standard: Set<ArchetypeID> = [
+            .fogAnalyticsCloud, .cableCarCorrelator, .sutroSignalWitch, .autonomousInformant, .victorianVendor
+        ]
+        for route in manifest.patrols {
+            guard standard.contains(route.archetype) else { throw ArenaValidationError.patrol(route.id) }
+            guard route.waypoints.count >= 2 else { throw ArenaValidationError.patrol(route.id) }
+            guard let zone = manifest.zones.first(where: { $0.id == route.zoneId }) else {
+                throw ArenaValidationError.patrol(route.id)
+            }
+            for point in route.waypoints {
+                let blocked = manifest.permanentSolids.contains { $0.aabb.contains(point) }
+                    || manifest.gates.contains { $0.aabb.contains(point) }
+                    || manifest.encounterTriggers.contains { $0.aabb.contains(point) }
+                guard zone.aabb.contains(point), !blocked else { throw ArenaValidationError.patrol(route.id) }
+            }
         }
     }
 }

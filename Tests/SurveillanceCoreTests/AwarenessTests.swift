@@ -2,21 +2,25 @@ import Foundation
 import Testing
 @testable import SurveillanceCore
 
-/// D-089 awareness and ambush: `enemies-and-encounters.md` § Awareness,
-/// vectors EN-016 to EN-023; `combat.md` CB-011 and CB-012; the
-/// `combat-content-003` `awareness` block; and `simulation-order.md` phase 5.
+/// D-089 awareness and ambush, with the D-090 values and drift:
+/// `enemies-and-encounters.md` § Awareness, vectors EN-016 to EN-023 and
+/// EN-031; `combat.md` CB-011 and CB-012; the `combat-content-004`
+/// `awareness` block; and `simulation-order.md` phase 5. These vectors run
+/// without the Transit Patrol, which has its own (`TransitPatrolTests`).
 @Suite(.serialized)
 struct AwarenessTests {
     /// Far from the Player spawn (160, 192), clear of every solid, and more
-    /// than the 160-unit sight range away.
+    /// than the 320-unit sight range away.
     static let far = VecI(x: 700, y: 300)
 
     // MARK: - Spawning
 
-    /// EN-016: an M-A enemy that spawns while `hidden` is unaware, holds its
-    /// spawn position with zero velocity, and never attacks.
-    @Test func encounterEN016HiddenSpawnIsUnawareAndHolds() throws {
-        var sim = try Simulation.make(seed: 1)
+    /// EN-016: an M-A enemy that spawns while `hidden` is unaware, spawns
+    /// with zero velocity, and never attacks. Since D-090 it does not hold
+    /// its socket: it drifts toward the trigger centre (EN-031), which this
+    /// vector allows for, and stops within 48 units of it.
+    @Test func encounterEN016HiddenSpawnIsUnawareAndNeverAttacks() throws {
+        var sim = try Simulation.withoutPatrol(seed: 1)
         enterTrigger("M-A", sim: &sim)
         // Step back out of sight so nothing alerts it; keep the weapon quiet.
         sim.testing_setPlayerPosition(VecI(x: 160, y: 192))
@@ -32,9 +36,11 @@ struct AwarenessTests {
             alerts += result.events.filter { $0.type == .enemyAlerted }
         }
         let held = try #require(sim.state.enemies.first { $0.id == first.id })
+        let centre = sim.state.arena.encounterTriggers.first { $0.encounterId == "M-A" }!.center.asQ8
+        let stop = Int64(sim.state.content.awareness.unawareDriftStopUnits) * Q8.scale
         #expect(held.awareness == .unaware)
-        #expect(held.position == first.position)
-        #expect(held.velocity == .zero)
+        #expect(held.position.distanceSquared(to: centre) <= stop * stop, "drifted in and stopped (EN-031)")
+        #expect(held.velocity == .zero, "stopped")
         #expect(held.state == .pursue, "no telegraph, charge, or attack state")
         #expect(alerts.isEmpty)
         #expect(sim.state.player.integrity == PlayerBody.maxIntegrity)
@@ -46,7 +52,7 @@ struct AwarenessTests {
     /// EN-017: an M-A enemy that spawns while `tracked` is aware at once, and
     /// no alert is ever published for it.
     @Test func encounterEN017TrackedSpawnIsAware() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         sim.testing_setExposure(500)
         enterTrigger("M-A", sim: &sim)
         sim.testing_setPlayerPosition(VecI(x: 160, y: 192))
@@ -65,7 +71,7 @@ struct AwarenessTests {
 
     /// EN-018: every M-C enemy spawns aware.
     @Test func encounterEN018MobCSpawnsAware() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         enterTrigger("M-C", sim: &sim)
         var spawned: [EnemyBody] = []
         for _ in 0..<400 where spawned.count < 3 {
@@ -81,7 +87,7 @@ struct AwarenessTests {
     /// since dropped back to `hidden`, while the wave's authored members,
     /// spawned in the same state, are unaware.
     @Test func encounterEN018HeatReinforcementSpawnsAwareWhileAuthoredMembersDoNot() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         sim.testing_setExposure(500)
         enterTrigger("M-A", sim: &sim)
         let runtime = try #require(sim.state.encounters["M-A"])
@@ -121,7 +127,7 @@ struct AwarenessTests {
 
     /// EN-023: the elite and the boss are never unaware.
     @Test func encounterEN023EliteAndBossAreNeverUnaware() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         sim.testing_completeEncounter("M-A")
         sim.testing_completeEncounter("M-B")
         sim.testing_completeEncounter("M-C")
@@ -132,7 +138,7 @@ struct AwarenessTests {
         #expect(elite.awareness == .aware)
         #expect(sim.state.exposure.detectionState == .hidden, "precondition: spawned while hidden")
 
-        var bossSim = try Simulation.make(seed: 1)
+        var bossSim = try Simulation.withoutPatrol(seed: 1)
         bossSim.testing_completeMobAndEliteGraph()
         let bossTrigger = bossSim.state.arena.encounterTriggers.first { $0.id == "trigger-boss" }!
         bossSim.testing_setPlayerPosition(bossTrigger.center)
@@ -144,13 +150,13 @@ struct AwarenessTests {
 
     // MARK: - Becoming alerted
 
-    /// EN-019: within 160 units with a clear line, the enemy is alerted by
+    /// EN-019: within 320 units with a clear line, the enemy is alerted by
     /// sight, and it holds this tick and acts from the next.
     @Test func encounterEN019SightAlertsAndActsNextTick() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         let player = VecI(x: 160, y: 192)
         sim.testing_setPlayerPosition(player)
-        let spot = VecI(x: player.x + 150, y: player.y)
+        let spot = VecI(x: player.x + 300, y: player.y)
         let id = sim.testing_spawnStandard(.autonomousInformant, at: spot, awareness: .unaware)
 
         let result = sim.step(command: .neutral(tick: 1))
@@ -171,10 +177,10 @@ struct AwarenessTests {
         #expect(acting.position.x < spot.asQ8.x, "it pursues the Player")
     }
 
-    /// Sight is inclusive at 160 units and does not reach 161.
+    /// Sight is inclusive at 320 units and does not reach 321 (D-090).
     @Test func sightRangeIsInclusive() throws {
-        for (offset, expected) in [(160, true), (161, false)] {
-            var sim = try Simulation.make(seed: 1)
+        for (offset, expected) in [(320, true), (321, false)] {
+            var sim = try Simulation.withoutPatrol(seed: 1)
             let player = VecI(x: 160, y: 192)
             sim.testing_setPlayerPosition(player)
             let id = sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: player.x + offset, y: player.y), awareness: .unaware)
@@ -186,7 +192,7 @@ struct AwarenessTests {
     /// EN-020: 150 units away with the transit kiosk between them, the enemy
     /// stays unaware.
     @Test func encounterEN020SolidBlocksSight() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         // solid-03-transit-kiosk spans x 512...640 at y 704.
         let player = VecI(x: 492, y: 704)
         sim.testing_setPlayerPosition(player)
@@ -203,7 +209,7 @@ struct AwarenessTests {
     /// enemy is alerted by surveillance at the next enemy phase, in ascending
     /// entity ID.
     @Test func encounterEN021TrackedAlertsEveryUnawareEnemy() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         sim.testing_setExposure(449)
         parkInCameraField(&sim)
         let ids = [
@@ -226,7 +232,7 @@ struct AwarenessTests {
     /// 100 units from it is alerted as an ally; a third, 200 units from the
     /// hit one, stays unaware.
     @Test func encounterEN022DamageAlertsAnAllyOneHop() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         let hit = sim.testing_spawnStandard(.cableCarCorrelator, at: Self.far, awareness: .unaware)
         let near = sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: Self.far.x, y: Self.far.y + 100), awareness: .unaware)
         let distant = sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: Self.far.x, y: Self.far.y + 200), awareness: .unaware)
@@ -244,14 +250,15 @@ struct AwarenessTests {
 
     /// An ally alert never propagates: the third enemy is 100 units from the
     /// ally-alerted one, but 200 from the enemy that saw the Player, and it
-    /// stays unaware on this tick and every later one.
+    /// stays unaware on this tick and every later one. Both are beyond the
+    /// 320-unit sight range.
     @Test func allyAlertsNeverChain() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         let player = VecI(x: 160, y: 192)
         sim.testing_setPlayerPosition(player)
-        let seer = sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: 300, y: 192), awareness: .unaware)
-        let ally = sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: 400, y: 192), awareness: .unaware)
-        let third = sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: 500, y: 192), awareness: .unaware)
+        let seer = sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: 460, y: 192), awareness: .unaware)
+        let ally = sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: 560, y: 192), awareness: .unaware)
+        let third = sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: 660, y: 192), awareness: .unaware)
         sim.testing_fillCivicPool(count: Targeting.activeCeiling)
         let result = sim.step(command: .neutral(tick: 1))
         let alerts = result.events.filter { $0.type == .enemyAlerted }
@@ -264,7 +271,7 @@ struct AwarenessTests {
     /// Surveillance outranks damage and sight: a struck enemy with the Player
     /// in sight, alerted while `tracked`, publishes cause `surveillance`.
     @Test func surveillanceTakesPrecedenceOverDamageAndSight() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         let player = VecI(x: 160, y: 192)
         sim.testing_setPlayerPosition(player)
         let struck = sim.testing_spawnStandard(.cableCarCorrelator, at: VecI(x: 260, y: 192), awareness: .struck)
@@ -278,7 +285,7 @@ struct AwarenessTests {
 
     /// Damage outranks sight.
     @Test func damageTakesPrecedenceOverSight() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         sim.testing_setPlayerPosition(VecI(x: 160, y: 192))
         let id = sim.testing_spawnStandard(.cableCarCorrelator, at: VecI(x: 260, y: 192), awareness: .struck)
         let result = sim.step(command: .neutral(tick: 1))
@@ -295,7 +302,7 @@ struct AwarenessTests {
         var content = CombatContent.bundled()
         content.awareness.sightRangeUnits = 0
         for (awareness, damaged) in [(EnemyAwareness.unaware, false), (.aware, true)] {
-            var sim = try Simulation(seed: 1, arena: ArenaManifest.bundled(), content: content)
+            var sim = try Simulation.withoutPatrol(seed: 1, content: content)
             let player = VecI(x: 160, y: 192)
             sim.testing_setPlayerPosition(player)
             sim.testing_fillCivicPool(count: Targeting.activeCeiling)
@@ -309,38 +316,40 @@ struct AwarenessTests {
 
     // MARK: - Ambush
 
-    /// CB-011: the first hit on an unaware 20-Integrity enemy deals 20
-    /// (10 x 2); it dies.
-    @Test func combatCB011AmbushKillsATwentyIntegrityEnemy() throws {
-        var sim = try Simulation.make(seed: 1)
+    /// CB-011: the first hit on an unaware 30-Integrity enemy deals 30
+    /// (10 x 3, D-090); it dies.
+    @Test func combatCB011AmbushKillsAThirtyIntegrityEnemy() throws {
+        var sim = try Simulation.withoutPatrol(seed: 1)
         let id = sim.testing_spawnStandard(.fogAnalyticsCloud, at: Self.far, awareness: .unaware)
         sim.testing_injectPulseHitting(position: Self.far.asQ8)
         let result = sim.step(command: .neutral(tick: 1))
         let damage = result.events.filter { $0.type == .entityDamaged && $0.primaryEntityId == id }
-        #expect(damage.map { $0.payload["amount"] } == [.integer(20)])
+        #expect(sim.state.content.standardEnemies[.fogAnalyticsCloud]?.hp == 30)
+        #expect(damage.map { $0.payload["amount"] } == [.integer(30)])
         #expect(result.events.contains { $0.type == .entityDied && $0.primaryEntityId == id })
         #expect(!(sim.state.enemies.first { $0.id == id }?.alive ?? true))
     }
 
-    /// CB-012: two hits in one tick on an unaware 40-Integrity enemy: the
-    /// first deals 20 (ambush), the second 10.
+    /// CB-012: two hits in one tick on an unaware 60-Integrity enemy: the
+    /// first deals 30 (ambush, D-090), the second 10.
     @Test func combatCB012OnlyTheFirstHitIsAnAmbush() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         let id = sim.testing_spawnStandard(.cableCarCorrelator, at: Self.far, awareness: .unaware)
         sim.testing_injectPulseHitting(position: Self.far.asQ8)
         sim.testing_injectPulseHitting(position: Self.far.asQ8)
         let result = sim.step(command: .neutral(tick: 1))
         let damage = result.events.filter { $0.type == .entityDamaged && $0.primaryEntityId == id }
-        #expect(damage.map { $0.payload["amount"] } == [.integer(20), .integer(10)])
+        #expect(sim.state.content.standardEnemies[.cableCarCorrelator]?.hp == 60)
+        #expect(damage.map { $0.payload["amount"] } == [.integer(30), .integer(10)])
         let enemy = try #require(sim.state.enemies.first { $0.id == id })
-        #expect(enemy.integrity == 10)
+        #expect(enemy.integrity == 20)
         #expect(enemy.awareness == .struck)
     }
 
     /// A hit on an aware enemy, or on a struck one in a later tick, is normal.
     @Test func awareAndStruckEnemiesTakeNormalDamage() throws {
         for awareness in [EnemyAwareness.aware, .struck] {
-            var sim = try Simulation.make(seed: 1)
+            var sim = try Simulation.withoutPatrol(seed: 1)
             let id = sim.testing_spawnStandard(.cableCarCorrelator, at: Self.far, awareness: awareness)
             sim.testing_injectPulseHitting(position: Self.far.asQ8)
             let result = sim.step(command: .neutral(tick: 1))
@@ -352,8 +361,8 @@ struct AwarenessTests {
     // MARK: - Digest
 
     @Test func awarenessIsDigested() throws {
-        var a = try Simulation.make(seed: 1)
-        var b = try Simulation.make(seed: 1)
+        var a = try Simulation.withoutPatrol(seed: 1)
+        var b = try Simulation.withoutPatrol(seed: 1)
         a.testing_spawnStandard(.fogAnalyticsCloud, at: Self.far, awareness: .unaware)
         b.testing_spawnStandard(.fogAnalyticsCloud, at: Self.far, awareness: .aware)
         #expect(a.state.digest() != b.state.digest())
@@ -364,10 +373,12 @@ struct AwarenessTests {
     @Test func awarenessBlockDecodesFromTheBundledContract() {
         let spec = CombatContent.bundled().awareness
         #expect(spec.appliesTo == [.fogAnalyticsCloud, .cableCarCorrelator, .sutroSignalWitch, .autonomousInformant, .victorianVendor])
-        #expect(spec.sightRangeUnits == 160)
+        #expect(spec.sightRangeUnits == 320)
         #expect(spec.allyAlertRadiusUnits == 128)
         #expect(spec.surveillanceAlertState == .tracked)
-        #expect(spec.ambushDamageMultiplier == 2)
+        #expect(spec.ambushDamageMultiplier == 3)
+        #expect(spec.unawareDriftPercent == 25)
+        #expect(spec.unawareDriftStopUnits == 48)
         #expect(spec.awareEncounters == ["M-C"])
         #expect(spec.heatReinforcementsSpawnAware)
         #expect(!spec.surveillanceAlerts(.observed))
@@ -376,7 +387,7 @@ struct AwarenessTests {
 
     @Test func awarenessBlockFailsClosed() throws {
         let bundled = try #require(
-            try JSONSerialization.jsonObject(with: BundledResource.data(name: "combat-content-003", subdirectory: "contracts"))
+            try JSONSerialization.jsonObject(with: BundledResource.data(name: "combat-content-004", subdirectory: "contracts"))
                 as? [String: Any]
         )
         func decodeError(_ key: String?, _ value: Any?) -> CombatContentError? {
@@ -399,7 +410,8 @@ struct AwarenessTests {
         #expect(decodeError(nil, nil) == .missingField("awareness"))
         #expect(decodeError(nil, [1, 2]) == .wrongType("awareness"))
         for key in ["appliesTo", "sightRangeUnits", "allyAlertRadiusUnits", "surveillanceAlertState",
-                    "ambushDamageMultiplier", "awareEncounters", "heatReinforcementsSpawnAware"] {
+                    "ambushDamageMultiplier", "awareEncounters", "heatReinforcementsSpawnAware",
+                    "unawareDriftPercent", "unawareDriftStopUnits"] {
             #expect(decodeError(key, nil) == .missingField("awareness.\(key)"), "\(key)")
         }
         #expect(decodeError("sightRangeUnits", "160") == .wrongType("awareness.sightRangeUnits"))
@@ -417,6 +429,10 @@ struct AwarenessTests {
         #expect(decodeError("appliesTo", ["algorithmicModerate"]) == .wrongType("awareness.appliesTo"))
         #expect(decodeError("appliesTo", "fogAnalyticsCloud") == .wrongType("awareness.appliesTo"))
         #expect(decodeError("sightRange", 160) == .wrongType("awareness.sightRange"))
+        #expect(decodeError("unawareDriftPercent", -1) == .wrongType("awareness.unawareDriftPercent"))
+        #expect(decodeError("unawareDriftPercent", 25.5) == .wrongType("awareness.unawareDriftPercent"))
+        #expect(decodeError("unawareDriftPercent", false) == .wrongType("awareness.unawareDriftPercent"))
+        #expect(decodeError("unawareDriftStopUnits", "48") == .wrongType("awareness.unawareDriftStopUnits"))
     }
 
     // MARK: - Presentation
@@ -424,7 +440,7 @@ struct AwarenessTests {
     /// animation.md § 8a: an unaware enemy presents its idle clip and the
     /// snapshot flags it for the `?` marker; presentation writes nothing.
     @Test func snapshotFlagsUnawareEnemiesWithTheirIdleClip() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         let unaware = sim.testing_spawnStandard(.cableCarCorrelator, at: Self.far, awareness: .unaware)
         let aware = sim.testing_spawnStandard(.cableCarCorrelator, at: VecI(x: 900, y: 300), awareness: .aware)
         let before = sim.state
@@ -463,7 +479,7 @@ struct AwarenessTests {
     /// `hud-tutorial.md`: the copy shows once, the first time an unaware
     /// enemy is on screen, for 300 ticks.
     @Test func hintShowsOnceWhenTheFirstUnawareEnemyIsOnScreen() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         var hint = AwarenessHintProjector()
         #expect(hint.project(PresentationSnapshot(sim.state)) == nil)
         // Off screen: no copy.

@@ -335,7 +335,7 @@ struct CaptainCameraTests {
         #expect(idle.captainHousings.map(\.id) == emitters.map(\.id))
         #expect(idle.captainHousings.allSatisfy { !$0.active && $0.assetId == "env_camera_captain_idle" })
 
-        var runtime = BossRuntime()
+        var runtime = BossRuntime(bands: state.content.bossPhaseBands)
         runtime.activeEmitter = emitters[1]
         runtime.fieldRemaining = 90
         state.bossRuntime = runtime

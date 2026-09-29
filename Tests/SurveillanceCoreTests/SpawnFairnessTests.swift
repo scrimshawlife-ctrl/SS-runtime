@@ -53,7 +53,7 @@ struct SpawnFairnessTests {
     }
 
     @Test func encounterEN002RetryEveryThirtyTicksThenTimeout() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         sim.testing_obstructEncounterSockets("M-A")
         sim.testing_activateEncounter("M-A", spawnQueue: [.autonomousInformant])
 
@@ -104,7 +104,7 @@ struct SpawnFairnessTests {
     }
 
     @Test func encounterEN003SimulationUsesLowerSocketID() throws {
-        var sim = try Simulation.make(seed: 1)
+        var sim = try Simulation.withoutPatrol(seed: 1)
         sim.testing_setPlayerPosition(VecI(x: 576, y: 448))
         sim.testing_setEncounterSockets(
             "M-A",
@@ -174,7 +174,7 @@ struct SpawnFairnessTests {
         let content = CombatContent.bundled()
         let blocked = SpawnFairness.socketsBlockedByPermanentSolids(arena)
         let leaked = SpawnFairness.socketsOutsideEncounterZone(arena, content: content)
-        // Pinned civic-seam-arena-002.json; do not rewrite coordinates.
+        // Pinned civic-seam-arena-003.json; do not rewrite coordinates.
         #expect(blocked == ["ma-02", "mb-02", "mc-08"])
         #expect(leaked == ["mb-01"])
     }

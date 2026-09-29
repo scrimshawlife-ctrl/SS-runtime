@@ -25,7 +25,8 @@ public enum AwarenessSystem {
     ///   is, in the previous tick's damage phase (it is `struck`).
     /// - **sight**: squared distance to the Player at most the sight range
     ///   squared, on Q8 positions, with a clear line under the weapon's
-    ///   line-of-fire rule against the same solids.
+    ///   line-of-fire rule against the same solids. A Transit Patrol member
+    ///   sees only in its cone (D-091, `PatrolSystem.sees`) instead.
     /// - **ally**: within the ally radius of an enemy alerted this tick by
     ///   damage or sight. One hop: an ally alert never alerts anyone.
     public static func resolve(
@@ -33,7 +34,8 @@ public enum AwarenessSystem {
         player: VecQ8,
         detection: DetectionState,
         spec: AwarenessSpec,
-        solids: [(id: String, box: AABB)]
+        solids: [(id: String, box: AABB)],
+        patrol: PatrolSpec? = nil
     ) -> [Alert] {
         let ordered = enemies.indices
             .filter { enemies[$0].alive && enemies[$0].isUnaware }
@@ -49,6 +51,10 @@ public enum AwarenessSystem {
                 let enemy = enemies[index]
                 if enemy.awareness == .struck {
                     causes[index] = .damage
+                } else if enemy.isPatrolMember {
+                    if let patrol, PatrolSystem.sees(member: enemy, player: player, spec: patrol, solids: solids) {
+                        causes[index] = .sight
+                    }
                 } else if enemy.position.distanceSquared(to: player) <= sight * sight,
                           Collision.lineOfFireClear(from: enemy.position, to: player, solids: solids)
                 {

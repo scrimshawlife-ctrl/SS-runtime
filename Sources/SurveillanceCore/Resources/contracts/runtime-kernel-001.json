@@ -7,9 +7,9 @@
   "required": ["schemaVersion", "rulesetVersion", "contentVersion", "arenaVersion", "seed", "commands"],
   "properties": {
     "schemaVersion": {"const": "runtime-kernel-001"},
-    "rulesetVersion": {"const": "ss-rules-003"},
-    "contentVersion": {"const": "civic-seam-content-003"},
-    "arenaVersion": {"const": "civic-seam-arena-002"},
+    "rulesetVersion": {"const": "ss-rules-004"},
+    "contentVersion": {"const": "civic-seam-content-004"},
+    "arenaVersion": {"const": "civic-seam-arena-003"},
     "seed": {"type": "integer", "minimum": 0},
     "commands": {
       "type": "array",
