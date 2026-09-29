@@ -65,9 +65,11 @@ public struct RunCard: Equatable, Sendable {
         state.exposure.lockdownEntered ? .lockdown : DetectionState.projected(state.exposure.peak)
     }
 
-    /// `NEW BEST` when this run replaces the stored best; otherwise the signed
-    /// gap to it; nil when there is no best to compare with.
+    /// Success only (RS-017): `NEW BEST` when this run replaces the stored best,
+    /// otherwise the gap to it. Nil on failure, where a shorter run would read
+    /// as "faster", and nil when there is no best to compare with.
     static func ghostValue(state: WorldState, bestTicks: UInt64?, storesBest: Bool) -> String? {
+        guard state.outcome == .success else { return nil }
         if storesBest, state.outcome == .success, bestTicks.map({ state.tick < $0 }) ?? true {
             return "NEW BEST"
         }

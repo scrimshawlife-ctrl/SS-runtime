@@ -381,7 +381,8 @@ struct RunCardTests {
         #expect(some.value(for: "GHOST") == "-0:01")
     }
 
-    /// RS-002: a failed run is never a best; with no best the row is omitted.
+    /// RS-002 / RS-017: a failed run shows no ghost row at all, with or
+    /// without a stored best, so a short death never reads as "faster".
     @Test func failedRunNeverShowsNewBest() throws {
         var sim = try Simulation.make(seed: Self.seed)
         sim.testing_setPlayerIntegrity(0)
@@ -390,7 +391,7 @@ struct RunCardTests {
         let none = RunCard(state: sim.state, dateLabel: "2026-09-28", bestTicks: nil)
         #expect(none.value(for: "GHOST") == nil)
         let some = RunCard(state: sim.state, dateLabel: "2026-09-28", bestTicks: sim.state.tick + 60)
-        #expect(some.value(for: "GHOST") == "-0:01")
+        #expect(some.value(for: "GHOST") == nil)
     }
 
     @Test func networkBlackoutJoinsTheCameraRow() throws {
