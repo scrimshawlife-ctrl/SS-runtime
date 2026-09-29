@@ -136,9 +136,8 @@ final class VFXRenderer {
 
     /// Projects one stepped tick. Call after `session.step()`, before redraw.
     ///
-    /// `heatReinforcements` is the D-083 count granted to this tick's waves.
-    /// Heat is not on main (SS-runtime #101), so the scene passes nothing and
-    /// `heatReinforcements` stays inert until the rules land.
+    /// `heatReinforcements` is the D-083 count granted to this tick's waves,
+    /// from `HeatCaptionProjector.reinforcements`.
     func ingest(
         tick: UInt64,
         events: [AuthoritativeEvent],
@@ -778,7 +777,9 @@ enum VFXPalette {
     static let fieldCut = SKColor(red: 0.9, green: 0.7, blue: 0.1, alpha: 0.8)
     static let cascadeField = SKColor(red: 0.9, green: 0.7, blue: 0.1, alpha: 0.16)
     static let cascadeEdge = SKColor(red: 0.95, green: 0.75, blue: 0.15, alpha: 0.7)
-    static let title = SKColor(red: 0.95, green: 0.90, blue: 0.70, alpha: 1)
+    // Neutral white: gold is reserved for pickups (visual language), so the
+    // Blackout title must not read as a reward colour.
+    static let title = SKColor(red: 0.96, green: 0.96, blue: 0.96, alpha: 1)
     static let banner = SKColor(white: 0.05, alpha: 0.85)
     /// Peak Blackout darkening. The overlay is black, so the scene only ever
     /// gets darker than it was.

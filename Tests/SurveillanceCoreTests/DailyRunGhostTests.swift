@@ -179,7 +179,7 @@ struct GhostRunTests {
             #expect(GhostRun(record: record, liveIdentity: .current, liveSeed: Self.seed) == nil)
         }
         let other = ReplayIdentity(
-            rulesetVersion: "ss-rules-002",
+            rulesetVersion: "ss-rules-999",
             contentVersion: ContractVersions.content,
             arenaVersion: ContractVersions.arena,
             replaySchemaVersion: ContractVersions.replaySchema

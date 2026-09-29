@@ -193,7 +193,7 @@
         "language": "groundShapeAndBodyAnticipation",
         "particleCount": 0,
         "lifetimeMs": 450,
-        "hitStopMs": 90,
+        "hitStopMs": 0,
         "screenShake": false,
         "fullScreenFlash": false
       },
@@ -201,7 +201,7 @@
         "language": "groundShapeAndPhaseIcon",
         "particleCount": 0,
         "lifetimeMs": 450,
-        "hitStopMs": 90,
+        "hitStopMs": 0,
         "screenShake": false,
         "fullScreenFlash": false
       }

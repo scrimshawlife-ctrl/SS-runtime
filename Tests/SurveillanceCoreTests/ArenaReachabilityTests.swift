@@ -11,7 +11,7 @@ struct ArenaReachabilityTests {
         #expect(ArenaReachability.spawnAlleyProtected(arena))
         #expect(ArenaReachability.consecutiveZonesConnected(arena))
         #expect(ArenaReachability.diagonalSpine(arena))
-        // Pinned civic-seam-arena-001.json; do not rewrite coordinates (SS-specs authority).
+        // Pinned civic-seam-arena-002.json; do not rewrite coordinates (SS-specs authority).
         #expect(
             ArenaReachability.authoredSolidOverlaps(arena) == [
                 "gate gate-mb-forward overlaps mb-05",
@@ -20,7 +20,18 @@ struct ArenaReachabilityTests {
                 "socket:mc-08 in solid-09-grid-island-a"
             ]
         )
-        #expect(ArenaReachability.fieldOriginsInsideSolids(arena) == ["cam-z02-d"])
+        // D-087 moved cam-z02-d off the kiosk corner: no socket's field origin
+        // or target anchor lies inside a permanent solid any more.
+        #expect(ArenaReachability.fieldOriginsInsideSolids(arena) == [])
+        let anchorsInSolids = arena.cameraSockets.filter { socket in
+            let anchor = CameraPlacement.targetAnchor(socket: socket, geometry: arena.standardCameraGeometry)
+            return arena.permanentSolids.contains { solid in
+                let box = solid.aabb
+                return Int64(box.minX) * Q8.scale <= anchor.x.raw && anchor.x.raw <= Int64(box.maxX) * Q8.scale
+                    && Int64(box.minY) * Q8.scale <= anchor.y.raw && anchor.y.raw <= Int64(box.maxY) * Q8.scale
+            }
+        }.map(\.socketId)
+        #expect(anchorsInSolids == [])
     }
 
     @Test func arenaAR005ClosedMAGateLeavesEscapeAperture() throws {
@@ -43,13 +54,13 @@ struct ArenaReachabilityTests {
     @Test func arenaLayoutDocumentsBossGateSidestep() throws {
         let arena = try ArenaManifest.bundled()
         #expect(ArenaReachability.extractionReachable(arena, bossGateClosed: false))
-        // Pinned civic-seam-arena-001.json leaves a 64-unit gap beside gate-boss-extraction
+        // Pinned civic-seam-arena-002.json leaves a 64-unit gap beside gate-boss-extraction
         // (2048,384) half (96,16) vs phoenix solids. SS-specs is authority; do not widen the gate.
         #expect(ArenaReachability.extractionReachable(arena, bossGateClosed: true))
     }
 
     @Test func arenaAR010ManifestJSONRoundTrip() throws {
-        let data = SpecBundle.contract("civic-seam-arena-001")
+        let data = SpecBundle.contract("civic-seam-arena-002")
         let object = try JSONSerialization.jsonObject(with: data)
         let first = try #require(CanonicalJSON.parse(object))
         let encoded = first.serialize()

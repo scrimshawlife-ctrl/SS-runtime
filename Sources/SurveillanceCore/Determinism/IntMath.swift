@@ -88,3 +88,34 @@ public enum IntMath {
         return Int64(bitPattern: low)
     }
 }
+
+/// An exact unsigned 128-bit product of two `UInt64`s, for comparisons whose
+/// sides exceed 64 bits. `Int128` needs macOS 15, above this package's floor.
+struct UInt128Product: Comparable, Sendable {
+    let high: UInt64
+    let low: UInt64
+
+    init(_ a: UInt64, _ b: UInt64) {
+        let full = a.multipliedFullWidth(by: b)
+        high = full.high
+        low = full.low
+    }
+
+    private init(high: UInt64, low: UInt64) {
+        self.high = high
+        self.low = low
+    }
+
+    /// The product times a small factor. Traps rather than wraps past 128 bits.
+    func times(_ factor: UInt64) -> UInt128Product {
+        let lowProduct = low.multipliedFullWidth(by: factor)
+        let (highProduct, highOverflow) = high.multipliedReportingOverflow(by: factor)
+        let (sum, carryOverflow) = highProduct.addingReportingOverflow(lowProduct.high)
+        precondition(!highOverflow && !carryOverflow, "UInt128Product overflow")
+        return UInt128Product(high: sum, low: lowProduct.low)
+    }
+
+    static func < (lhs: UInt128Product, rhs: UInt128Product) -> Bool {
+        lhs.high != rhs.high ? lhs.high < rhs.high : lhs.low < rhs.low
+    }
+}

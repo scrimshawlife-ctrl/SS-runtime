@@ -72,6 +72,7 @@ final class HUDRenderer {
         // during play; this covers a run that ends while one is still fresh.)
         if !snap.outcome.isTerminal { drawTutorial(snap, projector) }
         drawCameraNotches(cameraHUD, projector)
+        drawReinforcements(projector)
         drawCaptions(projector)
         drawControls(snap, projector, paused: paused)
         if snap.upgradePending {
@@ -458,6 +459,20 @@ final class HUDRenderer {
         )
     }
 
+    /// `REINFORCEMENTS +<n> • <STATE>` (hud-tutorial.md, D-083) in the slot
+    /// `HeatCaptionProjector.referenceRect` names.
+    private func drawReinforcements(_ projector: HUDProjector) {
+        guard let copy = reinforcementCopy else { return }
+        let mapped = projector.mapped(HeatCaptionProjector.referenceRect, hudScale: hudScale, informational: true)
+        label(
+            key: "reinforcements",
+            text: copy,
+            at: projector.sceneCentre(of: mapped),
+            size: 11,
+            colour: HUDPalette.critical
+        )
+    }
+
     /// Caption history in a right-hand column, newest at the bottom.
     ///
     /// The layout table does not place captions, so they take the free strip
@@ -587,6 +602,8 @@ final class HUDRenderer {
     /// a visual caption/event equivalent." The projector keeps the last eight
     /// and clears them on restart; this only draws them.
     var captions: [String] = []
+    /// D-083 heat caption from `HeatCaptionProjector`, or nil. This only draws it.
+    var reinforcementCopy: String?
     /// camera-destruction.md: the Camera counter may be pinned through settings.
     var pinCameraCounter = false
     /// hud-tutorial-001: "Tutorial completion is a local setting." It governs

@@ -297,7 +297,9 @@ struct GameFeelTests {
         var projector = VFXProjector()
         var found: VFXProjection?
         while sim.state.tick < 600, found == nil {
-            let result = sim.step(command: .neutral(tick: sim.state.tick + 1))
+            // D-082: a Camera is shot only when the Player moves toward it. The
+            // scenario places it straight up (+y), so walk up.
+            let result = sim.step(command: PlayerCommand(tick: sim.state.tick + 1, moveX: 0, moveY: 32767, dodgePressed: false))
             guard result.events.contains(where: { $0.type == .allCamerasDestroyed }) else { continue }
             found = projector.project(
                 tick: result.tick,
@@ -402,12 +404,19 @@ struct GameFeelTests {
                 _ = shake.advance()
                 continue
             }
-            let steer = pilot.command(PresentationSnapshot(sim.state))
-            if pilot.stalled { break }
             let tick = sim.state.tick + 1
-            let command = sim.state.upgrade.pending
-                ? PlayerCommand(tick: tick, moveX: 0, moveY: 0, dodgePressed: false, upgradeChoiceIndex: upgrade.selectionIndex)
-                : PlayerCommand(tick: tick, moveX: steer.moveX, moveY: steer.moveY, dodgePressed: steer.dodge)
+            let command: PlayerCommand
+            if scenario != nil, !sawBlackout {
+                // D-082: walk toward the Camera the scenario placed straight up
+                // (+y), so the weapon chooses it, until the kill lands.
+                command = PlayerCommand(tick: tick, moveX: 0, moveY: 32767, dodgePressed: false)
+            } else {
+                let steer = pilot.command(PresentationSnapshot(sim.state))
+                if pilot.stalled { break }
+                command = sim.state.upgrade.pending
+                    ? PlayerCommand(tick: tick, moveX: 0, moveY: 0, dodgePressed: false, upgradeChoiceIndex: upgrade.selectionIndex)
+                    : PlayerCommand(tick: tick, moveX: steer.moveX, moveY: steer.moveY, dodgePressed: steer.dodge)
+            }
             commands.append(command)
             let result = sim.step(command: command)
             if result.events.contains(where: { $0.type == .allCamerasDestroyed }) { sawBlackout = true }

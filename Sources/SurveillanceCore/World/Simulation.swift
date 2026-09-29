@@ -243,12 +243,14 @@ public struct Simulation: Equatable, Sendable {
         }
 
         // T410 / camera-destruction-001 §9: surviving contacts, then ordered Tamper, even on the death tick.
-        let tamper = state.destructions.filter { $0.tick == tick }.sorted { $0.cameraId < $1.cameraId }.map { _ in 100 }
+        let tamper = state.destructions.filter { $0.tick == tick }.sorted { $0.cameraId < $1.cameraId }.map { _ in ExposureState.tamperSpike }
         let resolution = state.exposure.resolveTick(
             survivingContactCount: survivingContacts.count,
             tamperAmounts: tamper,
             signalJammer: state.upgrade.signalJammer,
-            forceLockdown: forceLockdown
+            forceLockdown: forceLockdown,
+            // D-084: every Camera destroyed this run, this tick's included.
+            destroyedCameras: state.destructions.count
         )
         emitExposure(resolution, tick: tick)
 
@@ -373,7 +375,8 @@ public struct Simulation: Equatable, Sendable {
             distanceTravelledQ8: IntMath.isqrt(velocity.lengthSquaredRaw),
             maxTravelQ8: Int64(Targeting.maxTravel) * Q8.scale,
             hitEntityIds: [],
-            alive: true
+            alive: true,
+            targetCameraId: state.cameras.contains { $0.entityId == target.0 } ? target.0 : nil
         )
         guard state.civicPool.checkout(projectile) else { return }
         state.projectiles.append(projectile)
@@ -420,7 +423,11 @@ public struct Simulation: Equatable, Sendable {
         var hits: [DamageHit] = []
         for (pIndex, projectile) in state.projectiles.enumerated() where projectile.alive {
             var wallT: Int64?
-            for solid in state.liveSolids {
+            // D-085: a shot at a Camera is not stopped by that Camera's own mount.
+            let ownMount = projectile.targetCameraId.flatMap { id in
+                state.cameras.first { $0.entityId == id }?.mountSolidId
+            }
+            for solid in state.liveSolids where solid.id != ownMount {
                 if Collision.segmentIntersects(projectile.previous, projectile.position, box: solid.box) {
                     wallT = 0
                 }
@@ -622,7 +629,8 @@ public struct Simulation: Equatable, Sendable {
             distanceTravelledQ8: 0,
             maxTravelQ8: range,
             hitEntityIds: hitEntityIds,
-            alive: true
+            alive: true,
+            targetCameraId: state.cameras.contains { $0.entityId == next.0 } ? next.0 : nil
         )
         if let index = state.projectiles.firstIndex(where: { $0.id == source.id }) {
             state.projectiles[index] = ricochet
@@ -671,8 +679,8 @@ public struct Simulation: Equatable, Sendable {
                 wasDetectingPlayer: camera.wasDetecting,
                 source: source,
                 exposureBefore: before,
-                exposureAfter: min(1000, before + 100),
-                triggeredLockdown: before + 100 >= 1000 && !state.exposure.lockdownEntered
+                exposureAfter: min(1000, before + ExposureState.tamperSpike),
+                triggeredLockdown: before + ExposureState.tamperSpike >= 1000 && !state.exposure.lockdownEntered
             )
         )
         if state.destructions.count == 8 && !state.networkBlackout {
@@ -868,7 +876,7 @@ public struct Simulation: Equatable, Sendable {
                 runtime.activated = true
                 if id == "M-C" { forceLockdown = true }
                 if let spec = state.content.encounters[id], let first = spec.waves.first {
-                    runtime.spawnQueue = flatten(first.members)
+                    runtime.spawnQueue = waveQueue(first, encounter: id)
                     runtime.nextSpawnTick = tick + UInt64(first.delay)
                     events.emit(
                         tick: tick,
@@ -906,7 +914,7 @@ public struct Simulation: Equatable, Sendable {
                 if runtime.waveIndex + 1 < spec.waves.count {
                     runtime.waveIndex += 1
                     let wave = spec.waves[runtime.waveIndex]
-                    runtime.spawnQueue = flatten(wave.members)
+                    runtime.spawnQueue = waveQueue(wave, encounter: id)
                     runtime.nextSpawnTick = tick + UInt64(wave.delay)
                     events.emit(
                         tick: tick,
@@ -931,6 +939,18 @@ public struct Simulation: Equatable, Sendable {
             }
             state.encounters[id] = runtime
         }
+    }
+
+    /// D-083 heat reinforcements: the wave's authored members, then the
+    /// `content.heat` Informants for the Detection State resolved at the end
+    /// of the previous tick. Encounters run before this tick's Exposure
+    /// resolution (phases 13–14), so `state.exposure` still holds that state.
+    /// The appended members spawn at the wave's interval under the same
+    /// validation, and the wave cannot complete until they are dead.
+    private func waveQueue(_ wave: WaveSpec, encounter: String) -> [ArchetypeID] {
+        let heat = state.content.heat
+        let added = heat.reinforcements(encounter: encounter, state: state.exposure.detectionState)
+        return flatten(wave.members) + repeatElement(heat.reinforcementArchetype, count: added)
     }
 
     private func flatten(_ members: [WaveMember]) -> [ArchetypeID] {
@@ -1632,6 +1652,12 @@ public struct Simulation: Equatable, Sendable {
                 )
             )
         }
+    }
+
+    /// Empties the pool `testing_fillCivicPool` filled, so injected pulses can
+    /// check out again. Placeholder slots only; no live projectile is touched.
+    mutating func testing_emptyCivicPool() {
+        state.civicPool = ProjectilePool()
     }
 
     mutating func testing_fillCivicPool(count: Int) {

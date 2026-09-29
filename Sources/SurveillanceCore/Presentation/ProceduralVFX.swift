@@ -114,9 +114,9 @@ public struct VFXProjectionContext: Equatable, Sendable {
     /// Every Camera's stable ID, in any order. The Blackout cascade sorts them.
     public var cameraIds: [EntityID]
     /// D-083 heat reinforcements granted to the waves that started this tick.
-    /// `heatReinforcements` projects only when this is above zero. The rules
-    /// that grant reinforcements are not on main yet (SS-runtime #101), so
-    /// every caller passes zero and the recipe stays inert until they land.
+    /// `heatReinforcements` projects only when this is above zero. It comes from
+    /// `HeatCaptionProjector.reinforcements`, the same rule as the caption, so
+    /// the chevrons and the caption always agree.
     public var heatReinforcements: Int
 
     public init(cameraIds: [EntityID] = [], heatReinforcements: Int = 0) {

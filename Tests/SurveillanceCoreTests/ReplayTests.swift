@@ -6,7 +6,7 @@ import Testing
 struct ReplayTests {
     @Test func unknownReplayIdentityFailsBeforeTickOne() throws {
         let json = """
-        {"schemaVersion":"runtime-kernel-001","rulesetVersion":"unknown","contentVersion":"civic-seam-content-001","arenaVersion":"civic-seam-arena-001","seed":1,"commands":[]}
+        {"schemaVersion":"runtime-kernel-001","rulesetVersion":"unknown","contentVersion":"civic-seam-content-002","arenaVersion":"civic-seam-arena-002","seed":1,"commands":[]}
         """.data(using: .utf8)!
         let result = ReplayEnvelope.load(json: json)
         guard case .failure(.incompatibleIdentity) = result else {
@@ -17,7 +17,7 @@ struct ReplayTests {
 
     @Test func duplicateCommandTickIsRejected() throws {
         let json = """
-        {"schemaVersion":"runtime-kernel-001","rulesetVersion":"ss-rules-001","contentVersion":"civic-seam-content-001","arenaVersion":"civic-seam-arena-001","seed":1,"commands":[{"tick":1,"moveX":0,"moveY":0,"dodgePressed":false},{"tick":1,"moveX":0,"moveY":0,"dodgePressed":false}]}
+        {"schemaVersion":"runtime-kernel-001","rulesetVersion":"ss-rules-002","contentVersion":"civic-seam-content-002","arenaVersion":"civic-seam-arena-002","seed":1,"commands":[{"tick":1,"moveX":0,"moveY":0,"dodgePressed":false},{"tick":1,"moveX":0,"moveY":0,"dodgePressed":false}]}
         """.data(using: .utf8)!
         let result = ReplayEnvelope.load(json: json)
         guard case .failure(.duplicateCommandTick(1)) = result else {

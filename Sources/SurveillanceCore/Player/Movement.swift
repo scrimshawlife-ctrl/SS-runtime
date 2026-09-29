@@ -25,6 +25,12 @@ public struct PlayerBody: Equatable, Sendable {
     /// bookkeeping, like `damageTaken`; it is not part of the state digest and
     /// no rule reads it.
     public var movedUnitsLastTick: Int = 0
+    /// This tick's velocity, in Q8 units per tick: the analog command (or the
+    /// Dodge heading) before solid collision, which is what
+    /// `player-controller.md` calls velocity. Zero while standing. The
+    /// chosen-Camera test (D-082) reads it in the same tick it is written, so
+    /// it carries nothing across ticks and stays out of the digest.
+    public var velocity: VecQ8 = .zero
 
     public init(id: EntityID, spawn: VecI) {
         self.id = id
@@ -125,6 +131,7 @@ public enum Movement {
             }
         }
 
+        player.velocity = delta
         if delta != .zero {
             player.facing = delta
         }

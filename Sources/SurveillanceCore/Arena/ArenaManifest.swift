@@ -159,7 +159,7 @@ public struct ArenaManifest: Equatable, Sendable, Codable {
     }
 
     public static func bundled() throws -> ArenaManifest {
-        let data = BundledResource.data(name: "civic-seam-arena-001", subdirectory: "contracts")
+        let data = BundledResource.data(name: "civic-seam-arena-002", subdirectory: "contracts")
         return try ArenaLoader.decodeAndValidate(data)
     }
 

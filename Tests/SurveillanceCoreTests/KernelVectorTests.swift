@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SurveillanceCore
 
@@ -91,8 +92,22 @@ struct KernelVectorTests {
     @Test func cameraCD001ThreeImpactsDestroyOnce() {
         let result = IsolatedKernel.cameraIntegrity(impacts: 3)
         #expect(result.integrity == 0)
-        #expect(result.tamper == 100)
+        #expect(result.tamper == 150)
         #expect(result.destructions == 1)
+    }
+
+    /// The `kernel-vectors-001` CD-001 row is what the kernel produces (D-086).
+    @Test func cameraCD001FixtureMatchesTheKernel() throws {
+        let data = SpecBundle.fixture("kernel-vectors-001")
+        let root = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let vectors = try #require(root["vectors"] as? [[String: Any]])
+        let cd001 = try #require(vectors.first { $0["id"] as? String == "CD-001" })
+        let expected = try #require(cd001["expected"] as? [String: Any])
+        let impacts = try #require(cd001["orderedValidImpacts"] as? Int)
+        let result = IsolatedKernel.cameraIntegrity(impacts: impacts)
+        #expect(expected["integrity"] as? Int == result.integrity)
+        #expect(expected["tamper"] as? Int == result.tamper)
+        #expect(expected["destructionEvents"] as? Int == result.destructions)
     }
 
     @Test func arenaAR008ExtractionLeaveResets() {

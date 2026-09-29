@@ -50,8 +50,8 @@ struct CameraDestructionOrderTests {
         #expect(integrity == 0)
         #expect(destroyed == 1)
         #expect(detecting)
-        // Contact from the destroyed Camera is stripped; only +100 Tamper remains (not 102).
-        #expect(exposure == 100)
+        // Contact from the destroyed Camera is stripped; only +150 Tamper remains (not 152).
+        #expect(exposure == 150)
         #expect(reason == .hidden)
     }
 
@@ -68,7 +68,7 @@ struct CameraDestructionOrderTests {
         #expect(integrity == 0)
         #expect(destroyed == 1)
         #expect(!detecting)
-        #expect(exposure == 100)
+        #expect(exposure == 150)
     }
 
     @Test func cameraCD007DestroyAt950ClampsAndLockdown() throws {
@@ -102,15 +102,15 @@ struct CameraDestructionOrderTests {
         #expect(outcome == .failure)
         #expect(reason == .playerDeath)
         #expect(destroyed == 1)
-        #expect(exposure == 100)
+        #expect(exposure == 150)
     }
 
     @Test func cameraT410SurvivingContactThenTamperAddsBoth() {
         var state = ExposureState()
-        let result = state.resolveTick(survivingContactCount: 1, tamperAmounts: [100], signalJammer: false)
+        let result = state.resolveTick(survivingContactCount: 1, tamperAmounts: [ExposureState.tamperSpike], signalJammer: false)
         #expect(result.contactDelta == 2)
-        #expect(result.tamperApplied == 100)
-        #expect(state.exposure == 102)
+        #expect(result.tamperApplied == ExposureState.tamperSpike)
+        #expect(state.exposure == 152)
         #expect(result.reason == .cameraTamper)
     }
 
@@ -297,7 +297,7 @@ struct CameraDestructionOrderTests {
         let integrity = sim.state.cameras[0].integrity
         #expect(destroyed == 1)
         #expect(events == 1)
-        #expect(exposure == 100)
+        #expect(exposure == 150)
         #expect(integrity == 0)
     }
 
@@ -318,7 +318,7 @@ struct CameraDestructionOrderTests {
         let ordered = [id0, id1].sorted()
         let eventsMatch = eventIds == ordered
         #expect(destroyed == 2)
-        #expect(exposure == 200)
+        #expect(exposure == 300)
         #expect(eventIds.count == 2)
         #expect(eventsMatch)
     }

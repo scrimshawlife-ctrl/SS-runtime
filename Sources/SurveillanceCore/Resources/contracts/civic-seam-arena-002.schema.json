@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/scrimshawlife-ctrl/SS-specs/contracts/civic-seam-arena-001.schema.json",
+  "$id": "https://github.com/scrimshawlife-ctrl/SS-specs/contracts/civic-seam-arena-002.schema.json",
   "title": "Civic Seam Arena Manifest",
   "type": "object",
   "required": [
@@ -29,7 +29,7 @@
       "const": "arena-manifest-001"
     },
     "arenaVersion": {
-      "const": "civic-seam-arena-001"
+      "const": "civic-seam-arena-002"
     },
     "cellSizeUnits": {
       "const": 64

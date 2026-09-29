@@ -32,7 +32,10 @@ struct ProceduralVFXTests {
         #expect(ghostLifetime <= 300)
         #expect(reducedGhostParticles <= 1)
         #expect(playerHitStop == 50)
-        #expect(captainHitStop == 90)
+        // D-088: a telegraph is a cue to react, not an impact, so it carries
+        // no hit-stop; the Captain cap belongs to the phase break.
+        #expect(captainHitStop == 0)
+        #expect(catalog.recipesById["bossPhaseBreak"]?.defaultVariant.hitStopMs == 90)
         #expect(!reducedHitShake)
         #expect(catalog.atlas == "combat_vfx.atlas")
     }
