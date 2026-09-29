@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SurveillanceCore
 
@@ -123,6 +124,17 @@ struct DamageOrderingTests {
     /// second resolved hit would therefore inflate the run receipt and could
     /// report an encounter complete while enemies are still standing in it.
     @Test func combatCB010ALaterHitCannotDamageOrRekillADeadTarget() throws {
+        // DIAG: run on a 16 MB stack to test the stack-overflow hypothesis.
+        var failure: Error?
+        let done = DispatchSemaphore(value: 0)
+        let thread = Thread { do { try Self.cb010Body() } catch { failure = error }; done.signal() }
+        thread.stackSize = 16 << 20
+        thread.start()
+        done.wait()
+        if let failure { throw failure }
+    }
+
+    static func cb010Body() throws {
         var sim = try Simulation.make(seed: 1)
         let spot = VecI(
             x: sim.state.player.position.x.unitsTruncated + 120,

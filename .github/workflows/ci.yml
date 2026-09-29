@@ -17,7 +17,7 @@ jobs:
       - name: DIAG crash backtrace
         run: |
           set +e
-          swift test --filter "DamageOrderingTests|ProtectedUpgradeSelectionTests" > /tmp/d.log 2>&1; echo "rc=$?"; grep -E "Test run with|signal" /tmp/d.log
+          swift test --filter "DamageOrderingTests" > /tmp/d.log 2>&1; echo "rc=$?"; grep -E "Test run with|signal" /tmp/d.log
           grep -E "started|passed|signal" /tmp/d.log | tail -8
           sleep 5
           f=$(ls -t ~/Library/Logs/DiagnosticReports/*.ips 2>/dev/null | head -1)

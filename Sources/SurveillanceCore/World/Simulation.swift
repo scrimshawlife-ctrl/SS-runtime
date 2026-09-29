@@ -519,13 +519,11 @@ public struct Simulation: Equatable, Sendable {
                 // D-089 ambush: the first damage to an unaware enemy, in this
                 // ordered collection, is multiplied; it is then `struck`, so
                 // later hits this tick are normal.
-                // Read everything first, then write back: no inout access into
-                // `state` overlaps the other reads of `state` in this call.
-                let base = state.projectiles[hit.index].damage
-                let multiplier = state.content.awareness.ambushDamageMultiplier
-                var awareness = state.enemies[eIndex].awareness
-                let dealt = AwarenessSystem.hitDamage(base: base, awareness: &awareness, multiplier: multiplier)
-                state.enemies[eIndex].awareness = awareness
+                let dealt = AwarenessSystem.hitDamage(
+                    base: state.projectiles[hit.index].damage,
+                    awareness: &state.enemies[eIndex].awareness,
+                    multiplier: state.content.awareness.ambushDamageMultiplier
+                )
                 let amount = min(dealt.amount, state.enemies[eIndex].integrity)
                 state.enemies[eIndex].integrity -= amount
                 state.combat.damageDealt += amount
