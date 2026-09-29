@@ -133,7 +133,7 @@ struct PacingProbeTests {
                     problems.append("\(job.profile.name) seed \(job.seed) \(wave.wave): queued \(wave.queued)")
                 }
                 var digests: [String] = []
-                if !job.sustained {
+                if !job.sustained, ProcessInfo.processInfo.environment["SS_PROBE_NO_PATROL"] == nil {
                     let replay = PacingProbe.replay(run)
                     if replay?.digest != run.digest { problems.append("\(job.profile.name) seed \(job.seed): replay digest differs") }
                     digests = replay.map { [$0.digest] } ?? []

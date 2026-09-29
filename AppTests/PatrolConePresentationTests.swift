@@ -10,7 +10,7 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct PatrolConePresentationTests {
-    private static func shapes(in node: SKNode, where match: (SKShapeNode) -> Bool) -> [SKShapeNode] {
+    private static func shapes(in node: SKNode, where match: @escaping (SKShapeNode) -> Bool) -> [SKShapeNode] {
         var found: [SKShapeNode] = []
         node.enumerateChildNodes(withName: "//*") { child, _ in
             if let shape = child as? SKShapeNode, match(shape) { found.append(shape) }
@@ -19,11 +19,11 @@ struct PatrolConePresentationTests {
     }
 
     private static func cones(_ renderer: WorldRenderer) -> [SKShapeNode] {
-        shapes(in: renderer.root) { $0.fillColor == Palette.patrolCone }
+        shapes(in: renderer.root) { $0.name == WorldRenderer.patrolConeName && $0.fillColor != .clear }
     }
 
     private static func edges(_ renderer: WorldRenderer) -> [SKShapeNode] {
-        shapes(in: renderer.root) { $0.strokeColor == Palette.patrolConeEdge }
+        shapes(in: renderer.root) { $0.name == WorldRenderer.patrolEdgeName && $0.lineWidth > 0 }
     }
 
     @Test func everyUnawareMemberDrawsADashedConeUntilAlerted() throws {

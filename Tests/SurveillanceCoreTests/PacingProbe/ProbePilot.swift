@@ -154,6 +154,20 @@ struct ProbePilot {
     private var orbitSign = 1
     private var lastPosition: VecI?
     private var stuckTicks = 0
+    /// Rocking: the Player has stayed within `rockRadius` of `rockAnchor`
+    /// for `rockTicks` with enemies alive. Two headings chosen on
+    /// alternate ticks (orbit one way, hunt the other) can hold it there
+    /// forever while the weapon never gets its line (seen at M-A under
+    /// ss-rules-004: a Correlator pinned against the civic dais).
+    private var rockAnchor: VecI?
+    private var rockTicks = 0
+    private var closeInTicks = 0
+    /// Whether the last command asked to move. Standing still on purpose
+    /// (an ambush, a hide, holding Extraction) is not rocking.
+    private var lastCommandMoved = false
+    private static let rockRadius = 16
+    private static let rockLimit = 240
+    private static let closeInDuration = 120
 
     init(profile: Profile, arena: ArenaManifest) {
         self.profile = profile
@@ -166,6 +180,12 @@ struct ProbePilot {
     // MARK: - Decision
 
     mutating func command(_ snapshot: PresentationSnapshot) -> Command {
+        let command = steer(snapshot)
+        lastCommandMoved = command.moveX != 0 || command.moveY != 0
+        return command
+    }
+
+    private mutating func steer(_ snapshot: PresentationSnapshot) -> Command {
         let command = decide(snapshot)
         // Under Lockdown Exposure is latched at 1000, so a Camera the weapon
         // chooses costs nothing more; filtering headings for it only rocked
@@ -225,6 +245,19 @@ struct ProbePilot {
             stuckTicks = 0
         }
 
+        if let anchor = rockAnchor, distance(anchor, position) < Self.rockRadius, !snapshot.enemies.isEmpty, lastCommandMoved {
+            rockTicks += 1
+        } else {
+            rockAnchor = position
+            rockTicks = 0
+        }
+        if rockTicks > Self.rockLimit {
+            // Break it: walk the path to the nearest enemy for a while, which
+            // ends with a clear line or at close range.
+            rockTicks = 0
+            closeInTicks = Self.closeInDuration
+        }
+
         let objective = destination(for: snapshot)
         let holdingExtraction = snapshot.extractionArmed && arena.extraction.aabb.contains(position)
         let solids = Array(zip(snapshot.solidIds, snapshot.solids)).map { (id: $0.0, box: $0.1) }
@@ -268,6 +301,10 @@ struct ProbePilot {
             var command = flee(from: position, threat: threat.point, toward: objective)
             command.dodge = profile.usesDodge && threat.d < kiteRange / 2
             return command
+        }
+        if closeInTicks > 0, let target = nearest {
+            closeInTicks -= 1
+            if target.d > Targeting.closeEnemyRange { return navigate(from: position, to: target.point) }
         }
         if profile.cameraStyle == .loud, let camera = cameraToDestroy(from: position) {
             // Walk straight at it: the weapon now chooses it at every attack

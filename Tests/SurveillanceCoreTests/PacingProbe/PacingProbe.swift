@@ -70,6 +70,10 @@ struct PacingProbe {
         var patrolOutcomes: [String: Int] = [:]
         /// `enemyAlerted` causes for patrol members only.
         var patrolAlertsByCause: [String: Int] = [:]
+        /// Patrol members killed, and those of them whose first hit was an
+        /// ambush (included in `standardKills` and `ambushKills`).
+        var patrolKills = 0
+        var patrolAmbushKills = 0
 
         var seconds: Double { Double(ticks) / 60 }
         var damageTaken: Int { damageBySource.values.reduce(0, +) }
@@ -110,7 +114,12 @@ struct PacingProbe {
         profile: ProbePilot.Profile,
         sustained: Bool = false
     ) throws -> Result {
-        var sim = try Simulation.make(seed: seed)
+        // `SS_PROBE_NO_PATROL` (diagnostic only): the same run without the
+        // Transit Patrol, to separate its effect from the D-090 values. Such
+        // runs are not the bundled arena and are never replay evidence.
+        var sim = ProcessInfo.processInfo.environment["SS_PROBE_NO_PATROL"] != nil
+            ? try Simulation.withoutPatrol(seed: seed)
+            : try Simulation.make(seed: seed)
         var pilot = ProbePilot(profile: profile, arena: sim.state.arena)
         var commands: [PlayerCommand] = []
         var zoneEntry: [String: UInt64] = [:]
@@ -137,6 +146,8 @@ struct PacingProbe {
         var patrolAlerted: Set<EntityID> = []
         var patrolOutcomes: [String: Int] = [:]
         var patrolAlertsByCause: [String: Int] = [:]
+        var patrolKills = 0
+        var patrolAmbushKills = 0
 
         while !sim.isTerminal, sim.state.tick < tickCeiling {
             let current = PresentationSnapshot(sim.state)
@@ -201,6 +212,10 @@ struct PacingProbe {
                           standard.contains(enemy.archetype) else { continue }
                     standardKills += 1
                     if firstHitAmbush[id] == true { ambushKills += 1 }
+                    if enemy.patrol != nil {
+                        patrolKills += 1
+                        if firstHitAmbush[id] == true { patrolAmbushKills += 1 }
+                    }
                 default:
                     break
                 }
@@ -304,7 +319,9 @@ struct PacingProbe {
             spawnedAwareBy: spawnedAwareBy,
             damageBeforeMobC: damageBeforeMobC,
             patrolOutcomes: patrolOutcomes,
-            patrolAlertsByCause: patrolAlertsByCause
+            patrolAlertsByCause: patrolAlertsByCause,
+            patrolKills: patrolKills,
+            patrolAmbushKills: patrolAmbushKills
         )
     }
 
@@ -356,6 +373,7 @@ struct PacingProbe {
             + "\"damageTaken\":\(r.damageTaken),\"damageBeforeMobC\":\(r.damageBeforeMobC),"
             + "\"spawnedAwareBy\":\(map(r.spawnedAwareBy)),"
             + "\"patrolOutcomes\":\(map(r.patrolOutcomes)),\"patrolAlertsByCause\":\(map(r.patrolAlertsByCause)),"
+            + "\"patrolKills\":\(r.patrolKills),\"patrolAmbushKills\":\(r.patrolAmbushKills),"
             + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave),\"camerasBefore\":\($0.camerasDestroyedBefore)}" }.joined(separator: ","))],"
             + "\"damageBySource\":\(map(r.damageBySource)),"
             + "\"zoneEntry\":\(map(r.zoneEntry)),\"milestones\":\(map(r.milestones)),"

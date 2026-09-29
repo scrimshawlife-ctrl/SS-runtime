@@ -619,10 +619,21 @@ final class WorldRenderer {
     /// Camera fields and the grey Captain cone. It goes when the member is
     /// alerted (it leaves `patrolCones`). Nothing sweeps, so Reduced Motion
     /// draws it unchanged.
+    nonisolated static let patrolConeName = "patrol-cone"
+    nonisolated static let patrolEdgeName = "patrol-cone-edge"
+
     private func renderPatrolCones(_ snap: PresentationSnapshot) {
         for cone in snap.patrolCones {
-            let fillNode = node(.cameraFields, "patrol-cone-\(cone.id.raw)") { SKShapeNode() }
-            let edgeNode = node(.cameraFields, "patrol-edge-\(cone.id.raw)") { SKShapeNode() }
+            let fillNode = node(.cameraFields, "patrol-cone-\(cone.id.raw)") {
+                let shape = SKShapeNode()
+                shape.name = Self.patrolConeName
+                return shape
+            }
+            let edgeNode = node(.cameraFields, "patrol-edge-\(cone.id.raw)") {
+                let shape = SKShapeNode()
+                shape.name = Self.patrolEdgeName
+                return shape
+            }
             let path = Geometry.polygonPath(cone.outline)
             if let fill = fillNode as? SKShapeNode {
                 fill.path = path
