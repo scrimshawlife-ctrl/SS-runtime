@@ -14,27 +14,10 @@ jobs:
         run: grep -q "e71236facafcfc738ee44ebf5421cfea5cbffa37" SPEC_BASELINE.md
       - name: Toolchain
         run: swift --version && xcodebuild -version
-      - name: DIAG crash backtrace
+      - name: DIAG available Xcodes
         run: |
-          set +e
-          swift test --filter "DamageOrderingTests" > /tmp/d.log 2>&1; echo "rc=$?"; grep -E "Test run with|signal" /tmp/d.log
-          grep -E "started|passed|signal" /tmp/d.log | tail -8
-          sleep 5
-          f=$(ls -t ~/Library/Logs/DiagnosticReports/*.ips 2>/dev/null | head -1)
-          echo "report: $f"
-          [ -n "$f" ] && python3 - "$f" <<'PY'
-          import json,sys
-          raw=open(sys.argv[1]).read().split('\n',1)
-          d=json.loads(raw[1])
-          print('exception', d.get('exception'))
-          imgs=d.get('usedImages',[])
-          for t in d.get('threads',[]):
-              if t.get('triggered'):
-                  fr=t.get('frames',[])
-                  print('frames', len(fr))
-                  for f in fr[:40]:
-                      print(f.get('symbol','?')[:140], f.get('imageIndex'))
-          PY
+          ls -d /Applications/Xcode*.app
+          for x in /Applications/Xcode*.app; do echo "$x: $(DEVELOPER_DIR=$x/Contents/Developer xcrun swift --version 2>/dev/null | head -1)"; done
           exit 1
       - name: Test camera placement
         run: swift test --filter CameraPlacementTests --parallel --num-workers 1
