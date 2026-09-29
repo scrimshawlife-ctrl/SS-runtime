@@ -145,9 +145,9 @@ struct TargetingPriorityTests {
                 y: camera.position.y + Int(unit.y) * 160 / Int(Cordic.q15)
             )
         }
-        // A Camera whose anchor its own mount does not hide from the field
-        // side. (Near-diagonal headings put the 16-unit anchor inside the
-        // ±12 mount box, which blocks every line of fire to it.)
+        // An off-diagonal socket, where no mount is in the way at all;
+        // CD-019 covers the diagonal sockets, whose own mount would block
+        // without D-085.
         let index = try #require(sim.state.cameras.indices.first { i in
             let camera = sim.state.cameras[i]
             return Collision.lineOfFireClear(
@@ -175,6 +175,64 @@ struct TargetingPriorityTests {
         } else {
             #expect(fired.isEmpty)
         }
+    }
+}
+
+extension TargetingPriorityTests {
+    /// CD-019 through the whole simulation, on a real diagonal socket: its
+    /// anchor lies inside its own mount box, which would block every shot
+    /// without D-085. Walking at it targets it, and three hits destroy it.
+    @Test func cameraCD019DiagonalSocketIsTargetedAndDestroyed() throws {
+        var sim = try Simulation.make(seed: 1)
+        let index = try #require(sim.state.cameras.indices.first {
+            sim.state.cameras[$0].headingMilliDegrees % 90_000 == 45_000
+        }, "seed 1 selects a diagonal socket")
+        let camera = sim.state.cameras[index]
+        sim.testing_keepOnlyCamera(at: index, integrity: 3)
+        let unit = Cordic.headingUnit(milliDegrees: camera.headingMilliDegrees)
+        let start = VecI(
+            x: camera.position.x + Int(unit.x) * 160 / Int(Cordic.q15),
+            y: camera.position.y + Int(unit.y) * 160 / Int(Cordic.q15)
+        )
+        sim.testing_setPlayerPosition(start)
+        // The precondition the vector is about: the own mount is in the way.
+        #expect(!Collision.lineOfFireClear(from: start.asQ8, to: camera.targetAnchor, solids: sim.state.liveSolids))
+        #expect(Targeting.lineOfFireClear(from: start.asQ8, to: camera, solids: sim.state.liveSolids))
+
+        var shotsAtCamera = 0
+        var destroyedEvents = 0
+        for _ in 0..<(Targeting.firstOpportunity + UInt64(Targeting.cadence) * 3) {
+            let tick = sim.state.tick + 1
+            let anchor = camera.targetAnchor
+            let dx = anchor.x.raw - sim.state.player.position.x.raw
+            let dy = anchor.y.raw - sim.state.player.position.y.raw
+            let scale = Double(PlayerCommand.axisMaximum) / max(1, (Double(dx * dx + dy * dy)).squareRoot())
+            let events = sim.step(command: PlayerCommand(
+                tick: tick, moveX: Int16(Double(dx) * scale), moveY: Int16(Double(dy) * scale), dodgePressed: false
+            )).events
+            shotsAtCamera += events.filter { $0.type == .weaponFired && $0.secondaryEntityId == camera.entityId }.count
+            destroyedEvents += events.filter { $0.type == .cameraDestroyed }.count
+        }
+        #expect(shotsAtCamera >= 3)
+        #expect(sim.state.cameras[index].integrity == 0)
+        #expect(destroyedEvents == 1)
+        #expect(sim.state.destructions.map(\.cameraId) == [camera.entityId])
+    }
+
+    /// CD-020: a shot at Camera B that passes through Camera A's mount is
+    /// blocked; B's own mount (its anchor sits inside it) never is.
+    @Test func cameraCD020AnotherCamerasMountBlocks() {
+        let player = moving(Self.east)
+        var b = camera(id: 8, anchor: VecI(x: 190, y: 0), detecting: false)
+        b.position = VecI(x: 200, y: 0)
+        let a = camera(id: 7, anchor: VecI(x: 90, y: 40), detecting: false)
+        let bMount = (id: b.mountSolidId, box: AABB(center: b.position, halfSize: VecI(x: 12, y: 12)))
+        let aMount = (id: a.mountSolidId, box: AABB(center: VecI(x: 100, y: 0), halfSize: VecI(x: 12, y: 12)))
+        // Only B's own mount on the line: B is targeted.
+        #expect(Targeting.select(player: player, enemies: [], cameras: [b], solids: [bMount])?.0.raw == 8)
+        // A's mount also on the line: blocked.
+        #expect(Targeting.select(player: player, enemies: [], cameras: [b], solids: [bMount, aMount]) == nil)
+        #expect(!Targeting.lineOfFireClear(from: player.position, to: b, solids: [bMount, aMount]))
     }
 }
 

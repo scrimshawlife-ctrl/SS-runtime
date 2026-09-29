@@ -21,6 +21,9 @@ public struct ProjectileBody: Equatable, Sendable {
     public var maxTravelQ8: Int64
     public var hitEntityIds: [EntityID]
     public var alive: Bool
+    /// The Camera this shot was fired at, if any. D-085: that Camera's own
+    /// mount does not stop the shot. Not digested (projectiles never are).
+    public var targetCameraId: EntityID? = nil
 }
 
 /// `camera-destruction.md` § 6 candidate classes (D-082). A Camera that is not
@@ -78,7 +81,7 @@ public enum Targeting {
             guard isChosen(velocity: player.velocity, from: player.position, to: camera.targetAnchor) else { continue }
             let distSq = player.position.distanceSquared(to: camera.targetAnchor)
             if !inRange(distSq) { continue }
-            if !Collision.lineOfFireClear(from: player.position, to: camera.targetAnchor, solids: solids) { continue }
+            if !lineOfFireClear(from: player.position, to: camera, solids: solids) { continue }
             list.append(
                 Candidate(
                     id: camera.entityId,
@@ -116,7 +119,7 @@ public enum Targeting {
         }
         for camera in cameras where camera.isDamageable && camera.entityId != excluding {
             let distSq = origin.distanceSquared(to: camera.targetAnchor)
-            if distSq <= range * range, Collision.lineOfFireClear(from: origin, to: camera.targetAnchor, solids: solids) {
+            if distSq <= range * range, lineOfFireClear(from: origin, to: camera, solids: solids) {
                 list.append(Candidate(id: camera.entityId, distSq: distSq, anchor: camera.targetAnchor))
             }
         }
@@ -143,6 +146,18 @@ public enum Targeting {
         let left = UInt128Product(UInt64(dot), UInt64(dot)).times(4)
         let right = UInt128Product(vSq, dSq).times(3)
         return left >= right
+    }
+
+    /// D-085: a Camera's own mount never blocks line of fire to that Camera;
+    /// every other solid, other mounts included, blocks as usual. On the
+    /// diagonal sockets the 16-unit anchor lies inside the ±12 mount box.
+    public static func lineOfFireClear(
+        from origin: VecQ8,
+        to camera: SelectedCamera,
+        solids: [(id: String, box: AABB)]
+    ) -> Bool {
+        let own = camera.mountSolidId
+        return !solids.contains { $0.id != own && Collision.segmentIntersects(origin, camera.targetAnchor, box: $0.box) }
     }
 
     public static func inRange(_ distSqQ8: Int64) -> Bool {

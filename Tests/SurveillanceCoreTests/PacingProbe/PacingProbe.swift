@@ -34,6 +34,8 @@ struct PacingProbe {
         var playerIntegrity: Int
         var camerasDestroyed: Int
         var lockdownEntered: Bool
+        /// All eight Cameras destroyed (Network Blackout).
+        var networkBlackout: Bool
         /// Integrity lost, by the archetype of the damaging entity.
         var damageBySource: [String: Int]
         /// `arena.md` § 5 segment starts (D-079), measured by the core.
@@ -199,6 +201,7 @@ struct PacingProbe {
             playerIntegrity: sim.state.player.integrity,
             camerasDestroyed: sim.state.destructions.count,
             lockdownEntered: sim.state.exposure.lockdownEntered,
+            networkBlackout: sim.state.networkBlackout,
             damageBySource: damageBySource,
             timeline: timeline,
             waveHeat: waveHeat,
@@ -245,7 +248,7 @@ struct PacingProbe {
             + "\"outcome\":\"\(r.outcome.rawValue)\",\"failureReason\":\(failure),\"stalledOn\":\(stalled),"
             + "\"ticks\":\(r.ticks),\"digest\":\"\(r.digest)\",\"replayDigests\":[\(digests)],"
             + "\"playerIntegrity\":\(r.playerIntegrity),\"camerasDestroyed\":\(r.camerasDestroyed),"
-            + "\"lockdownEntered\":\(r.lockdownEntered),"
+            + "\"lockdownEntered\":\(r.lockdownEntered),\"networkBlackout\":\(r.networkBlackout),"
             + "\"reinforcements\":\(r.reinforcements),"
             + "\"mobCStartTick\":\(r.mobCStartTick.map(String.init) ?? "null"),"
             + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave),\"camerasBefore\":\($0.camerasDestroyedBefore)}" }.joined(separator: ","))],"

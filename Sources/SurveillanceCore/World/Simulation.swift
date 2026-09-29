@@ -248,7 +248,9 @@ public struct Simulation: Equatable, Sendable {
             survivingContactCount: survivingContacts.count,
             tamperAmounts: tamper,
             signalJammer: state.upgrade.signalJammer,
-            forceLockdown: forceLockdown
+            forceLockdown: forceLockdown,
+            // D-084: every Camera destroyed this run, this tick's included.
+            destroyedCameras: state.destructions.count
         )
         emitExposure(resolution, tick: tick)
 
@@ -373,7 +375,8 @@ public struct Simulation: Equatable, Sendable {
             distanceTravelledQ8: IntMath.isqrt(velocity.lengthSquaredRaw),
             maxTravelQ8: Int64(Targeting.maxTravel) * Q8.scale,
             hitEntityIds: [],
-            alive: true
+            alive: true,
+            targetCameraId: state.cameras.contains { $0.entityId == target.0 } ? target.0 : nil
         )
         guard state.civicPool.checkout(projectile) else { return }
         state.projectiles.append(projectile)
@@ -420,7 +423,11 @@ public struct Simulation: Equatable, Sendable {
         var hits: [DamageHit] = []
         for (pIndex, projectile) in state.projectiles.enumerated() where projectile.alive {
             var wallT: Int64?
-            for solid in state.liveSolids {
+            // D-085: a shot at a Camera is not stopped by that Camera's own mount.
+            let ownMount = projectile.targetCameraId.flatMap { id in
+                state.cameras.first { $0.entityId == id }?.mountSolidId
+            }
+            for solid in state.liveSolids where solid.id != ownMount {
                 if Collision.segmentIntersects(projectile.previous, projectile.position, box: solid.box) {
                     wallT = 0
                 }
@@ -622,7 +629,8 @@ public struct Simulation: Equatable, Sendable {
             distanceTravelledQ8: 0,
             maxTravelQ8: range,
             hitEntityIds: hitEntityIds,
-            alive: true
+            alive: true,
+            targetCameraId: state.cameras.contains { $0.entityId == next.0 } ? next.0 : nil
         )
         if let index = state.projectiles.firstIndex(where: { $0.id == source.id }) {
             state.projectiles[index] = ricochet

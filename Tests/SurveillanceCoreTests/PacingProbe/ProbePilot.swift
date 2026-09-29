@@ -106,6 +106,7 @@ struct ProbePilot {
         var headingMilli: Int
         var halfFieldMilli: Int
         var range: Int
+        var mountId: String
     }
     private var liveCameras: [LiveCamera] = []
     /// Grid cells some live Camera field covers (stealth only).
@@ -481,7 +482,8 @@ struct ProbePilot {
                 anchor: CameraPlacement.targetAnchor(socket: socket, geometry: arena.standardCameraGeometry),
                 headingMilli: sprite.headingMilli,
                 halfFieldMilli: sprite.fieldAngleMilli / 2,
-                range: sprite.range
+                range: sprite.range,
+                mountId: SelectedCamera.mountSolidPrefix + socket.socketId
             )
         }
         guard profile.cameraStyle == .stealth else { return }
@@ -512,6 +514,12 @@ struct ProbePilot {
         }
     }
 
+    /// Line of fire to a Camera's anchor as the rules test it: every solid
+    /// blocks except that Camera's own mount (D-085).
+    private func shotClear(from q: VecQ8, to camera: LiveCamera) -> Bool {
+        !solidPairs.contains { $0.id != camera.mountId && Collision.segmentIntersects(q, camera.anchor, box: $0.box) }
+    }
+
     /// Loud: the nearest live Camera within reach with a clear line of fire.
     private func cameraToDestroy(from position: VecI) -> VecI? {
         let q = position.asQ8
@@ -519,7 +527,7 @@ struct ProbePilot {
         return liveCameras
             .filter {
                 q.distanceSquared(to: $0.anchor) <= reach * reach
-                    && Collision.lineOfFireClear(from: q, to: $0.anchor, solids: solidPairs)
+                    && shotClear(from: q, to: $0)
             }
             .min { q.distanceSquared(to: $0.anchor) < q.distanceSquared(to: $1.anchor) }
             .map { VecI(x: $0.anchor.x.unitsTruncated, y: $0.anchor.y.unitsTruncated) }
@@ -594,7 +602,7 @@ struct ProbePilot {
         return liveCameras.contains { camera in
             Targeting.isChosen(velocity: velocity, from: q, to: camera.anchor)
                 && Targeting.inRange(q.distanceSquared(to: camera.anchor))
-                && Collision.lineOfFireClear(from: q, to: camera.anchor, solids: solidPairs)
+                && shotClear(from: q, to: camera)
         }
     }
 

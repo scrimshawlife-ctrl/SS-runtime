@@ -103,16 +103,12 @@ public struct HeatSpec: Equatable, Sendable {
     public var byDetectionState: [DetectionState: Int]
 
     /// Informants appended to a wave of `encounter` that starts while
-    /// `state`. Zero for any encounter the block does not name (M-C).
-    ///
-    /// The contract's table names `hidden` through `hunted`. A Lockdown
-    /// latched before M-C is not in it; it takes the `hunted` count, the
-    /// table's ceiling, so escalating further never lowers the pressure.
-    /// That reading is the runtime's and is recorded in the adoption PR.
+    /// `state`. Zero for any encounter the block does not name (M-C). The
+    /// table covers every Detection State, `lockdown` included (D-084,
+    /// EN-015), and decoding requires all five.
     public func reinforcements(encounter: String, state: DetectionState) -> Int {
         guard encounters.contains(encounter) else { return 0 }
-        let key: DetectionState = state == .lockdown ? .hunted : state
-        return byDetectionState[key] ?? 0
+        return byDetectionState[state] ?? 0
     }
 }
 
@@ -208,7 +204,7 @@ public struct CombatContent: Equatable, Sendable {
         )
     }
 
-    /// The four table states are required; any other key fails closed.
+    /// All five Detection States are required; any other key fails closed.
     private static func parseHeat(_ raw: Any?) throws -> HeatSpec {
         let heat = try decodeObject(raw, path: "heat")
         let archetypeKey = try heat.string("reinforcementArchetype", within: "heat")
@@ -224,14 +220,14 @@ public struct CombatContent: Equatable, Sendable {
         let table = try decodeDictionary(heat["byDetectionState"], path: "heat.byDetectionState")
         var counts: [DetectionState: Int] = [:]
         for key in table.keys.sorted() {
-            guard let state = DetectionState(rawValue: key), state != .lockdown,
+            guard let state = DetectionState(rawValue: key),
                   let value = table[key] as? Int, value >= 0
             else {
                 throw CombatContentError.wrongType("heat.byDetectionState.\(key)")
             }
             counts[state] = value
         }
-        for state in [DetectionState.hidden, .observed, .tracked, .hunted] where counts[state] == nil {
+        for state in [DetectionState.hidden, .observed, .tracked, .hunted, .lockdown] where counts[state] == nil {
             throw CombatContentError.missingField("heat.byDetectionState.\(state.rawValue)")
         }
         return HeatSpec(reinforcementArchetype: archetype, encounters: encounters, byDetectionState: counts)

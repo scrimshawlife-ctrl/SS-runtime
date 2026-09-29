@@ -83,15 +83,23 @@ struct HeatReinforcementTests {
             + [.autonomousInformant, .autonomousInformant])
     }
 
-    /// The contract names no `lockdown` row. A Lockdown latched before M-C
-    /// takes the `hunted` count, so escalating further never lowers pressure.
-    @Test func encounterHeatLockdownBeforeMobCTakesTheHuntedCount() throws {
+    /// EN-015: an M-B wave that starts after Lockdown latched early, before
+    /// M-C, appends the table's `lockdown` count, two.
+    @Test func encounterEN015EarlyLockdownAppendsTwoInformants() throws {
         var sim = try Simulation.make(seed: 1)
-        sim.testing_setExposure(1000)
-        #expect(sim.state.exposure.detectionState == .lockdown)
-        _ = enterTrigger("M-A", sim: &sim)
-        let queue = try #require(sim.state.encounters["M-A"]).spawnQueue
-        #expect(queue.count == Self.authored("M-A", wave: 0, content: sim.state.content).count + 2)
+        // Latch Lockdown through the real resolution: Exposure 999 plus a
+        // Tamper Spike crosses 1000 in one tick.
+        sim.testing_setExposure(999)
+        sim.testing_keepOnlyCamera(at: 0, integrity: 1)
+        sim.testing_injectPulseHitting(camera: sim.state.cameras[0])
+        _ = sim.step(command: .neutral(tick: 1))
+        #expect(sim.state.exposure.lockdownEntered)
+        #expect(sim.state.encounters["M-C"]?.activated == false, "precondition: Lockdown latched before M-C")
+
+        _ = enterTrigger("M-B", sim: &sim)
+        let queue = try #require(sim.state.encounters["M-B"]).spawnQueue
+        #expect(queue == Self.authored("M-B", wave: 0, content: sim.state.content)
+            + [.autonomousInformant, .autonomousInformant])
     }
 
     /// EN-014: an appended Informant still alive keeps the wave open after
@@ -168,7 +176,7 @@ struct HeatReinforcementTests {
         let heat = CombatContent.bundled().heat
         #expect(heat.reinforcementArchetype == .autonomousInformant)
         #expect(heat.encounters == ["M-A", "M-B"])
-        #expect(heat.byDetectionState == [.hidden: 0, .observed: 0, .tracked: 1, .hunted: 2])
+        #expect(heat.byDetectionState == [.hidden: 0, .observed: 0, .tracked: 1, .hunted: 2, .lockdown: 2])
         #expect(heat.reinforcements(encounter: "M-C", state: .hunted) == 0)
     }
 
@@ -199,10 +207,17 @@ struct HeatReinforcementTests {
         #expect(decodeError {
             var heat = $0["heat"] as! [String: Any]
             var table = heat["byDetectionState"] as! [String: Any]
-            table["lockdown"] = 3
+            table["lockdown"] = nil
             heat["byDetectionState"] = table
             $0["heat"] = heat
-        } == .wrongType("heat.byDetectionState.lockdown"))
+        } == .missingField("heat.byDetectionState.lockdown"))
+        #expect(decodeError {
+            var heat = $0["heat"] as! [String: Any]
+            var table = heat["byDetectionState"] as! [String: Any]
+            table["spotted"] = 1
+            heat["byDetectionState"] = table
+            $0["heat"] = heat
+        } == .wrongType("heat.byDetectionState.spotted"))
         #expect(decodeError {
             var heat = $0["heat"] as! [String: Any]
             heat["reinforcementArchetype"] = "phantomCritic"
