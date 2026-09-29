@@ -14,20 +14,28 @@ jobs:
         run: grep -q "e71236facafcfc738ee44ebf5421cfea5cbffa37" SPEC_BASELINE.md
       - name: Toolchain
         run: swift --version && xcodebuild -version
-      - name: Test deterministic core (DIAG, per suite)
+      - name: DIAG crash backtrace
         run: |
           set +e
-          swift build --build-tests
-          swift test list 2>/dev/null | sed -E 's#^[^.]+\.([A-Za-z0-9_]+)/.*#\1#' | sort -u > /tmp/suites.txt
-          wc -l /tmp/suites.txt
-          fail=0
-          while read -r s; do
-            swift test --skip-build --filter "\.${s}/" > /tmp/s.log 2>&1
-            rc=$?
-            echo "suite $s rc=$rc"
-            if [ $rc -ne 0 ]; then echo "SUITE-FAIL $s rc=$rc"; grep -E "signal|✘|error" /tmp/s.log | head -5; fail=1; fi
-          done < /tmp/suites.txt
-          echo "done fail=$fail"; exit $fail
+          swift test --filter DamageOrderingTests > /tmp/d.log 2>&1; echo "rc=$?"
+          grep -E "started|passed|signal" /tmp/d.log | tail -8
+          sleep 5
+          f=$(ls -t ~/Library/Logs/DiagnosticReports/*.ips 2>/dev/null | head -1)
+          echo "report: $f"
+          [ -n "$f" ] && python3 - "$f" <<'PY'
+          import json,sys
+          raw=open(sys.argv[1]).read().split('\n',1)
+          d=json.loads(raw[1])
+          print('exception', d.get('exception'))
+          imgs=d.get('usedImages',[])
+          for t in d.get('threads',[]):
+              if t.get('triggered'):
+                  fr=t.get('frames',[])
+                  print('frames', len(fr))
+                  for f in fr[:40]:
+                      print(f.get('symbol','?')[:140], f.get('imageIndex'))
+          PY
+          exit 1
       - name: Test camera placement
         run: swift test --filter CameraPlacementTests --parallel --num-workers 1
       - name: Test camera fairness
