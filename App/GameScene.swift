@@ -28,6 +28,14 @@ final class GameSession {
     var moveY: Int16 = 0
     var dodgePressed = false
     var pendingUpgradeChoice: UInt8?
+    /// `run-shell.md` § 10.2: every command that advanced this run, in tick
+    /// order, so a successful run can be stored and replayed as the ghost.
+    /// Written after each step; never read back into the simulation.
+    private(set) var commandLog: [PlayerCommand] = []
+    /// True once a debug scenario has written authoritative state directly.
+    /// Such a run cannot be replayed from its commands, so it is never stored
+    /// as a best.
+    private(set) var scenarioSeeded = false
 
     init(seed: UInt64 = 1) {
         simulation = try! Simulation.make(seed: seed)
@@ -37,30 +45,31 @@ final class GameSession {
         let tick = simulation.state.tick + 1
         let enemiesBefore = simulation.state.enemies
         let result: TickResult
+        var command: PlayerCommand?
         if simulation.state.upgrade.pending {
             if let choice = pendingUpgradeChoice {
-                result = simulation.step(
-                    command: PlayerCommand(
-                        tick: tick,
-                        moveX: 0,
-                        moveY: 0,
-                        dodgePressed: false,
-                        upgradeChoiceIndex: choice
-                    )
+                command = PlayerCommand(
+                    tick: tick,
+                    moveX: 0,
+                    moveY: 0,
+                    dodgePressed: false,
+                    upgradeChoiceIndex: choice
                 )
                 pendingUpgradeChoice = nil
-            } else {
-                result = simulation.step(command: nil)
             }
         } else {
-            result = simulation.step(
-                command: PlayerCommand(
-                    tick: tick,
-                    moveX: moveX,
-                    moveY: moveY,
-                    dodgePressed: dodgePressed
-                )
+            command = PlayerCommand(
+                tick: tick,
+                moveX: moveX,
+                moveY: moveY,
+                dodgePressed: dodgePressed
             )
+        }
+        result = simulation.step(command: command)
+        // Log only a command the simulation consumed: one that advanced the
+        // tick. A held upgrade gate and a finished run do not advance.
+        if let command, simulation.state.tick == tick {
+            commandLog.append(command)
         }
         reactions.ingest(result, previousEnemies: enemiesBefore, currentEnemies: simulation.state.enemies)
         applyCameraHUD(result)
@@ -83,6 +92,8 @@ final class GameSession {
 
     func restartRun(seed: UInt64 = 1) {
         simulation = try! Simulation.make(seed: seed)
+        commandLog = []
+        scenarioSeeded = false
         terminalReceiptStored = false
         audioProjector.reset()
         heatCaption.reset()
@@ -129,7 +140,9 @@ final class GameSession {
 
 #if DEBUG
     func seedScenario(_ scenario: String) -> Bool {
-        simulation.debug_seedScenario(scenario)
+        let seeded = simulation.debug_seedScenario(scenario)
+        if seeded { scenarioSeeded = true }
+        return seeded
     }
 #endif
 
@@ -156,6 +169,17 @@ final class GameScene: SKScene {
     /// Raised when the player presses Pause; SwiftUI owns the surface itself.
     var onPauseRequested: (() -> Void)?
     private var settings: PresentationSettings = .defaults
+    /// `run-shell.md` § 10.1: the Daily Run this scene is playing. Nil only for
+    /// a debug harness run that skipped the title.
+    private var dailyRun: DailyRun?
+    /// `run-shell.md` § 10.2: the ghost. Presentation only — it owns its own
+    /// simulation and nothing flows from it into `session`.
+    private var ghost: GhostRun?
+    /// Bumped on every run start, so a ghost verified in the background for an
+    /// earlier run is never attached to a later one.
+    private var ghostGeneration = 0
+    /// `run-shell.md` § 11: built once, when the run reaches a terminal outcome.
+    private var runCard: RunCard?
 #if DEBUG
     private var autopilot: DebugAutopilot?
     /// The `--console-pty` stream drops on long runs; the unified log survives,
@@ -204,6 +228,11 @@ final class GameScene: SKScene {
             )
             soundEngine.settings = session.audioSettings
             soundEngine.mix = AudioEngine.Mix(master: 0, music: 0, effects: 0, voice: 0, haptics: 0)
+        }
+        // `-SSDaily` plays today's Daily Run seed in a harness run that skips
+        // the title, so the Daily Run surfaces can be observed under the pilot.
+        if arguments.contains("-SSDaily"), let run = try? DailyRun(day: DailyRun.Day(utc: Date())) {
+            beginDailyRun(run)
         }
         autopilot = DebugAutopilot.fromLaunchArguments(arguments, arena: session.simulation.state.arena)
         // `-SSSeed <scenario>` puts the simulation into a named legal late-game
@@ -255,6 +284,7 @@ final class GameScene: SKScene {
     /// ER-007 requires the digest and receipt to be unchanged by a settings
     /// change, and none of these values is a simulation input.
     func apply(settings: PresentationSettings) {
+        let wasGhostEnabled = self.settings.ghostEnabled
         self.settings = settings
         session.audioSettings = settings.audio
         soundEngine.settings = settings.audio
@@ -268,6 +298,17 @@ final class GameScene: SKScene {
         hud.pinCameraCounter = settings.pinCameraCounter
         hud.tutorialsEnabled = settings.tutorialsEnabled
         if let view { configureHUD(for: view) }
+        // § 10.2: the ghost can be turned off, and back on, from Settings.
+        // Only a change to the toggle itself touches it, so moving a slider
+        // never restarts a verification in flight.
+        if settings.ghostEnabled != wasGhostEnabled {
+            if settings.ghostEnabled {
+                if !session.simulation.isTerminal { loadGhost() }
+            } else {
+                ghost = nil
+                ghostGeneration += 1
+            }
+        }
     }
 
     func setPaused(_ paused: Bool) {
@@ -332,6 +373,10 @@ final class GameScene: SKScene {
         }
 #endif
         session.step()
+        // § 10.2: one ghost tick for each tick of the live run, after the live
+        // step and never before it.
+        ghost?.advance(to: session.simulation.state.tick)
+        finishRunIfNeeded()
         soundEngine.apply(session.audio)
         instrumentation.recordSimulation(session.simulation.state)
         persistDeviceEvidenceIfNeeded()
@@ -366,9 +411,68 @@ final class GameScene: SKScene {
         }
     }
 
+    /// `run-shell.md` § 8 Start: begins the Daily Run the title computed.
+    func beginDailyRun(_ run: DailyRun) {
+        dailyRun = run
+        restartRun(seed: run.seed)
+    }
+
+    /// § 10.2 / § 11 bookkeeping for a run that just ended: build the run card
+    /// against the best stored *before* this run, then store this run if it
+    /// beats that best. Presentation and local storage only.
+    private func finishRunIfNeeded() {
+        let state = session.simulation.state
+        guard state.outcome.isTerminal, runCard == nil else { return }
+        var bestTicks: UInt64?
+        if let dailyRun,
+           let stored = GhostStore.load(seed: dailyRun.seed),
+           stored.identity == state.identity
+        {
+            bestTicks = stored.ticks
+        }
+        let storesBest = dailyRun != nil && !session.scenarioSeeded
+        if storesBest, let record = GhostRecord(successfulRun: state, commands: session.commandLog) {
+            GhostStore.storeIfBest(record)
+        }
+        let card = RunCard(
+            state: state,
+            dateLabel: dailyRun?.day.label,
+            bestTicks: bestTicks,
+            storesBest: storesBest
+        )
+        runCard = card
+        hud.runCard = card
+    }
+
+    /// Loads today's best and verifies it off the main thread: a full replay
+    /// is thousands of ticks. The ghost catches up to the live tick on attach.
+    private func loadGhost() {
+        ghost = nil
+        ghostGeneration += 1
+        guard settings.ghostEnabled,
+              let dailyRun,
+              let record = GhostStore.load(seed: dailyRun.seed)
+        else { return }
+        let generation = ghostGeneration
+        let seed = dailyRun.seed
+        Task.detached(priority: .utility) { [weak self] in
+            let verified = GhostRun(record: record, liveIdentity: .current, liveSeed: seed)
+            await self?.attachGhost(verified, generation: generation)
+        }
+    }
+
+    private func attachGhost(_ verified: GhostRun?, generation: Int) {
+        guard generation == ghostGeneration, settings.ghostEnabled, var verified else { return }
+        verified.advance(to: session.simulation.state.tick)
+        ghost = verified
+    }
+
     func restartRun(seed: UInt64? = nil) {
         let nextSeed = seed ?? session.simulation.state.seed
         session.restartRun(seed: nextSeed)
+        runCard = nil
+        hud.runCard = nil
+        loadGhost()
         soundEngine.reset()
         renderer.reset()
         instrumentation.reset()
@@ -413,6 +517,8 @@ final class GameScene: SKScene {
             if snap.outcome.isTerminal {
                 if hud.terminalRestartHit(atPoints: point, projector: projector) {
                     restartRun()
+                } else if hud.terminalShareHit(atPoints: point, projector: projector) {
+                    presentShare()
                 }
                 return
             }
@@ -452,10 +558,43 @@ final class GameScene: SKScene {
         }
     }
 
+    /// § 11 Share: the system share sheet with the run card's plain text and
+    /// nothing else — no seed, no receipt, no identifier.
+    private func presentShare() {
+        guard let text = runCard?.shareText,
+              let view,
+              var presenter = view.window?.rootViewController
+        else { return }
+        while let next = presenter.presentedViewController { presenter = next }
+        guard !(presenter is UIActivityViewController) else { return }
+        let sheet = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+        }
+        presenter.present(sheet, animated: true)
+    }
+
+    /// The ghost as the renderer draws it, or nil when there is none to draw.
+    private func ghostPresentation(liveTick: UInt64) -> WorldRenderer.Ghost? {
+        guard let ghost else { return nil }
+        let fade = ghost.fade(liveTick: liveTick, reducedMotion: settings.vfx.reducedMotion)
+        guard fade > 0 else { return nil }
+        let position = ghost.playerPosition
+        return WorldRenderer.Ghost(
+            position: CGPoint(x: position.x, y: position.y),
+            fade: CGFloat(fade)
+        )
+    }
+
     private func redraw() {
         let snap = session.snapshot
         cameraNode.position = CGPoint(x: snap.camera.center.x, y: snap.camera.center.y)
-        renderer.render(snap, reducedMotion: settings.vfx.reducedMotion)
+        renderer.render(
+            snap,
+            reducedMotion: settings.vfx.reducedMotion,
+            ghost: ghostPresentation(liveTick: snap.tick)
+        )
         hud.knobOffsetPoints = controller.knobOffset
         hud.dodgePressed = controller.dodgeTouch != nil
         hud.captions = session.audio.captions

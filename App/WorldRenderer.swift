@@ -170,7 +170,21 @@ final class WorldRenderer {
 
     // MARK: - Frame
 
-    func render(_ snap: PresentationSnapshot, reducedMotion: Bool = false) {
+    /// `run-shell.md` § 10.2: the ghost as drawn. Position in arena units;
+    /// `fade` is 1 while it runs and falls to 0 after its terminal tick.
+    struct Ghost: Equatable {
+        var position: CGPoint
+        var fade: CGFloat
+    }
+
+    /// Ghost opacity at full strength: translucent enough that it never reads
+    /// as a second Player.
+    static let ghostAlpha: CGFloat = 0.35
+
+    private var ghost: Ghost?
+
+    func render(_ snap: PresentationSnapshot, reducedMotion: Bool = false, ghost: Ghost? = nil) {
+        self.ghost = ghost
         renderGround(snap)
         renderDecorations(snap)
         renderFog(snap, reducedMotion: reducedMotion)
@@ -669,6 +683,20 @@ final class WorldRenderer {
                 boxHeight: 64,
                 layer: .actors
             )
+        }
+        if let ghost {
+            // A silhouette only: no sprite, clip, or reaction, so it cannot be
+            // mistaken for the live Player. Drawn beneath the live Player.
+            let shape = node(.actors, "ghost-player") {
+                let shape = SKShapeNode(path: Geometry.silhouettePath(snap.player.silhouette))
+                shape.fillColor = Palette.playerFill
+                shape.strokeColor = Palette.playerStroke
+                shape.lineWidth = 2
+                shape.zPosition = -0.5
+                return shape
+            }
+            shape.position = ghost.position
+            shape.alpha = Self.ghostAlpha * ghost.fade
         }
         if !playerDrawn {
             let player = node(.actors, "player") {
