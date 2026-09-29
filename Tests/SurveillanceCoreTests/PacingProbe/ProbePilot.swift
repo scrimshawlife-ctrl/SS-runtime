@@ -96,7 +96,8 @@ struct ProbePilot {
     private static let fieldStepCost = 12
     /// Stealth (D-089): keep this far from any unaware enemy with a clear
     /// line: its 160-unit sight plus a margin for a tick's overshoot.
-    private static let stealthStandoff = 192
+    /// Pacing search: set to the overridden sight range plus 32.
+    var stealthStandoff = 192
     /// Loud: a Camera anchor this close with a clear line gets walked at.
     private static let loudReach = 360
 
@@ -269,7 +270,7 @@ struct ProbePilot {
             // D-089 ambush: stand inside weapon range but outside every
             // unaware enemy's sight, and let the automatic weapon open.
             // Standing still also chooses no Camera (D-082).
-            let seen = contacts.contains { $0.unaware && $0.clear && $0.d <= Self.stealthStandoff }
+            let seen = contacts.contains { $0.unaware && $0.clear && $0.d <= stealthStandoff }
             if !seen, hasShot { return Command() }
             if let spot = ambushPosition(from: position, snapshot: snapshot, solids: solids) {
                 return navigate(from: position, to: spot)
@@ -532,7 +533,7 @@ struct ProbePilot {
             head += 1
             let p = point(current % cols, current / cols)
             let hidden = !unaware.contains { u in
-                distance(p, u) <= Self.stealthStandoff && Collision.lineOfFireClear(from: p.asQ8, to: u.asQ8, solids: solids)
+                distance(p, u) <= stealthStandoff && Collision.lineOfFireClear(from: p.asQ8, to: u.asQ8, solids: solids)
             }
             if hidden, enemies.contains(where: { distance(p, $0) <= Self.fireRange && Self.clearShot(from: p, to: $0, solids: solids) }) {
                 if !preferUnseen || !inField[current] {

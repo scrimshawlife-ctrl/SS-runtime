@@ -54,6 +54,10 @@ public struct BossRuntime: Equatable, Sendable {
     public var lockedHeadingMilli: Int?
     public var fieldRemaining: Int
     public var activeEmitter: CaptainEmitter?
+    /// Research only (`research/pacing-search`): boss Integrity as a percent
+    /// of the authored 800, so the phase bands scale with it. 100 is the
+    /// shipped rule. Set only by `Simulation.testing_bossPhaseScalePercent`.
+    var testing_phaseIntegrityScalePercent = 100
 
     public var observationNumerator: Int {
         switch phase {
@@ -107,7 +111,7 @@ public struct BossRuntime: Equatable, Sendable {
 
     public mutating func syncPhase(hp: Int) -> (before: BossPhase, after: BossPhase)? {
         let before = phase
-        let next = BossPhase.from(hp: hp)
+        let next = BossPhase.from(hp: hp * 100 / testing_phaseIntegrityScalePercent)
         guard next != before else { return nil }
         phase = next
         sequenceIndex = 0

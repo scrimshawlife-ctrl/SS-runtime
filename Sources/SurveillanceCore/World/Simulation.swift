@@ -1,6 +1,17 @@
 public struct Simulation: Equatable, Sendable {
     public private(set) var state: WorldState
     private var events = EventBuffer()
+    /// Research only (`research/pacing-search`): unaware standard enemies
+    /// drift toward their encounter's trigger centre at this percent of their
+    /// archetype speed, stopping within 48 units. 0 is the shipped rule.
+    var testing_unawareDriftPercent = 0
+    /// Research only: see `BossRuntime.testing_phaseIntegrityScalePercent`.
+    var testing_bossPhaseScalePercent = 100
+    /// Research only: every hit on the Player is scaled by this percent, with
+    /// the fraction carried to the next hit so the total is exact. 100 is the
+    /// shipped rule; it stands in for scaling every enemy damage value.
+    var testing_playerDamagePercent = 100
+    private var testing_playerDamageCarry = 0
 
     public init(seed: UInt64, arena: ArenaManifest, content: CombatContent) throws {
         var allocator = EntityAllocator()
@@ -184,6 +195,7 @@ public struct Simulation: Equatable, Sendable {
             playerDamage: &enemyPlayerDamage,
             alertedThisTick: Set(alerts.map(\.entityId))
         )
+        if testing_unawareDriftPercent > 0 { testing_applyUnawareDrift() }
         for (source, amount) in enemyPlayerDamage {
             applyPlayerDamage(source, amount: amount, tick: tick)
         }
@@ -814,7 +826,14 @@ public struct Simulation: Equatable, Sendable {
         }
     }
 
-    private mutating func applyPlayerDamage(_ source: EntityID, amount: Int, tick: UInt64) {
+    private mutating func applyPlayerDamage(_ source: EntityID, amount incoming: Int, tick: UInt64) {
+        var amount = incoming
+        if testing_playerDamagePercent != 100 {
+            let scaled = incoming * testing_playerDamagePercent + testing_playerDamageCarry
+            amount = scaled / 100
+            testing_playerDamageCarry = scaled % 100
+            if amount == 0 { return }
+        }
         let applied = min(amount, state.player.integrity)
         state.player.integrity -= applied
         state.player.damageTaken += applied
@@ -1146,6 +1165,7 @@ public struct Simulation: Equatable, Sendable {
         state.bossPhase = "publicSafety"
         state.phasesReached = ["publicSafety"]
         state.bossRuntime = BossRuntime()
+        state.bossRuntime?.testing_phaseIntegrityScalePercent = testing_bossPhaseScalePercent
         events.emit(tick: tick, phase: 16, type: .bossActivated, payload: ["bossId": .string(ArchetypeID.algorithmicModerate.rawValue)])
         events.emit(
             tick: tick,
@@ -1310,6 +1330,28 @@ public struct Simulation: Equatable, Sendable {
     private mutating func finishTick() -> TickResult {
         let published = events.publish()
         return TickResult(tick: state.tick, events: published, digest: state.digest(), outcome: state.outcome)
+    }
+
+    /// Research only: the proposed unaware-drift rule, after the enemy phase.
+    /// Ascending entity ID; only `unaware` (not `struck`) standard enemies.
+    private mutating func testing_applyUnawareDrift() {
+        let solids = state.liveSolids
+        let bounds = state.arena.boundsUnits.aabb
+        let stop = Int64(48) * Q8.scale
+        let order = state.enemies.indices.sorted { state.enemies[$0].id < state.enemies[$1].id }
+        for index in order {
+            let enemy = state.enemies[index]
+            guard enemy.alive, enemy.awareness == .unaware,
+                  let trigger = state.arena.encounterTriggers.first(where: { $0.encounterId == enemy.encounterId })
+            else { continue }
+            let target = trigger.center.asQ8
+            guard enemy.position.distanceSquared(to: target) > stop * stop else { continue }
+            let speed = Steering.speedQ8(enemy.speedUnitsPerSecond * testing_unawareDriftPercent / 100)
+            let delta = Steering.toward(enemy.position, target, speedPerTickQ8: speed)
+            state.enemies[index].position = Collision.slideCircle(
+                from: enemy.position, delta: delta, radius: enemy.radius, bounds: bounds, solids: solids
+            )
+        }
     }
 
     mutating func testing_armUpgradeSelection() {

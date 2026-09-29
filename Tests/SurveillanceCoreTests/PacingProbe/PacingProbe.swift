@@ -101,10 +101,25 @@ struct PacingProbe {
         seed: UInt64,
         upgrade: UpgradeID,
         profile: ProbePilot.Profile,
-        sustained: Bool = false
+        sustained: Bool = false,
+        overrides: PacingOverrides? = nil
     ) throws -> Result {
-        var sim = try Simulation.make(seed: seed)
-        var pilot = ProbePilot(profile: profile, arena: sim.state.arena)
+        var sim: Simulation
+        var pilot: ProbePilot
+        if let overrides {
+            sim = try Simulation(seed: seed, arena: ArenaManifest.bundled(), content: overrides.apply(to: .bundled()))
+            sim.testing_unawareDriftPercent = overrides.driftPercent
+            sim.testing_bossPhaseScalePercent = overrides.bossPercent
+            sim.testing_playerDamagePercent = overrides.playerDamagePercent
+            if overrides.playerIntegrity != PlayerBody.maxIntegrity {
+                sim.testing_setPlayerIntegrity(overrides.playerIntegrity)
+            }
+            pilot = ProbePilot(profile: profile, arena: sim.state.arena)
+            pilot.stealthStandoff = overrides.sightRange + 32
+        } else {
+            sim = try Simulation.make(seed: seed)
+            pilot = ProbePilot(profile: profile, arena: sim.state.arena)
+        }
         var commands: [PlayerCommand] = []
         var zoneEntry: [String: UInt64] = [:]
         var milestones: [String: UInt64] = [:]
