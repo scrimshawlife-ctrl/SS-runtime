@@ -97,10 +97,12 @@ struct SettingsView: View {
             .accessibilityHint("Mirrors the movement stick and Dodge. Pause and readouts do not move.")
 
             Toggle("Always show Camera counter", isOn: $store.settings.pinCameraCounter)
+            Toggle("Ghost", isOn: $store.settings.ghostEnabled)
+                .accessibilityHint("Shows your best run on today's layout as a translucent silhouette.")
         } header: {
             Text("Display")
         } footer: {
-            Text("The Camera counter normally appears once a Camera is damaged.")
+            Text("The Camera counter normally appears once a Camera is damaged. The ghost replays your best run on today's layout and never affects the run.")
         }
     }
 

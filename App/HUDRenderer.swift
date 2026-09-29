@@ -593,6 +593,8 @@ final class HUDRenderer {
     /// tutorial cards only — Lockdown and Extraction share the card but are
     /// safety messages and are never suppressed by it.
     var tutorialsEnabled = true
+    /// `run-shell.md` § 11: the run card, set once the run is terminal.
+    var runCard: RunCard?
 
     /// Card geometry in safe-rectangle point space — the single source the
     /// drawing, the hit test, and any synthetic tap all read. Computing it
@@ -646,6 +648,15 @@ final class HUDRenderer {
         terminalRestartRect(projector: projector).contains(point)
     }
 
+    /// `run-shell.md` § 11: the Share control, beside Restart.
+    func terminalShareRect(projector: HUDProjector) -> CGRect {
+        rect(HUDLayout.terminalShare(safeWidth: projector.safeWidth, safeHeight: projector.safeHeight))
+    }
+
+    func terminalShareHit(atPoints point: CGPoint, projector: HUDProjector) -> Bool {
+        terminalShareRect(projector: projector).contains(point)
+    }
+
     /// Drawn once the run is over, so a finished run says so instead of looking
     /// like a game that stopped responding.
     private func drawTerminal(_ snap: PresentationSnapshot, _ projector: HUDProjector) {
@@ -682,17 +693,61 @@ final class HUDRenderer {
         }
         backdrop.position = panelCentre
 
+        let safeWidth = projector.safeWidth
+        let safeHeight = projector.safeHeight
         label(
             key: "terminal-title",
             text: title,
-            at: projector.scenePoint(fromPoints: CGPoint(x: panel.midX, y: panel.minY + 54)),
+            at: projector.scenePoint(
+                fromPoints: CGPoint(
+                    x: panel.midX,
+                    y: CGFloat(HUDLayout.terminalTitleCentreY(safeWidth: safeWidth, safeHeight: safeHeight))
+                )
+            ),
             size: 18,
             colour: HUDPalette.text
         )
 
-        let button = terminalRestartRect(projector: projector)
+        // § 11 run card: label left, value right, one row per line.
+        let rows = runCard?.rows ?? []
+        let inset = CGFloat(HUDLayout.terminalCardInset)
+        for (index, row) in rows.prefix(HUDLayout.terminalCardRowCapacity).enumerated() {
+            let y = CGFloat(HUDLayout.terminalCardRowCentreY(index, safeWidth: safeWidth, safeHeight: safeHeight))
+            label(
+                key: "terminal-card-label-\(index)",
+                text: row.label,
+                at: projector.scenePoint(fromPoints: CGPoint(x: panel.minX + inset, y: y)),
+                size: 11,
+                colour: HUDPalette.dim,
+                alignment: .left
+            )
+            label(
+                key: "terminal-card-value-\(index)",
+                text: row.value,
+                at: projector.scenePoint(fromPoints: CGPoint(x: panel.maxX - inset, y: y)),
+                size: 12,
+                colour: row.value == "NEW BEST" ? HUDPalette.accolade : HUDPalette.text,
+                alignment: .right
+            )
+        }
+
+        drawTerminalControl(
+            key: "terminal-restart",
+            text: "RESTART",
+            rect: terminalRestartRect(projector: projector),
+            projector: projector
+        )
+        drawTerminalControl(
+            key: "terminal-share",
+            text: "SHARE",
+            rect: terminalShareRect(projector: projector),
+            projector: projector
+        )
+    }
+
+    private func drawTerminalControl(key: String, text: String, rect button: CGRect, projector: HUDProjector) {
         let buttonCentre = projector.scenePoint(fromPoints: CGPoint(x: button.midX, y: button.midY))
-        let plate = node("terminal-restart") { () -> SKShapeNode in
+        let plate = node(key) { () -> SKShapeNode in
             let shape = SKShapeNode(
                 rectOf: CGSize(
                     width: projector.sceneLength(points: Int(button.width)),
@@ -705,7 +760,7 @@ final class HUDRenderer {
             return shape
         }
         plate.position = buttonCentre
-        label(key: "terminal-restart-label", text: "RESTART", at: buttonCentre, size: 13, colour: HUDPalette.text)
+        label(key: "\(key)-label", text: text, at: buttonCentre, size: 13, colour: HUDPalette.text)
     }
 
     /// Three equal cards in canonical order, no default and no timeout.
