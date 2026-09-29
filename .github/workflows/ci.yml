@@ -12,8 +12,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify pinned specification
         run: grep -q "e71236facafcfc738ee44ebf5421cfea5cbffa37" SPEC_BASELINE.md
-      - name: Test deterministic core
-        run: swift test --skip CameraPlacementTests --skip CameraFairnessTests --parallel --num-workers 1
+      - name: Toolchain
+        run: swift --version && xcodebuild -version
+      - name: Test deterministic core (DIAG, serial)
+        run: swift test --skip CameraPlacementTests --skip CameraFairnessTests --no-parallel 2>&1 | tee /tmp/t.log; grep -E "started|passed after|failed after" /tmp/t.log | tail -12; exit ${PIPESTATUS[0]}
       - name: Test camera placement
         run: swift test --filter CameraPlacementTests --parallel --num-workers 1
       - name: Test camera fairness
