@@ -1740,9 +1740,37 @@ extension Simulation {
             testing_completeCombatGraph()
             testing_armExtraction()
             return true
+        case "cameraKill":
+            // D-088 evidence: one Camera, one hit from destruction, in the
+            // Player's line of fire, so the weapon's first shots kill it.
+            debug_placeCameraInLineOfFire(index: 0)
+            return true
+        case "blackout":
+            // D-088 evidence: seven Cameras already down and the eighth one
+            // hit from destruction, so a played kill publishes Network Blackout.
+            for index in state.cameras.indices.dropFirst() {
+                testing_destroyCameraAtIndex(index)
+            }
+            // Seeding is not a played tick: drop its events rather than
+            // publishing seven destructions on tick 1.
+            _ = events.publish()
+            debug_placeCameraInLineOfFire(index: 0)
+            return true
         default:
             return false
         }
+    }
+
+    /// Straight above the spawn the line of fire is clear, so the weapon's
+    /// first shot (tick 30) kills the Camera a few ticks later.
+    private mutating func debug_placeCameraInLineOfFire(index: Int) {
+        guard state.cameras.indices.contains(index) else { return }
+        let player = VecI(
+            x: state.player.position.x.unitsTruncated,
+            y: state.player.position.y.unitsTruncated
+        )
+        testing_relocateCamera(at: index, position: VecI(x: player.x, y: player.y + 130), headingMilli: 90_000)
+        state.cameras[index].integrity = 1
     }
 }
 #endif

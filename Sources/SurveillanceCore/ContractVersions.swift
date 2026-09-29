@@ -1,5 +1,5 @@
 public enum ContractVersions {
-    public static let specificationCommit = "fb1fd33f1f85538f33594940c236642ceb4b6c19"
+    public static let specificationCommit = "b79df6692415a2e5fc9976c7e07ba5af70ca1474"
     public static let ruleset = "ss-rules-002"
     public static let content = "civic-seam-content-002"
     public static let arena = "civic-seam-arena-002"
@@ -7,7 +7,7 @@ public enum ContractVersions {
     public static let cameraPlacement = "camera-placement-001"
     public static let animation = "animation-civic-seam-001"
     public static let clipMetadata = "clip-metadata-001"
-    public static let proceduralVFX = "procedural-vfx-001"
+    public static let proceduralVFX = "procedural-vfx-002"
     public static let ambientMotion = "ambient-motion-001"
 }
 

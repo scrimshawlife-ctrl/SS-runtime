@@ -259,6 +259,21 @@ struct HeatReinforcementTests {
 
     /// When the state changed in the wave-start tick, the caption uses the
     /// `before` the director read, not the new state.
+    /// D-088: the chevron recipe's count comes from the same rule as the
+    /// caption, so the two can never disagree.
+    @Test func vfxReinforcementCountMatchesTheCaption() {
+        let heat = CombatContent.bundled().heat
+        let wave = AuthoritativeEvent(tick: 1, phase: 14, type: .waveStarted, payload: ["encounterId": .string("M-A"), "waveId": .string("A1")], insertion: 0)
+        let mc = AuthoritativeEvent(tick: 1, phase: 14, type: .waveStarted, payload: ["encounterId": .string("M-C"), "waveId": .string("C1")], insertion: 1)
+        for state in [DetectionState.hidden, .observed, .tracked, .hunted, .lockdown] {
+            let count = HeatCaptionProjector.reinforcements(events: [wave], detection: state, heat: heat)
+            #expect(count == heat.reinforcements(encounter: "M-A", state: state), "\(state)")
+            #expect(HeatCaptionProjector.copy(count: count, state: state) != nil || count == 0)
+        }
+        #expect(HeatCaptionProjector.reinforcements(events: [mc], detection: .hunted, heat: heat) == 0)
+        #expect(HeatCaptionProjector.reinforcements(events: [], detection: .hunted, heat: heat) == 0)
+    }
+
     @Test func captionUsesTheStateBeforeThisTicksChange() {
         let heat = CombatContent.bundled().heat
         let events = [

@@ -32,7 +32,10 @@ struct ProceduralVFXTests {
         #expect(ghostLifetime <= 300)
         #expect(reducedGhostParticles <= 1)
         #expect(playerHitStop == 50)
-        #expect(captainHitStop == 90)
+        // D-088: a telegraph is a cue to react, not an impact, so it carries
+        // no hit-stop; the Captain cap belongs to the phase break.
+        #expect(captainHitStop == 0)
+        #expect(catalog.recipesById["bossPhaseBreak"]?.defaultVariant.hitStopMs == 90)
         #expect(!reducedHitShake)
         #expect(catalog.atlas == "combat_vfx.atlas")
     }
@@ -194,7 +197,7 @@ struct ProceduralVFXTests {
     }
 
     private func mutatedBundled(_ mutate: (inout [[String: Any]]) -> Void) throws -> Data {
-        var root = try JSONSerialization.jsonObject(with: SpecBundle.contract("procedural-vfx-001")) as! [String: Any]
+        var root = try JSONSerialization.jsonObject(with: SpecBundle.contract("procedural-vfx-002")) as! [String: Any]
         var recipes = root["recipes"] as! [[String: Any]]
         mutate(&recipes)
         root["recipes"] = recipes

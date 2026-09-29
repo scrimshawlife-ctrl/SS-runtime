@@ -42,6 +42,18 @@ public struct HeatCaptionProjector: Equatable, Sendable {
         return current
     }
 
+    /// Total heat reinforcements granted to the waves that started in this
+    /// tick, by the same rule as the caption. It feeds the
+    /// `heatReinforcements` VFX recipe (D-088), so the chevrons and the
+    /// caption can never disagree.
+    public static func reinforcements(events: [AuthoritativeEvent], detection: DetectionState, heat: HeatSpec) -> Int {
+        let state = stateAtWaveStart(events: events, current: detection)
+        return events.reduce(0) { total, event in
+            guard event.type == .waveStarted, case .string(let encounter)? = event.payload["encounterId"] else { return total }
+            return total + heat.reinforcements(encounter: encounter, state: state)
+        }
+    }
+
     /// The caption to draw after `events` were published at `tick`.
     public mutating func project(
         tick: UInt64,
