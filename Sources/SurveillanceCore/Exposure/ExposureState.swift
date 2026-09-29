@@ -45,6 +45,12 @@ public struct ExposureState: Equatable, Sendable {
         self.peak = exposure
     }
 
+    /// `exposure.md` constants: Camera Tamper Spike per destruction (D-086).
+    public static let tamperSpike = 150
+
+    /// `exposure.md` constants: Tamper floor, per Camera destroyed this run (D-084).
+    public static let tamperFloorPerCamera = 150
+
     public static func contactDelta(cameraCount n: Int, signalJammer: Bool) -> Int {
         guard n > 0 else { return 0 }
         var delta = min(5, 2 + n - 1)
@@ -70,7 +76,8 @@ public struct ExposureState: Equatable, Sendable {
         survivingContactCount: Int,
         tamperAmounts: [Int],
         signalJammer: Bool,
-        forceLockdown: Bool = false
+        forceLockdown: Bool = false,
+        destroyedCameras: Int = 0
     ) -> Resolution {
         let before = exposure
         let stateBefore = detectionState
@@ -94,8 +101,11 @@ public struct ExposureState: Equatable, Sendable {
             reason = .cameraContact
         } else {
             noContactTicks += 1
-            if noContactTicks > 60 {
-                exposure -= 2
+            // D-084 Tamper floor: recovery stops at 150 × Cameras destroyed.
+            // It only limits recovery; it never raises Exposure.
+            let floor = Self.tamperFloorPerCamera * destroyedCameras
+            if noContactTicks > 60, exposure > floor {
+                exposure = max(floor, exposure - 2)
                 reason = .recovery
             }
         }

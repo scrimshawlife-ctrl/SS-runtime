@@ -1,6 +1,6 @@
 {
   "fixtureVersion": "complete-run-vectors-001",
-  "rulesetVersion": "ss-rules-001",
+  "rulesetVersion": "ss-rules-002",
   "vectors": [
     {
       "id": "CR-001",
@@ -11,7 +11,7 @@
         "camerasDestroyed": 0,
         "networkBlackout": false,
         "elapsedTicks": 302,
-        "terminalDigest": "518f9ba2a9da6cc76063988b13387b39847590bc0a27d8fdf082bdbf4a7ced73"
+        "terminalDigest": "4f01657b0d4363b6b18210a5ac8e25a9368ad3abe7082965f390ebac7e45ca09"
       }
     },
     {
@@ -23,7 +23,7 @@
         "camerasDestroyed": 0,
         "networkBlackout": false,
         "elapsedTicks": 302,
-        "terminalDigest": "69a9f74b4ca2d3e8c694993d22716dabf602fb597989d16a4f62d532a2a2f35b"
+        "terminalDigest": "2119adde6adf4751db656359886e4a168b682f492650553c8e1feeb8526e9f74"
       }
     },
     {
@@ -35,7 +35,7 @@
         "camerasDestroyed": 0,
         "networkBlackout": false,
         "elapsedTicks": 302,
-        "terminalDigest": "bfac1635893c78ce55a002a8cc64ecc36e3c297c2758b457da9c2800faad0453"
+        "terminalDigest": "6678e95e44587b3b484026fe86620e69475bdbc9ac990a1d955bbb79c57df7d6"
       }
     }
   ]

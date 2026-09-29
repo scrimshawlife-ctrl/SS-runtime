@@ -1,6 +1,6 @@
 {
   "schemaVersion": "arena-manifest-001",
-  "arenaVersion": "civic-seam-arena-001",
+  "arenaVersion": "civic-seam-arena-002",
   "cellSizeUnits": 64,
   "gridSizeCells": {
     "width": 36,
@@ -644,10 +644,10 @@
       "socketId": "cam-z02-d",
       "zoneId": "Z-02",
       "position": {
-        "x": 512,
-        "y": 640
+        "x": 496,
+        "y": 672
       },
-      "headingMilliDegrees": 315000,
+      "headingMilliDegrees": 70000,
       "rangeUnits": 280,
       "fieldAngleMilliDegrees": 55000,
       "allowedHousingFamilies": [

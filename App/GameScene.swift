@@ -8,6 +8,9 @@ import os
 final class GameSession {
     private(set) var simulation: Simulation
     private var cameraHUD = CameraHUDProjector()
+    private var heatCaption = HeatCaptionProjector()
+    /// D-083 heat caption, derived from the tick's events; nil when none shows.
+    private(set) var reinforcementCopy: String?
     private var audioProjector = AudioProjector()
     /// Hurt, stagger, and defeat clips driven by authoritative events.
     private var reactions = (try? ReactionClipTracker.bundled()) ?? .empty
@@ -70,6 +73,12 @@ final class GameSession {
         }
         reactions.ingest(result, previousEnemies: enemiesBefore, currentEnemies: simulation.state.enemies)
         applyCameraHUD(result)
+        reinforcementCopy = heatCaption.project(
+            tick: result.tick,
+            events: result.events,
+            detection: simulation.state.exposure.detectionState,
+            heat: simulation.state.content.heat
+        )
         applyAudio(result)
         persistTerminalReceiptIfNeeded()
     }
@@ -87,6 +96,8 @@ final class GameSession {
         scenarioSeeded = false
         terminalReceiptStored = false
         audioProjector.reset()
+        heatCaption.reset()
+        reinforcementCopy = nil
         reactions.reset()
         audio = AudioProjection.silent
         pendingUpgradeChoice = nil
@@ -587,6 +598,7 @@ final class GameScene: SKScene {
         hud.knobOffsetPoints = controller.knobOffset
         hud.dodgePressed = controller.dodgeTouch != nil
         hud.captions = session.audio.captions
+        hud.reinforcementCopy = session.reinforcementCopy
         hud.render(snap, cameraHUD: session.cameraHUDProjection, paused: runPaused)
     }
 }

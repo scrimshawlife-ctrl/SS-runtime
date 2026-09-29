@@ -95,7 +95,7 @@ struct CameraHUDTests {
         let adjacent = HUDLayout.tamperSpike().x > HUDLayout.exposureBar().x
         #expect(shown.tamperVisible)
         #expect(copy == HUDLayout.tamperCopy)
-        #expect(copy == "+100 TAMPER")
+        #expect(copy == "+150 TAMPER")
         #expect(adjacent)
         #expect(persisted.tamperVisible)
         #expect(!gone.tamperVisible)

@@ -1,12 +1,12 @@
 {
   "fixtureVersion":"kernel-vectors-001",
-  "rulesetVersion":"ss-rules-001",
+  "rulesetVersion":"ss-rules-002",
   "vectors":[
     {"id":"EX-001","initial":{"exposure":0,"state":"hidden","noContactTicks":0},"ticks":100,"contactsPerTick":1,"expected":{"exposure":200,"state":"observed"}},
     {"id":"EX-005","initial":{"exposure":300,"state":"observed","noContactTicks":0},"ticks":61,"contactsPerTick":0,"expected":{"exposure":298,"state":"observed","noContactTicks":61}},
     {"id":"PC-001","initial":{"x":256,"y":256},"ticks":60,"command":{"moveX":32767,"moveY":0,"dodgePressed":false},"expected":{"x":496,"y":256}},
     {"id":"CB-002","candidates":[{"entityId":"11","distanceSquared":4096},{"entityId":"7","distanceSquared":4096}],"expectedTargetEntityId":"7"},
-    {"id":"CD-001","initialIntegrity":3,"orderedValidImpacts":3,"expected":{"integrity":0,"tamper":100,"destructionEvents":1}},
+    {"id":"CD-001","initialIntegrity":3,"orderedValidImpacts":3,"expected":{"integrity":0,"tamper":150,"destructionEvents":1}},
     {"id":"UP-004","upgrade":"signalJammer","cameraContacts":[1,2,8],"expectedDeltas":[1,2,4]},
     {"id":"AR-008","extraction":{"initialRemaining":300,"insideTicks":299,"leave":true,"reenter":true},"expected":{"remainingAfterLeave":300,"remainingAfterReenterTick":299}}
   ]

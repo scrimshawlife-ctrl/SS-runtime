@@ -15,10 +15,10 @@ struct CameraDestructionReceiptTests {
         #expect(summary.objectiveDestroyed == 7)
         #expect(summary.objectiveTotal == 8)
         #expect(!summary.objectiveComplete)
-        #expect(summary.tamperExposureApplied == 700)
+        #expect(summary.tamperExposureApplied == 1000)
         #expect(receipt.networkBlackout == false)
         #expect(receipt.canonical().serialize().contains("\"cameraObjective\""))
-        #expect(receipt.canonical().serialize().contains("\"tamperExposureApplied\":700"))
+        #expect(receipt.canonical().serialize().contains("\"tamperExposureApplied\":1000"))
     }
 
     @Test func receiptT707SummaryReflectsCompleteBlackout() throws {
@@ -31,7 +31,7 @@ struct CameraDestructionReceiptTests {
         let summary = receipt.cameraDestructionSummary
         #expect(summary.camerasDestroyed == 8)
         #expect(summary.objectiveComplete)
-        #expect(summary.tamperExposureApplied == 800)
+        #expect(summary.tamperExposureApplied == 1000)
         #expect(receipt.networkBlackout)
     }
 
@@ -81,7 +81,7 @@ struct CameraDestructionReceiptTests {
         let receipt = RunReceipt(sim.state)
         #expect(receipt.outcome == .failure)
         #expect(receipt.destructions.count == 1)
-        #expect(receipt.destructions[0].exposureAfter == 100)
-        #expect(receipt.cameraDestructionSummary.tamperExposureApplied == 100)
+        #expect(receipt.destructions[0].exposureAfter == 150)
+        #expect(receipt.cameraDestructionSummary.tamperExposureApplied == 150)
     }
 }

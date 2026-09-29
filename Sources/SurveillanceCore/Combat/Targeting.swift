@@ -21,13 +21,17 @@ public struct ProjectileBody: Equatable, Sendable {
     public var maxTravelQ8: Int64
     public var hitEntityIds: [EntityID]
     public var alive: Bool
+    /// The Camera this shot was fired at, if any. D-085: that Camera's own
+    /// mount does not stop the shot. Not digested (projectiles never are).
+    public var targetCameraId: EntityID? = nil
 }
 
+/// `camera-destruction.md` § 6 candidate classes (D-082). A Camera that is not
+/// chosen has no class: it is never an automatic target.
 public enum TargetClass: Int, Equatable, Sendable {
     case closeEnemy = 1
-    case detectingCamera = 2
+    case chosenCamera = 2
     case otherEnemy = 3
-    case otherCamera = 4
 }
 
 public enum Targeting {
@@ -44,7 +48,8 @@ public enum Targeting {
     public static let cameraDamage = 1
     public static let ricochetRange = 160
 
-    /// D-031 / `camera-destruction-001` §6 / T409: class, then squared distance to anchor, then stable ID.
+    /// D-031 / D-082 / `camera-destruction-001` §6 / T409: class, then squared
+    /// distance to anchor, then stable ID. Only a chosen Camera is a candidate.
     public static func select(
         player: PlayerBody,
         enemies: [EnemyBody],
@@ -73,13 +78,14 @@ public enum Targeting {
             )
         }
         for camera in cameras where camera.isDamageable {
+            guard isChosen(velocity: player.velocity, from: player.position, to: camera.targetAnchor) else { continue }
             let distSq = player.position.distanceSquared(to: camera.targetAnchor)
             if !inRange(distSq) { continue }
-            if !Collision.lineOfFireClear(from: player.position, to: camera.targetAnchor, solids: solids) { continue }
+            if !lineOfFireClear(from: player.position, to: camera, solids: solids) { continue }
             list.append(
                 Candidate(
                     id: camera.entityId,
-                    class: camera.wasDetecting ? .detectingCamera : .otherCamera,
+                    class: .chosenCamera,
                     distSq: distSq,
                     anchor: camera.targetAnchor
                 )
@@ -113,7 +119,7 @@ public enum Targeting {
         }
         for camera in cameras where camera.isDamageable && camera.entityId != excluding {
             let distSq = origin.distanceSquared(to: camera.targetAnchor)
-            if distSq <= range * range, Collision.lineOfFireClear(from: origin, to: camera.targetAnchor, solids: solids) {
+            if distSq <= range * range, lineOfFireClear(from: origin, to: camera, solids: solids) {
                 list.append(Candidate(id: camera.entityId, distSq: distSq, anchor: camera.targetAnchor))
             }
         }
@@ -123,6 +129,35 @@ public enum Targeting {
         }
         guard let next = list.first else { return nil }
         return (next.id, next.anchor)
+    }
+
+    /// D-082 chosen Camera: `v` is non-zero, `dot(v, d) > 0`, and
+    /// `4 · dot(v, d)² ≥ 3 · |v|² · |d|²` (within 30 degrees of travel), on Q8
+    /// raw components. Both sides of the inequality exceed 64 bits at arena
+    /// scale, so they are compared as exact 128-bit products.
+    public static func isChosen(velocity v: VecQ8, from player: VecQ8, to anchor: VecQ8) -> Bool {
+        if v == .zero { return false }
+        let dx = anchor.x.raw - player.x.raw
+        let dy = anchor.y.raw - player.y.raw
+        let dot = v.x.raw * dx + v.y.raw * dy
+        guard dot > 0 else { return false }
+        let vSq = UInt64(v.x.raw * v.x.raw + v.y.raw * v.y.raw)
+        let dSq = UInt64(dx * dx + dy * dy)
+        let left = UInt128Product(UInt64(dot), UInt64(dot)).times(4)
+        let right = UInt128Product(vSq, dSq).times(3)
+        return left >= right
+    }
+
+    /// D-085: a Camera's own mount never blocks line of fire to that Camera;
+    /// every other solid, other mounts included, blocks as usual. On the
+    /// diagonal sockets the 16-unit anchor lies inside the ±12 mount box.
+    public static func lineOfFireClear(
+        from origin: VecQ8,
+        to camera: SelectedCamera,
+        solids: [(id: String, box: AABB)]
+    ) -> Bool {
+        let own = camera.mountSolidId
+        return !solids.contains { $0.id != own && Collision.segmentIntersects(origin, camera.targetAnchor, box: $0.box) }
     }
 
     public static func inRange(_ distSqQ8: Int64) -> Bool {

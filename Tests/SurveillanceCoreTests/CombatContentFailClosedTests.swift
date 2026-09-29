@@ -4,7 +4,7 @@ import Testing
 
 /// S3: combat content loading fails closed. Every `as!` in
 /// `CombatContent.decode` became a typed `CombatContentError` that names the
-/// field that failed, so a malformed `combat-content-001` payload is reported
+/// field that failed, so a malformed `combat-content-002` payload is reported
 /// by field path instead of crashing the kernel at an untyped cast.
 @Suite(.serialized)
 struct CombatContentFailClosedTests {
