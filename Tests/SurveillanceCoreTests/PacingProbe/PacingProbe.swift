@@ -61,6 +61,8 @@ struct PacingProbe {
         /// Highest Exposure since the previous M-A/M-B wave start (run start
         /// for A1). Not a rule input; it is here to test alternatives.
         var peakExposureSincePreviousWave: Int
+        /// Cameras destroyed before this wave started.
+        var camerasDestroyedBefore: Int
     }
 
     /// Hard ceiling: 30 simulated minutes. No accepted target is near this.
@@ -156,7 +158,8 @@ struct PacingProbe {
                     added: sim.state.content.heat.reinforcements(encounter: encounter, state: state),
                     queued: sim.state.encounters[encounter]?.spawnQueue.count ?? 0,
                     authored: authored,
-                    peakExposureSincePreviousWave: peakSinceWave
+                    peakExposureSincePreviousWave: peakSinceWave,
+                    camerasDestroyedBefore: sim.state.destructions.count
                 ))
                 peakSinceWave = 0
             }
@@ -245,7 +248,7 @@ struct PacingProbe {
             + "\"lockdownEntered\":\(r.lockdownEntered),"
             + "\"reinforcements\":\(r.reinforcements),"
             + "\"mobCStartTick\":\(r.mobCStartTick.map(String.init) ?? "null"),"
-            + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave)}" }.joined(separator: ","))],"
+            + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave),\"camerasBefore\":\($0.camerasDestroyedBefore)}" }.joined(separator: ","))],"
             + "\"damageBySource\":\(map(r.damageBySource)),"
             + "\"zoneEntry\":\(map(r.zoneEntry)),\"milestones\":\(map(r.milestones)),"
             + "\"segmentStarts\":\(map(Dictionary(uniqueKeysWithValues: r.timeline.starts.map { ($0.key.rawValue, $0.value) }))),"
