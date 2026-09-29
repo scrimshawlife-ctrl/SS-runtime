@@ -92,7 +92,7 @@ public enum IsolatedKernel {
             guard integrity > 0 else { break }
             integrity -= 1
             if integrity == 0 {
-                tamper += 100
+                tamper += ExposureState.tamperSpike
                 destructions += 1
             }
         }

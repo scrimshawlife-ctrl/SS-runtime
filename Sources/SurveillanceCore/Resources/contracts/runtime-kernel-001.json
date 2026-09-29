@@ -9,7 +9,7 @@
     "schemaVersion": {"const": "runtime-kernel-001"},
     "rulesetVersion": {"const": "ss-rules-002"},
     "contentVersion": {"const": "civic-seam-content-002"},
-    "arenaVersion": {"const": "civic-seam-arena-001"},
+    "arenaVersion": {"const": "civic-seam-arena-002"},
     "seed": {"type": "integer", "minimum": 0},
     "commands": {
       "type": "array",

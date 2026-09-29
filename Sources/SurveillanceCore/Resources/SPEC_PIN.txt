@@ -1,5 +1,5 @@
-SS-specs commit 126948d9b2797eeb2bd4dc882c7b85a0faaa32f4
+SS-specs commit 7022193902d6f540d1dab0ee47aba7d5835edf51
 ruleset ss-rules-002
 content civic-seam-content-002
-arena civic-seam-arena-001
+arena civic-seam-arena-002
 replaySchema runtime-kernel-001

@@ -45,6 +45,9 @@ public struct ExposureState: Equatable, Sendable {
         self.peak = exposure
     }
 
+    /// `exposure.md` constants: Camera Tamper Spike per destruction (D-086).
+    public static let tamperSpike = 150
+
     /// `exposure.md` constants: Tamper floor, per Camera destroyed this run (D-084).
     public static let tamperFloorPerCamera = 150
 

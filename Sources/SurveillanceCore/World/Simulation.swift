@@ -243,7 +243,7 @@ public struct Simulation: Equatable, Sendable {
         }
 
         // T410 / camera-destruction-001 §9: surviving contacts, then ordered Tamper, even on the death tick.
-        let tamper = state.destructions.filter { $0.tick == tick }.sorted { $0.cameraId < $1.cameraId }.map { _ in 100 }
+        let tamper = state.destructions.filter { $0.tick == tick }.sorted { $0.cameraId < $1.cameraId }.map { _ in ExposureState.tamperSpike }
         let resolution = state.exposure.resolveTick(
             survivingContactCount: survivingContacts.count,
             tamperAmounts: tamper,
@@ -679,8 +679,8 @@ public struct Simulation: Equatable, Sendable {
                 wasDetectingPlayer: camera.wasDetecting,
                 source: source,
                 exposureBefore: before,
-                exposureAfter: min(1000, before + 100),
-                triggeredLockdown: before + 100 >= 1000 && !state.exposure.lockdownEntered
+                exposureAfter: min(1000, before + ExposureState.tamperSpike),
+                triggeredLockdown: before + ExposureState.tamperSpike >= 1000 && !state.exposure.lockdownEntered
             )
         )
         if state.destructions.count == 8 && !state.networkBlackout {

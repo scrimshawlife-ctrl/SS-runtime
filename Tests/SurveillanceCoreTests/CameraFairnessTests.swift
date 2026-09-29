@@ -27,17 +27,18 @@ struct CameraFairnessTests {
         #expect(poolOk)
         #expect(legalCount == legal.count)
         #expect(!legal.isEmpty)
-        // Pinned civic-seam-arena-001.json coordinates are authority; do not rewrite them.
-        // cam-z02-d field origin sits in a solid (Civic Pulse stand empty).
-        // cam-z02-b field leaks into walkable Z-01; spawn-point alley protection still holds.
-        #expect(originSockets == ["cam-z02-d"])
-        #expect(unhittable == ["cam-z02-d"])
+        // Pinned civic-seam-arena-002.json coordinates are authority; do not rewrite them.
+        // D-087 moved cam-z02-d off the kiosk: no field origin in a solid, and
+        // every socket has a Civic Pulse stand, in every legal set that selects it.
+        // cam-z02-b field still leaks into walkable Z-01; spawn-point alley protection still holds.
+        #expect(originSockets == [])
+        #expect(unhittable == [])
         #expect(leaking == ["cam-z02-b"])
-        #expect(fieldOrigin == originKnownCount)
-        #expect(pulse == originKnownCount)
-        #expect(access == originKnownCount)
+        #expect(fieldOrigin == 0)
+        #expect(pulse == 0)
+        #expect(access == 0)
+        #expect(originKnownCount > 0, "cam-z02-d is still selectable")
         #expect(z01Keys == z01KnownCount)
-        #expect(originKnownCount > 0)
         #expect(z01KnownCount > 0)
         #expect(overlap == 0)
         #expect(extraction == 0)

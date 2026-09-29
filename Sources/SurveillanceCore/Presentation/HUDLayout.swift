@@ -177,7 +177,7 @@ public enum HUDLayout {
     public static func tutorialCard() -> HUDRect { HUDRect(x: 422, y: 318, width: 520, height: 56) }
     public static func tamperSpike() -> HUDRect { HUDRect(x: 642, y: 26, width: 120, height: 24) }
 
-    public static let tamperCopy = "+100 TAMPER"
+    public static let tamperCopy = "+\(ExposureState.tamperSpike) TAMPER"
     public static let integrityNotchCount = 3
     public static let integrityNotchPersistTicks: UInt64 = 90
     public static let firstEncounterCameraCopy = "MOVE TOWARD A CAMERA TO SHOOT IT • DESTRUCTION ADDS EXPOSURE"

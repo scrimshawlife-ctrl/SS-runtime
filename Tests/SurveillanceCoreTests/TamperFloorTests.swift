@@ -44,9 +44,9 @@ struct TamperFloorTests {
         #expect(state.exposure == 400)
     }
 
-    /// Through the simulation: a destroyed Camera's +100 Tamper never
-    /// recovers (100 is under the 150 floor), and with no Camera destroyed
-    /// the same Exposure recovers to zero.
+    /// Through the simulation: after one destruction (+150 Tamper, D-086),
+    /// Exposure raised to 400 recovers only to the 150 floor; with no Camera
+    /// destroyed the same Exposure recovers to zero.
     @Test(arguments: [true, false])
     func exposureTamperFloorThroughTheSimulation(destroy: Bool) throws {
         var sim = try Simulation.make(seed: 1)
@@ -54,15 +54,14 @@ struct TamperFloorTests {
         sim.testing_keepOnlyCamera(at: 0, integrity: destroy ? 1 : 0)
         if destroy {
             sim.testing_injectPulseHitting(camera: sim.state.cameras[0])
-        } else {
-            sim.testing_setExposure(100)
         }
         _ = sim.step(command: .neutral(tick: 1))
-        #expect(sim.state.exposure.exposure == 100)
+        #expect(sim.state.exposure.exposure == (destroy ? 150 : 0))
+        sim.testing_setExposure(400)
         #expect(sim.state.destructions.count == (destroy ? 1 : 0))
         for _ in 0..<300 {
             _ = sim.step(command: .neutral(tick: sim.state.tick + 1))
         }
-        #expect(sim.state.exposure.exposure == (destroy ? 100 : 0))
+        #expect(sim.state.exposure.exposure == (destroy ? 150 : 0))
     }
 }

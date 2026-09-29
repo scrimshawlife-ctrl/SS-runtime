@@ -8,7 +8,7 @@ iPhone runtime for the one-level **Surveillance Survivor** reboot.
 - Baseline commit: see [SPEC_BASELINE.md](SPEC_BASELINE.md).
 - Ruleset: `ss-rules-002`
 - Content: `civic-seam-content-002`
-- Arena: `civic-seam-arena-001`
+- Arena: `civic-seam-arena-002`
 - Replay schema: `runtime-kernel-001`
 
 Runtime behavior must trace to that baseline or a later explicitly adopted specification commit.

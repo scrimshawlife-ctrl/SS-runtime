@@ -5,10 +5,10 @@ Status: PINNED
 | Identity | Value |
 |---|---|
 | Specification repository | `scrimshawlife-ctrl/SS-specs` |
-| Specification commit | `126948d9b2797eeb2bd4dc882c7b85a0faaa32f4` |
+| Specification commit | `7022193902d6f540d1dab0ee47aba7d5835edf51` |
 | Ruleset | `ss-rules-002` |
 | Content | `civic-seam-content-002` |
-| Arena | `civic-seam-arena-001` |
+| Arena | `civic-seam-arena-002` |
 | Replay schema | `runtime-kernel-001` |
 
 Changing any pinned identity requires:
