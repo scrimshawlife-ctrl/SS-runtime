@@ -194,7 +194,7 @@ struct ProceduralVFXTests {
     }
 
     private func mutatedBundled(_ mutate: (inout [[String: Any]]) -> Void) throws -> Data {
-        var root = try JSONSerialization.jsonObject(with: SpecBundle.contract("procedural-vfx-001")) as! [String: Any]
+        var root = try JSONSerialization.jsonObject(with: SpecBundle.contract("procedural-vfx-002")) as! [String: Any]
         var recipes = root["recipes"] as! [[String: Any]]
         mutate(&recipes)
         root["recipes"] = recipes

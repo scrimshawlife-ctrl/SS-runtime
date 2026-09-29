@@ -31,11 +31,22 @@ public struct ProceduralVFXCatalog: Equatable, Sendable {
 
     public static let requiredRecipeIds = [
         "cameraAcquire", "exposureThreshold", "playerHit", "enemyHit", "enemyDefeat",
-        "ghostStep", "ricochet", "lockdown", "captainTelegraph", "extraction"
+        "ghostStep", "ricochet", "lockdown", "captainTelegraph", "extraction",
+        // procedural-vfx-002, animation.md § 8a (D-088): the four big moments.
+        "cameraDestroyed", "networkBlackout", "bossPhaseBreak", "heatReinforcements"
     ]
 
+    /// animation.md § 8: hit-stop is capped at 50 ms for standard impacts and
+    /// 90 ms for major Captain impacts. These recipes take the Captain cap.
+    public static let captainClassRecipeIds: Set<String> = ["captainTelegraph", "bossPhaseBreak"]
+
     public static func bundled() throws -> ProceduralVFXCatalog {
-        try ProceduralVFXLoader.decode(SpecBundle.contract("procedural-vfx-001"))
+        try ProceduralVFXLoader.decode(SpecBundle.contract("procedural-vfx-002"))
+    }
+
+    /// The hit-stop cap that applies to `recipeId`.
+    public func hitStopCapMs(for recipeId: String) -> Int {
+        Self.captainClassRecipeIds.contains(recipeId) ? captainHitStopMs : standardHitStopMs
     }
 
     public var recipesById: [String: VFXRecipe] {
@@ -81,6 +92,39 @@ public struct VFXPresentation: Equatable, Sendable {
     public var shape: String
     public var sourceEntityId: EntityID?
     public var sequence: Int
+    /// Text the moment shows: the boss phase name for `bossPhaseBreak`, and
+    /// `NETWORK BLACKOUT` for `networkBlackout`. Nil for every other recipe.
+    public var label: String? = nil
+    /// `networkBlackout` only (animation.md § 8a): every Camera field, in
+    /// stable-ID order, with the offset at which it turns off. Empty otherwise.
+    public var cascade: [VFXCascadeStep] = []
+    /// True when the reduced variant was chosen.
+    public var reduced: Bool = false
+}
+
+/// One Camera field turning off during the Network Blackout cascade.
+public struct VFXCascadeStep: Equatable, Sendable {
+    public var cameraId: EntityID
+    public var offsetMs: Int
+}
+
+/// What the projector needs beyond the tick's events. Presentation input
+/// only: nothing here is read back into the simulation.
+public struct VFXProjectionContext: Equatable, Sendable {
+    /// Every Camera's stable ID, in any order. The Blackout cascade sorts them.
+    public var cameraIds: [EntityID]
+    /// D-083 heat reinforcements granted to the waves that started this tick.
+    /// `heatReinforcements` projects only when this is above zero. The rules
+    /// that grant reinforcements are not on main yet (SS-runtime #101), so
+    /// every caller passes zero and the recipe stays inert until they land.
+    public var heatReinforcements: Int
+
+    public init(cameraIds: [EntityID] = [], heatReinforcements: Int = 0) {
+        self.cameraIds = cameraIds
+        self.heatReinforcements = heatReinforcements
+    }
+
+    public static let none = VFXProjectionContext()
 }
 
 public struct VFXProjection: Equatable, Sendable {
@@ -104,7 +148,8 @@ public struct VFXProjector: Equatable, Sendable {
         tick: UInt64,
         events: [AuthoritativeEvent],
         catalog: ProceduralVFXCatalog,
-        settings: PresentationVFXSettings = .standard
+        settings: PresentationVFXSettings = .standard,
+        context: VFXProjectionContext = .none
     ) -> VFXProjection {
         var presentations: [VFXPresentation] = []
         let reduced = settings.reducedMotion || settings.reducedFlash
@@ -125,7 +170,28 @@ public struct VFXProjector: Equatable, Sendable {
                 if recipe.id == "ricochet" {
                     continue
                 }
-                presentations.append(present(recipe, event: event, reduced: reduced, sequence: nextSequence))
+                if recipe.id == "heatReinforcements" {
+                    guard context.heatReinforcements > 0 else { continue }
+                }
+                var label: String?
+                if recipe.id == "bossPhaseBreak" {
+                    // Activation publishes `bossPhaseChanged` with no `before`;
+                    // that is the Captain arriving, not a phase breaking.
+                    guard payloadString(event, "before") != nil,
+                          let after = payloadString(event, "after")
+                    else { continue }
+                    label = Self.phaseTitle(after)
+                }
+                var presentation = present(recipe, event: event, reduced: reduced, sequence: nextSequence)
+                if recipe.id == "networkBlackout" {
+                    label = Self.blackoutTitle
+                    presentation.cascade = Self.cascade(
+                        cameraIds: context.cameraIds,
+                        lifetimeMs: presentation.lifetimeMs
+                    )
+                }
+                presentation.label = label
+                presentations.append(presentation)
                 nextSequence += 1
             }
         }
@@ -156,22 +222,58 @@ public struct VFXProjector: Equatable, Sendable {
             screenShake: variant.screenShake,
             shape: recipe.shape,
             sourceEntityId: event.primaryEntityId,
-            sequence: sequence
+            sequence: sequence,
+            reduced: reduced
         )
     }
 
+    /// The title card text for `networkBlackout` (animation.md § 8a).
+    public static let blackoutTitle = "NETWORK BLACKOUT"
+
+    /// `publicSafety` → `PUBLIC SAFETY`.
+    public static func phaseTitle(_ rawPhase: String) -> String {
+        var words: [String] = []
+        var current = ""
+        for character in rawPhase {
+            if character.isUppercase, !current.isEmpty {
+                words.append(current)
+                current = ""
+            }
+            current.append(character)
+        }
+        if !current.isEmpty { words.append(current) }
+        return words.map { $0.uppercased() }.joined(separator: " ")
+    }
+
+    /// animation.md § 8a: every Camera field turns off in stable-ID order over
+    /// the recipe's lifetime. The first goes at once and the rest follow at
+    /// even steps, so the whole cascade fits inside the 1.5 s.
+    static func cascade(cameraIds: [EntityID], lifetimeMs: Int) -> [VFXCascadeStep] {
+        let ordered = Array(Set(cameraIds)).sorted { $0.raw < $1.raw }
+        guard !ordered.isEmpty else { return [] }
+        return ordered.enumerated().map { index, id in
+            VFXCascadeStep(cameraId: id, offsetMs: lifetimeMs * index / ordered.count)
+        }
+    }
+
+    /// Emitter priority for stealing: a lower rank is kept longer. The big
+    /// moments outrank every per-event recipe; `enemyHit` goes first.
+    public static let priorityRank: [String: Int] = [
+        "networkBlackout": 0, "bossPhaseBreak": 1,
+        "lockdown": 1, "captainTelegraph": 2, "extraction": 2, "cameraDestroyed": 2,
+        "playerHit": 3, "exposureThreshold": 3, "cameraAcquire": 4, "heatReinforcements": 4,
+        "enemyDefeat": 5, "ghostStep": 6, "ricochet": 6, "enemyHit": 7
+    ]
+
+    static func rank(_ recipeId: String) -> Int { priorityRank[recipeId] ?? 9 }
+
     private func steal(_ items: [VFXPresentation], limit: Int) -> [VFXPresentation] {
         var remaining = items
-        let rank: [String: Int] = [
-            "lockdown": 1, "captainTelegraph": 2, "extraction": 2, "playerHit": 3,
-            "exposureThreshold": 3, "cameraAcquire": 4, "enemyDefeat": 5,
-            "ghostStep": 6, "ricochet": 6, "enemyHit": 7
-        ]
         while remaining.count > limit {
-            let lowest = remaining.map { rank[$0.recipeId] ?? 9 }.max()!
+            let lowest = remaining.map { Self.rank($0.recipeId) }.max()!
             let oldest = remaining
                 .enumerated()
-                .filter { (rank[$0.element.recipeId] ?? 9) == lowest }
+                .filter { Self.rank($0.element.recipeId) == lowest }
                 .min { $0.element.sequence < $1.element.sequence }!
             remaining.remove(at: oldest.offset)
         }
@@ -221,7 +323,7 @@ enum ProceduralVFXLoader {
         if let unexpected = Set(root.keys).subtracting(catalogKeys).sorted().first {
             throw ProceduralVFXError.unexpectedKey(unexpected)
         }
-        guard root["schemaVersion"] as? String == "procedural-vfx-001" else {
+        guard root["schemaVersion"] as? String == ContractVersions.proceduralVFX else {
             throw ProceduralVFXError.schemaVersion
         }
         guard root["visualVersion"] as? String == "visual-civic-seam-001" else {
@@ -253,7 +355,7 @@ enum ProceduralVFXLoader {
         }
         try validateBudgets(recipes)
         return ProceduralVFXCatalog(
-            schemaVersion: "procedural-vfx-001",
+            schemaVersion: ContractVersions.proceduralVFX,
             visualVersion: "visual-civic-seam-001",
             atlas: atlas,
             maxConcurrentEmitters: maxEmitters,
@@ -299,7 +401,7 @@ enum ProceduralVFXLoader {
         if reducedVariant.screenShake {
             throw ProceduralVFXError.reducedShake(id)
         }
-        let hitCap = id == "captainTelegraph" ? captainHitStop : standardHitStop
+        let hitCap = ProceduralVFXCatalog.captainClassRecipeIds.contains(id) ? captainHitStop : standardHitStop
         if defaultVariant.hitStopMs > hitCap || reducedVariant.hitStopMs > hitCap {
             throw ProceduralVFXError.budget(id)
         }
@@ -354,6 +456,11 @@ enum ProceduralVFXLoader {
             case "ghostStep":
                 if recipe.defaultVariant.lifetimeMs > 300 { throw ProceduralVFXError.budget(recipe.id) }
                 if recipe.reducedVariant.particleCount > 1 { throw ProceduralVFXError.budget(recipe.id) }
+            case "networkBlackout":
+                // animation.md § 8a: the cascade runs over 1.5 s, in both variants.
+                if recipe.defaultVariant.lifetimeMs != 1500 || recipe.reducedVariant.lifetimeMs != 1500 {
+                    throw ProceduralVFXError.budget(recipe.id)
+                }
             default:
                 break
             }

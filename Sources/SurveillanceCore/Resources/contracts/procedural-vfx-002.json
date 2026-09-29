@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "procedural-vfx-001",
+  "schemaVersion": "procedural-vfx-002",
   "visualVersion": "visual-civic-seam-001",
   "atlas": "combat_vfx.atlas",
   "maxConcurrentEmitters": 16,
@@ -227,6 +227,10 @@
         "screenShake": false,
         "fullScreenFlash": false
       }
-    }
+    },
+    {"id": "cameraDestroyed", "shape": "brokenRing", "eventTypes": ["cameraDestroyed"], "poolSize": 4, "default": {"language": "lensShatterAndSparkBurst", "particleCount": 10, "lifetimeMs": 320, "hitStopMs": 50, "screenShake": true, "fullScreenFlash": false}, "reduced": {"language": "staticCrackAndFieldCut", "particleCount": 0, "lifetimeMs": 320, "hitStopMs": 50, "screenShake": false, "fullScreenFlash": false}},
+    {"id": "networkBlackout", "shape": "segmentedBoundary", "eventTypes": ["allCamerasDestroyed"], "poolSize": 1, "default": {"language": "fieldsCascadeOffAndSceneDim", "particleCount": 0, "lifetimeMs": 1500, "hitStopMs": 50, "screenShake": false, "fullScreenFlash": false}, "reduced": {"language": "staticBlackoutBanner", "particleCount": 0, "lifetimeMs": 1500, "hitStopMs": 0, "screenShake": false, "fullScreenFlash": false}},
+    {"id": "bossPhaseBreak", "shape": "brokenRing", "eventTypes": ["bossPhaseChanged"], "poolSize": 1, "default": {"language": "phaseNameSlamAndRingRelease", "particleCount": 0, "lifetimeMs": 900, "hitStopMs": 90, "screenShake": true, "fullScreenFlash": false}, "reduced": {"language": "phaseNameCutIn", "particleCount": 0, "lifetimeMs": 900, "hitStopMs": 90, "screenShake": false, "fullScreenFlash": false}},
+    {"id": "heatReinforcements", "shape": "chevrons", "eventTypes": ["waveStarted"], "poolSize": 2, "default": {"language": "edgeChevronsTowardSpawnSockets", "particleCount": 0, "lifetimeMs": 600, "hitStopMs": 0, "screenShake": false, "fullScreenFlash": false}, "reduced": {"language": "staticEdgeChevrons", "particleCount": 0, "lifetimeMs": 600, "hitStopMs": 0, "screenShake": false, "fullScreenFlash": false}}
   ]
 }

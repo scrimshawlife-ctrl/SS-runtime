@@ -21,6 +21,9 @@ final class GameSession {
         tamperCopy: ""
     )
     private(set) var terminalReceiptStored = false
+    /// D-088: the last step's authoritative events, for the VFX layer. Read
+    /// after the step; never fed back.
+    private(set) var lastEvents: [AuthoritativeEvent] = []
     var moveX: Int16 = 0
     var moveY: Int16 = 0
     var dodgePressed = false
@@ -63,6 +66,7 @@ final class GameSession {
             )
         }
         result = simulation.step(command: command)
+        lastEvents = result.events
         // Log only a command the simulation consumed: one that advanced the
         // tick. A held upgrade gate and a finished run do not advance.
         if let command, simulation.state.tick == tick {
@@ -84,6 +88,7 @@ final class GameSession {
     func restartRun(seed: UInt64 = 1) {
         simulation = try! Simulation.make(seed: seed)
         commandLog = []
+        lastEvents = []
         scenarioSeeded = false
         terminalReceiptStored = false
         audioProjector.reset()
@@ -148,6 +153,8 @@ final class GameScene: SKScene {
     private let deviceRunTracker = DeviceRunTracker()
     private var terminalEvidenceStored = false
     private let renderer = WorldRenderer()
+    /// D-088: effects, hit-stop, and shake. Presentation only.
+    private let vfx = VFXRenderer()
     private let cameraNode = SKCameraNode()
     private let hud = HUDRenderer()
     private let soundEngine = AudioEngine()
@@ -171,6 +178,7 @@ final class GameScene: SKScene {
     private var runCard: RunCard?
 #if DEBUG
     private var autopilot: DebugAutopilot?
+    private var frameLogTick: UInt64 = 0
     /// The `--console-pty` stream drops on long runs; the unified log survives,
     /// so a full playthrough stays observable after the pipe closes.
     private static let autopilotLog = Logger(
@@ -188,6 +196,7 @@ final class GameScene: SKScene {
         addChild(renderer.root)
         addChild(cameraNode)
         camera = cameraNode
+        vfx.install(in: self, camera: cameraNode, worldRoot: renderer.root)
         // `ignoresSiblingOrder` makes draw order depend on zPosition alone, and
         // ties are undefined. WorldRenderer assigns its layers 0...8 while the
         // HUD left everything at the default 0, so world sprites could draw over
@@ -224,6 +233,7 @@ final class GameScene: SKScene {
             beginDailyRun(run)
         }
         autopilot = DebugAutopilot.fromLaunchArguments(arguments, arena: session.simulation.state.arena)
+        configureVFXEvidence(arguments)
         // `-SSSeed <scenario>` puts the simulation into a named legal late-game
         // state so the renderer can be observed there. Presentation evidence
         // only: a seeded run says nothing about balance or the acceptance gates.
@@ -277,6 +287,7 @@ final class GameScene: SKScene {
         self.settings = settings
         session.audioSettings = settings.audio
         soundEngine.settings = settings.audio
+        vfx.settings = settings.vfx
         soundEngine.mix = AudioEngine.Mix(
             master: Float(settings.mix.master) / 100,
             music: Float(settings.mix.music) / 100,
@@ -317,6 +328,12 @@ final class GameScene: SKScene {
     override func update(_ currentTime: TimeInterval) {
         instrumentation.frameTimes.recordFrame(timestamp: currentTime)
         guard !runPaused else { return }
+        // D-088 hit-stop: a frozen frame neither steps the simulation nor
+        // redraws the world. No tick, no command, so no digest change.
+        if vfx.consumeHitStopFrame() {
+            cameraNode.position = vfx.frozenCameraPosition()
+            return
+        }
 #if DEBUG
         if autopilot != nil {
             let snapshot = session.snapshot
@@ -362,6 +379,9 @@ final class GameScene: SKScene {
         }
 #endif
         session.step()
+        if !session.lastEvents.isEmpty {
+            vfx.ingest(tick: session.simulation.state.tick, events: session.lastEvents, snapshot: session.snapshot)
+        }
         // § 10.2: one ghost tick for each tick of the live run, after the live
         // step and never before it.
         ghost?.advance(to: session.simulation.state.tick)
@@ -370,6 +390,16 @@ final class GameScene: SKScene {
         instrumentation.recordSimulation(session.simulation.state)
         persistDeviceEvidenceIfNeeded()
         redraw()
+#if DEBUG
+        // D-088 frame budget: frame times with the VFX layer live.
+        if session.simulation.state.tick % 600 == 0, session.simulation.state.tick != frameLogTick {
+            frameLogTick = session.simulation.state.tick
+            let frames = instrumentation.frameTimes.summarize()
+            Self.autopilotLog.notice(
+                "frames tick=\(self.session.simulation.state.tick, privacy: .public) n=\(frames.sampleCount, privacy: .public) p50=\(frames.p50Ms, privacy: .public) p95=\(frames.p95Ms, privacy: .public) p99=\(frames.p99Ms, privacy: .public) worst=\(frames.worstMs, privacy: .public) vfxLive=\(self.vfx.liveEffectCount, privacy: .public) frozen=\(self.vfx.frozenFrames, privacy: .public) freezes=\(self.vfx.freezes, privacy: .public)"
+            )
+        }
+#endif
     }
 
     private func applyController() {
@@ -464,6 +494,7 @@ final class GameScene: SKScene {
         loadGhost()
         soundEngine.reset()
         renderer.reset()
+        vfx.reset()
         instrumentation.reset()
         // `GameSession.restartRun` zeroes the session's command, but the
         // controller holds its own copy and `applyController` overwrites the
@@ -576,14 +607,43 @@ final class GameScene: SKScene {
         )
     }
 
+#if DEBUG
+    /// `-SSHoldOnVFX <recipeId>:<frames>` freezes the view that many frames
+    /// after the named recipe is first drawn, so a screenshot can catch an
+    /// effect mid-flight. Evidence harness only; every drawn recipe is logged.
+    private func configureVFXEvidence(_ arguments: [String]) {
+        var hold: (recipe: String, frames: Int)?
+        if let flag = arguments.firstIndex(of: "-SSHoldOnVFX"), arguments.index(after: flag) < arguments.endIndex {
+            let parts = arguments[arguments.index(after: flag)].split(separator: ":")
+            if let recipe = parts.first {
+                hold = (String(recipe), parts.count > 1 ? Int(parts[1]) ?? 0 : 0)
+            }
+        }
+        vfx.onAdmit = { [weak self] presentation in
+            let tick = self?.session.simulation.state.tick ?? 0
+            Self.autopilotLog.notice(
+                "vfx tick=\(tick, privacy: .public) recipe=\(presentation.recipeId, privacy: .public) language=\(presentation.language, privacy: .public) hitStopMs=\(presentation.hitStopMs, privacy: .public) shake=\(presentation.screenShake, privacy: .public)"
+            )
+            guard let hold, presentation.recipeId == hold.recipe else { return }
+            let frames = max(0, hold.frames)
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: UInt64(frames) * 16_666_667)
+                self?.view?.isPaused = true
+                Self.autopilotLog.notice("vfx hold recipe=\(hold.recipe, privacy: .public) after \(frames, privacy: .public) frames")
+            }
+        }
+    }
+#endif
+
     private func redraw() {
         let snap = session.snapshot
-        cameraNode.position = CGPoint(x: snap.camera.center.x, y: snap.camera.center.y)
+        cameraNode.position = vfx.cameraPosition(base: CGPoint(x: snap.camera.center.x, y: snap.camera.center.y))
         renderer.render(
             snap,
             reducedMotion: settings.vfx.reducedMotion,
             ghost: ghostPresentation(liveTick: snap.tick)
         )
+        vfx.render(snap)
         hud.knobOffsetPoints = controller.knobOffset
         hud.dodgePressed = controller.dodgeTouch != nil
         hud.captions = session.audio.captions

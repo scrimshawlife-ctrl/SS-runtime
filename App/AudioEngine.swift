@@ -47,6 +47,10 @@ final class AudioEngine {
     private var ambience: AVAudioPlayer?
     private(set) var musicState: MusicState = .explore
     private var musicStarted = false
+    /// D-088 Network Blackout drop: true from the duck until the restore
+    /// begins. Bumping the generation cancels a drop in flight.
+    private(set) var musicDropped = false
+    private var dropGeneration = 0
 
     private var haptics: CHHapticEngine?
     private let impactLight = UIImpactFeedbackGenerator(style: .light)
@@ -88,14 +92,56 @@ final class AudioEngine {
 
     /// Consumes one tick of projection.
     func apply(_ projection: AudioProjection) {
+        let drop = BlackoutMusicDrop.triggers(projection)
+        if drop { beginBlackoutDrop() }
         for cue in projection.cues {
-            play(cue)
+            if drop, cue.audioId == BlackoutMusicDrop.cueId {
+                // Heard alone, at the start of the silence. The haptic is
+                // unchanged, so it still fires now.
+                playAfterDuck(cue)
+            } else {
+                play(cue)
+            }
             fire(cue.haptic)
         }
         setMusic(projection.musicState, bed: projection.musicBedAssetId)
     }
 
+    // MARK: - Network Blackout drop
+
+    /// audio-haptics.md § Network Blackout drop: duck the bed to silence over
+    /// 0.1 s, hold 1.0 s, restore over 0.5 s. The music state machine is not
+    /// touched; only the bed's volume moves.
+    private func beginBlackoutDrop() {
+        dropGeneration += 1
+        let generation = dropGeneration
+        musicDropped = true
+        for player in musicPlayers.values {
+            player.setVolume(0, fadeDuration: BlackoutMusicDrop.duckSeconds)
+        }
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(BlackoutMusicDrop.restoreStartSeconds * 1_000_000_000))
+            guard let self, self.dropGeneration == generation else { return }
+            self.musicDropped = false
+            guard self.settings.musicEnabled, !self.settings.reducedSensory,
+                  let bed = self.currentBedId, let player = self.musicPlayers[bed]
+            else { return }
+            player.setVolume(self.mix.master * self.mix.music, fadeDuration: BlackoutMusicDrop.restoreSeconds)
+        }
+    }
+
+    private func playAfterDuck(_ cue: ProjectedCue) {
+        let generation = dropGeneration
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(BlackoutMusicDrop.cueDelaySeconds * 1_000_000_000))
+            guard let self, self.dropGeneration == generation else { return }
+            self.play(cue)
+        }
+    }
+
     func reset() {
+        dropGeneration += 1
+        musicDropped = false
         for index in voices.indices {
             voices[index]?.stop()
             voices[index] = nil
@@ -175,7 +221,8 @@ final class AudioEngine {
             incoming.prepareToPlay()
             incoming.play()
         }
-        incoming.setVolume(mix.master * mix.music, fadeDuration: duration)
+        // A bed that changes during the Blackout silence waits for the restore.
+        incoming.setVolume(musicDropped ? 0 : mix.master * mix.music, fadeDuration: duration)
     }
 
     private func musicPlayer(for assetId: String) -> AVAudioPlayer? {

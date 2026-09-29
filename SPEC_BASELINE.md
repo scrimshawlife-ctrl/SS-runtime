@@ -5,7 +5,7 @@ Status: PINNED
 | Identity | Value |
 |---|---|
 | Specification repository | `scrimshawlife-ctrl/SS-specs` |
-| Specification commit | `eae96d8daa3274b13b1a81776ac82d96a08d32ec` |
+| Specification commit | `4a0bbd978d107faf29085b888bb1bcb862f2d928` |
 | Ruleset | `ss-rules-001` |
 | Content | `civic-seam-content-001` |
 | Arena | `civic-seam-arena-001` |
