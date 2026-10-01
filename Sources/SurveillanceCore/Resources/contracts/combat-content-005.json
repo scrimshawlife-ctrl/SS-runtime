@@ -45,5 +45,5 @@
   "heat": {"reinforcementArchetype":"autonomousInformant","encounters":["M-A","M-B"],"byDetectionState":{"hidden":0,"observed":0,"tracked":1,"hunted":2,"lockdown":2}},
   "awareness": {"appliesTo":["fogAnalyticsCloud","cableCarCorrelator","sutroSignalWitch","autonomousInformant","victorianVendor"],"sightRangeUnits":320,"allyAlertRadiusUnits":128,"surveillanceAlertState":"tracked","ambushDamageMultiplier":3,"awareEncounters":["M-C"],"heatReinforcementsSpawnAware":true,"unawareDriftPercent":25,"unawareDriftStopUnits":48},
   "patrol": {"integrityPercent":200,"speedPercent":40,"dwellTicks":30,"sightUnits":240,"sightHalfAngleMilliDegrees":45000,"arrivalUnits":4},
-  "player": {"integrity":150,"damageTakenPercent":50,"courtThresholdRestorePercent":60}
+  "player": {"integrity":150,"damageTakenPercent":50,"courtThresholdRestorePercent":50}
 }

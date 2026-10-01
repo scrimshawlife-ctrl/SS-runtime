@@ -26,8 +26,8 @@ struct CombatContentFailClosedTests {
         #expect(content.player.damageTakenPercent == 50)
         #expect(content.player.integrity == 150)
         // D-096: the Captain Court threshold and the lowered boss contact.
-        #expect(content.player.courtThresholdRestorePercent == 60)
-        #expect(content.player.courtThresholdIntegrity == 90)
+        #expect(content.player.courtThresholdRestorePercent == 50)
+        #expect(content.player.courtThresholdIntegrity == 75)
         #expect(content.bossContactDps == 10)
         #expect(content.encounters["M-A"]?.totals == 14)
         #expect(content.encounters["M-B"]?.totals == 17)

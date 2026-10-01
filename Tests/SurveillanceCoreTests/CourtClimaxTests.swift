@@ -21,12 +21,12 @@ struct CourtClimaxTests {
         return (sim, result)
     }
 
-    @Test func bo020BossActivationRaisesPlayerFrom40To90() throws {
+    @Test func bo020BossActivationRaisesPlayerFrom40To75() throws {
         let (sim, result) = try Self.activateBoss(playerIntegrity: 40)
         let activation = try #require(result.events.first { $0.type == .bossActivated })
         #expect(activation.phase == 16)
-        #expect(sim.state.player.integrity == 90)
-        #expect(sim.state.player.integrityRestored == 50)
+        #expect(sim.state.player.integrity == 75)
+        #expect(sim.state.player.integrityRestored == 35)
         // A restore, not damage: no damage booked, no damage event.
         #expect(sim.state.player.damageTaken == 0)
         #expect(!result.events.contains { $0.type == .playerDamaged })
@@ -44,16 +44,16 @@ struct CourtClimaxTests {
         sim.testing_setPlayerIntegrity(30)
         _ = sim.step(command: .neutral(tick: 2))
         #expect(sim.state.player.integrity <= 30)
-        #expect(sim.state.player.integrityRestored == 50)
+        #expect(sim.state.player.integrityRestored == 35)
     }
 
     @Test func receiptRecordsTheRestoreApartFromDamage() throws {
         let (sim, _) = try Self.activateBoss(playerIntegrity: 40)
         let receipt = RunReceipt(sim.state)
-        #expect(receipt.integrityRestored == 50)
+        #expect(receipt.integrityRestored == 35)
         #expect(receipt.damageTaken == 0)
         let serialized = receipt.canonical().serialize()
-        #expect(serialized.contains("\"integrityRestored\":50"))
+        #expect(serialized.contains("\"integrityRestored\":35"))
         #expect(serialized.contains("\"damageTaken\":0"))
     }
 
