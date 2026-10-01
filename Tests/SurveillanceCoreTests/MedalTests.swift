@@ -123,6 +123,15 @@ struct MedalTests {
         #expect(!card.shareText.contains("MEDALS"))
     }
 
+    /// D-100: a success that earned no medal shows no medal row either.
+    @Test func aSuccessWithNoMedalsShowsNoRow() {
+        let none = RunCard(state: Self.success, dateLabel: "2026-10-01", bestTicks: nil, medals: [], newMedals: [])
+        #expect(none.value(for: RunCard.medalsLabel) == nil)
+        #expect(!none.shareText.contains("MEDALS"))
+        let one = RunCard(state: Self.success, dateLabel: "2026-10-01", bestTicks: nil, medals: [.swift], newMedals: [])
+        #expect(one.value(for: RunCard.medalsLabel) == "SWIFT")
+    }
+
     // MARK: - RS-022 replay
 
     /// A real piloted success, replayed from its commands: the medals the

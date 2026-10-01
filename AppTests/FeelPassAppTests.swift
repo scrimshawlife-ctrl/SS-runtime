@@ -97,6 +97,18 @@ struct FeelPassAppTests {
         #expect(abs(thinned.base - 0.6) < 1e-9 && thinned.boost == 0, "thinned in a fight")
     }
 
+    /// D-100: the near-miss edge is the cone's own blue made paler, never
+    /// gold, which is reserved for pickups.
+    @Test func nearMissEdgeIsTheConeBlueNotGold() {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        NearMissEdgeLayer.edgeColour.getRed(&r, green: &g, blue: &b, alpha: &a)
+        var cr: CGFloat = 0, cg: CGFloat = 0, cb: CGFloat = 0, ca: CGFloat = 0
+        Palette.patrolConeEdge.getRed(&cr, green: &cg, blue: &cb, alpha: &ca)
+        #expect(b >= r && b >= g, "blue leads, as in the cone")
+        #expect(b - r >= 0.1, "a gold or amber edge has more red than blue")
+        #expect(r >= cr && g >= cg && b >= cb, "paler than the cone's own edge")
+    }
+
     @Test func nearMissEdgeLightsOnlyTheNamedCones() throws {
         var sim = try Simulation.make(seed: 1)
         sim.step(command: .neutral(tick: 1))
