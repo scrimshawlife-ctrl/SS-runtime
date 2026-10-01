@@ -8,6 +8,7 @@ import SurveillanceCore
 /// D-097 takedown ring: a grey wash that pulls the target's colour out, inside
 /// a thin pale ring. Brief, and it never brightens the scene under Reduced
 /// Flash; under Reduced Motion it does not expand.
+@MainActor
 enum TakedownRing {
     static let name = "takedown-ring"
     static let radius: CGFloat = 44
@@ -43,7 +44,8 @@ enum TakedownRing {
 @MainActor
 final class NearMissEdgeLayer {
     static let edgeName = "patrol-near-miss-edge"
-    static let edgeColour = SKColor(red: 1.0, green: 0.86, blue: 0.42, alpha: 1)
+    // The patrol cone's own blue, brightened: gold is reserved for pickups.
+    static let edgeColour = SKColor(red: 0.85, green: 0.95, blue: 1.0, alpha: 1)
 
     let node = SKNode()
     private var edges: [EntityID: SKShapeNode] = [:]
