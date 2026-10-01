@@ -24,16 +24,13 @@ public enum Medal: String, CaseIterable, Codable, Equatable, Hashable, Sendable 
 ///
 /// Feed it every tick's published events in order. It reads nothing else
 /// from the simulation except the set of Transit Patrol member IDs, which it
-/// learns from the state it is handed (they spawn with the run).
+/// learns from the state it is handed (they spawn with the run), and, for
+/// `GHOST`, the authoritative `quietApproach` latch in the final state.
 public struct MedalTracker: Equatable, Sendable {
-    /// `GHOST`: the Detection State reached `tracked` or above before M-C's
-    /// first `waveStarted`.
-    public private(set) var trackedBeforeMobC = false
     /// `SHADOW`: a Transit Patrol member was alerted before M-A's first
     /// `waveStarted`.
     public private(set) var patrolAlertedBeforeMobA = false
     public private(set) var mobAStarted = false
-    public private(set) var mobCStarted = false
     private var patrolMembers: Set<EntityID> = []
 
     public init() {}
@@ -57,29 +54,15 @@ public struct MedalTracker: Equatable, Sendable {
     public mutating func ingest(_ events: [AuthoritativeEvent]) {
         for event in events {
             switch event.type {
-            case .detectionStateChanged:
-                guard !mobCStarted,
-                      case .string(let after)? = event.payload["after"],
-                      let state = DetectionState(rawValue: after)
-                else { continue }
-                if Self.reachesTracked(state) { trackedBeforeMobC = true }
             case .enemyAlerted:
                 guard !mobAStarted, let id = event.primaryEntityId else { continue }
                 if patrolMembers.contains(id) { patrolAlertedBeforeMobA = true }
             case .waveStarted:
                 guard case .string(let encounter)? = event.payload["encounterId"] else { continue }
                 if encounter == CombatAuthorityNode.mobA.rawValue { mobAStarted = true }
-                if encounter == CombatAuthorityNode.mobC.rawValue { mobCStarted = true }
             default:
                 continue
             }
-        }
-    }
-
-    static func reachesTracked(_ state: DetectionState) -> Bool {
-        switch state {
-        case .hidden, .observed: false
-        case .tracked, .hunted, .lockdown: true
         }
     }
 
@@ -89,7 +72,11 @@ public struct MedalTracker: Equatable, Sendable {
         guard state.outcome == .success else { return [] }
         return Medal.allCases.filter { medal in
             switch medal {
-            case .ghost: !trackedBeforeMobC
+            // D-101 / RS-024: GHOST is the quiet-approach latch. Reading it
+            // from events failed: on M-C's activation tick the forced
+            // Lockdown's phase-14 `detectionStateChanged` is published
+            // before M-C's phase-15 `waveStarted`, so no real run earned it.
+            case .ghost: state.exposure.quietApproach
             case .shadow: !patrolAlertedBeforeMobA
             case .blackout: state.networkBlackout
             case .surgical: Self.surgical(integrity: state.player.integrity, max: state.player.maxIntegrity)

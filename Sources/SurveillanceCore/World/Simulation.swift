@@ -263,6 +263,7 @@ public struct Simulation: Equatable, Sendable {
             destroyedCameras: state.destructions.count
         )
         emitExposure(resolution, tick: tick)
+        resolveQuietApproach()
 
         if state.outcome == .failure {
             return finishTick()
@@ -1244,10 +1245,31 @@ public struct Simulation: Equatable, Sendable {
     /// `resolveAwareness` (SS-runtime #104).
     @inline(never)
     private mutating func applyCourtThreshold() {
-        let floor = min(state.content.player.courtThresholdIntegrity, state.player.maxIntegrity)
+        // D-101: a quiet approach raises the floor.
+        let player = state.content.player
+        let target = state.exposure.quietApproach ? player.courtQuietIntegrity : player.courtThresholdIntegrity
+        let floor = min(target, state.player.maxIntegrity)
         guard state.player.isAlive, state.player.integrity < floor else { return }
         state.player.integrityRestored += floor - state.player.integrity
         state.player.integrity = floor
+    }
+
+    /// D-101 (exposure.md § Quiet approach), phase 14 after the Detection
+    /// State resolves: `tracked` or higher before M-C activates clears the
+    /// latch. M-C's activation is resolved before this tick's Exposure (it
+    /// forces Lockdown here), so from the activation tick on the check is
+    /// skipped and the forced Lockdown never costs it.
+    ///
+    /// Kept out of `step` for the debug-stack reason (SS-runtime #104).
+    @inline(never)
+    private mutating func resolveQuietApproach() {
+        guard state.exposure.quietApproach,
+              state.encounters["M-C"]?.activated != true
+        else { return }
+        switch state.exposure.detectionState {
+        case .tracked, .hunted, .lockdown: state.exposure.quietApproach = false
+        case .hidden, .observed: break
+        }
     }
 
     private mutating func closeForwardGate(for encounter: String) {
@@ -1409,6 +1431,10 @@ public struct Simulation: Equatable, Sendable {
         state.upgrade.selected = upgrade
         state.upgrade.pending = false
         state.outcome = .playing
+    }
+
+    mutating func testing_setQuietApproach(_ value: Bool) {
+        state.exposure.quietApproach = value
     }
 
     mutating func testing_setPlayerIntegrity(_ value: Int) {

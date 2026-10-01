@@ -44,6 +44,8 @@ struct PacingProbe {
         /// restore, and the amount restored.
         var integrityBeforeCourt: Int?
         var integrityRestored: Int
+        /// D-101: the quiet-approach latch at the end of the run.
+        var quietApproach: Bool
         /// `arena.md` § 5 segment starts (D-079), measured by the core.
         var timeline: PacingTimeline
         /// D-083: every M-A/M-B wave start, the Detection State the director
@@ -333,6 +335,7 @@ struct PacingProbe {
             bossDamageBySource: bossDamageBySource,
             integrityBeforeCourt: integrityBeforeCourt,
             integrityRestored: sim.state.player.integrityRestored,
+            quietApproach: sim.state.exposure.quietApproach,
             timeline: timeline,
             waveHeat: waveHeat,
             mobCStartTick: mobCStartTick,
@@ -403,7 +406,7 @@ struct PacingProbe {
             + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave),\"camerasBefore\":\($0.camerasDestroyedBefore)}" }.joined(separator: ","))],"
             + "\"damageBySource\":\(map(r.damageBySource)),"
             + "\"bossDamageBySource\":\(map(r.bossDamageBySource)),"
-            + "\"integrityBeforeCourt\":\(r.integrityBeforeCourt.map(String.init) ?? "null"),\"integrityRestored\":\(r.integrityRestored),"
+            + "\"integrityBeforeCourt\":\(r.integrityBeforeCourt.map(String.init) ?? "null"),\"integrityRestored\":\(r.integrityRestored),\"quietApproach\":\(r.quietApproach),"
             + "\"zoneEntry\":\(map(r.zoneEntry)),\"milestones\":\(map(r.milestones)),"
             + "\"segmentStarts\":\(map(Dictionary(uniqueKeysWithValues: r.timeline.starts.map { ($0.key.rawValue, $0.value) }))),"
             + "\"segmentsOffTarget\":[\(r.timeline.segmentsOffTarget.map { "\"\($0.rawValue)\"" }.joined(separator: ","))]}"

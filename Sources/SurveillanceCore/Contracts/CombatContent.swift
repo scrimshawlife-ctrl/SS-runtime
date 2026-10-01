@@ -95,7 +95,7 @@ public struct WaveSpec: Equatable, Sendable {
     public var members: [WaveMember]
 }
 
-/// `combat-content-005` `heat` (D-083): Autonomous Informants appended to an
+/// `combat-content-006` `heat` (D-083): Autonomous Informants appended to an
 /// M-A or M-B wave by the Detection State read when the wave starts.
 public struct HeatSpec: Equatable, Sendable {
     public var reinforcementArchetype: ArchetypeID
@@ -112,7 +112,7 @@ public struct HeatSpec: Equatable, Sendable {
     }
 }
 
-/// `combat-content-005` `awareness` (D-089, `enemies-and-encounters.md`
+/// `combat-content-006` `awareness` (D-089, `enemies-and-encounters.md`
 /// § Awareness): which standard enemies can be unaware, how they become
 /// alerted, and the ambush multiplier.
 public struct AwarenessSpec: Equatable, Sendable {
@@ -165,7 +165,7 @@ public struct AwarenessSpec: Equatable, Sendable {
     }
 }
 
-/// `combat-content-005` `patrol` (D-091, `enemies-and-encounters.md`
+/// `combat-content-006` `patrol` (D-091, `enemies-and-encounters.md`
 /// § Transit Patrol): how an unaware patrol member moves and sees. The routes
 /// themselves are arena data (`civic-seam-arena-004` `patrols`).
 public struct PatrolSpec: Equatable, Sendable {
@@ -198,7 +198,7 @@ public struct PatrolSpec: Equatable, Sendable {
     }
 }
 
-/// `combat-content-005` `player` (D-090, `player-controller.md` § Damage
+/// `combat-content-006` `player` (D-090, `player-controller.md` § Damage
 /// response).
 public struct PlayerDamageSpec: Equatable, Sendable {
     /// Spawn Integrity, and the clamp's ceiling (D-092, 150).
@@ -208,17 +208,26 @@ public struct PlayerDamageSpec: Equatable, Sendable {
     public var damageTakenPercent: Int
     /// Captain Court threshold (D-096, bosses.md): on `bossActivated` the
     /// Player is raised to at least this percent of `integrity`, never
-    /// lowered (60).
+    /// lowered (50).
     public var courtThresholdRestorePercent: Int
+    /// D-101 quiet approach: the threshold percent instead, when
+    /// `ExposureState.quietApproach` is still true at boss activation (60).
+    public var courtQuietRestorePercent: Int
 
     /// The Integrity floor the Captain Court threshold restores to:
     /// `integrity × courtThresholdRestorePercent / 100`, rounded down.
     public var courtThresholdIntegrity: Int {
         integrity * courtThresholdRestorePercent / 100
     }
+
+    /// The D-101 quiet-approach floor: `integrity × courtQuietRestorePercent
+    /// / 100`, rounded down.
+    public var courtQuietIntegrity: Int {
+        integrity * courtQuietRestorePercent / 100
+    }
 }
 
-/// `combat-content-005` `boss.phases[].minHp` (bosses.md): the lowest HP
+/// `combat-content-006` `boss.phases[].minHp` (bosses.md): the lowest HP
 /// after a damage batch at which each phase still holds.
 public struct BossPhaseBands: Equatable, Sendable {
     /// Minimum HP of each phase, in `BossPhase.receiptOrder`, strictly
@@ -298,7 +307,7 @@ public struct CombatContent: Equatable, Sendable {
     public var player: PlayerDamageSpec
 
     public static func bundled() -> CombatContent {
-        let data = BundledResource.data(name: "combat-content-005", subdirectory: "contracts")
+        let data = BundledResource.data(name: "combat-content-006", subdirectory: "contracts")
         return try! decode(data)
     }
 
@@ -411,19 +420,24 @@ public struct CombatContent: Equatable, Sendable {
 
     /// `player`: Integrity (D-092, at least 1), the damage-taken percent
     /// (D-090, 0 through 100), and the Captain Court threshold restore
-    /// percent (D-096, 0 through 100).
+    /// percent (D-096, 0 through 100), and the quiet-approach restore percent
+    /// (D-101, 0 through 100).
     private static func parsePlayer(_ raw: Any?) throws -> PlayerDamageSpec {
         let values = try strictInts(raw, block: "player", minimums: [
-            "integrity": 1, "damageTakenPercent": 0, "courtThresholdRestorePercent": 0
+            "integrity": 1, "damageTakenPercent": 0, "courtThresholdRestorePercent": 0,
+            "courtQuietRestorePercent": 0
         ])
         let percent = values["damageTakenPercent"]!
         guard percent <= 100 else { throw CombatContentError.wrongType("player.damageTakenPercent") }
         let restore = values["courtThresholdRestorePercent"]!
         guard restore <= 100 else { throw CombatContentError.wrongType("player.courtThresholdRestorePercent") }
+        let quiet = values["courtQuietRestorePercent"]!
+        guard quiet <= 100 else { throw CombatContentError.wrongType("player.courtQuietRestorePercent") }
         return PlayerDamageSpec(
             integrity: values["integrity"]!,
             damageTakenPercent: percent,
-            courtThresholdRestorePercent: restore
+            courtThresholdRestorePercent: restore,
+            courtQuietRestorePercent: quiet
         )
     }
 

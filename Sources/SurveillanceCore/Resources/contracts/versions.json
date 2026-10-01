@@ -1,7 +1,7 @@
 {
   "schemaVersion": "runtime-kernel-001",
-  "rulesetVersion": "ss-rules-005",
-  "contentVersion": "civic-seam-content-005",
+  "rulesetVersion": "ss-rules-006",
+  "contentVersion": "civic-seam-content-006",
   "arenaVersion": "civic-seam-arena-004",
   "componentContracts": {
     "cameraDestruction": "camera-destruction-001",
@@ -14,7 +14,7 @@
     "enemiesEncounters": "enemies-encounters-001",
     "upgrades": "upgrades-001",
     "bosses": "bosses-001",
-    "combatContent": "combat-content-005",
+    "combatContent": "combat-content-006",
     "arenaLayout": "civic-seam-arena-004",
     "arenaSchema": "arena-manifest-001",
     "hudTutorial": "hud-tutorial-001",

@@ -11,6 +11,9 @@ final class GameSession {
     private var heatCaption = HeatCaptionProjector()
     /// D-083 heat caption, derived from the tick's events; nil when none shows.
     private(set) var reinforcementCopy: String?
+    /// D-101 quiet-approach tag and captions, read from the authoritative latch.
+    private var quietApproach = QuietApproachProjector()
+    private(set) var quietFrame = QuietApproachProjector.Frame(tagVisible: true, caption: nil)
     /// D-089 "first unaware enemy on screen" copy, derived from the snapshot.
     private var awarenessHint = AwarenessHintProjector()
     private(set) var awarenessHintCopy: String?
@@ -99,6 +102,7 @@ final class GameSession {
             detection: simulation.state.exposure.detectionState,
             heat: simulation.state.content.heat
         )
+        quietFrame = quietApproach.project(tick: result.tick, events: result.events, state: simulation.state)
         feel.didStep(events: result.events, enemiesBefore: enemiesBefore, state: simulation.state)
         applyAudio(result)
         audio = feel.decorate(audio)
@@ -124,6 +128,8 @@ final class GameSession {
         captionBoard.reset()
         heatCaption.reset()
         reinforcementCopy = nil
+        quietApproach.reset()
+        quietFrame = QuietApproachProjector.Frame(tagVisible: true, caption: nil)
         awarenessHint.reset()
         awarenessHintCopy = nil
         feel.reset()
@@ -890,6 +896,7 @@ final class GameScene: SKScene {
         hud.dodgePressed = controller.dodgeTouch != nil
         hud.captions = session.captionBoard.visible(at: snap.tick, setting: settings.captions)
         hud.reinforcementCopy = session.reinforcementCopy
+        hud.quietFrame = session.quietFrame
         hud.awarenessHintCopy = session.awarenessHintCopy
         hud.render(snap, cameraHUD: session.cameraHUDProjection, paused: runPaused)
     }

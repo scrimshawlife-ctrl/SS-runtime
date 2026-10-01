@@ -108,7 +108,7 @@ struct GrayscaleSystemsTests {
     }
 
     /// BO-002 (D-090): boss HP 1600/1200/1199/800/799/400/399/1, against the
-    /// bands `combat-content-005` authors (`boss.phases[].minHp`), not a
+    /// bands `combat-content-006` authors (`boss.phases[].minHp`), not a
     /// table in code.
     @Test func bossPhaseBO002HealthBands() {
         let content = CombatContent.bundled()

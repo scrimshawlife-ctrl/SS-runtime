@@ -1,11 +1,11 @@
 {
   "fixtureVersion": "replay-matrix-001",
-  "rulesetVersion": "ss-rules-005",
+  "rulesetVersion": "ss-rules-006",
   "entries": [
     {
       "id": "RM-001",
       "fixture": "replay-smoke-001",
-      "expectedFinalDigest": "9a4bfad5ebf2a84cb8a6d1a26e314b1c9c6da0096c3406915745d9be916c7733",
+      "expectedFinalDigest": "e52e8f1bc48cb041dce57d53ac141eecf5b0d150866b98dba096ec27a7cb4827",
       "tripleRunRequired": true
     }
   ]

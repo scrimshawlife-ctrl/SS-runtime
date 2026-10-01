@@ -123,7 +123,9 @@ public enum StateDigest {
                 "value": .integer(Int64(state.exposure.exposure)),
                 "state": .string(state.exposure.detectionState.rawValue),
                 "noContactTicks": .integer(Int64(state.exposure.noContactTicks)),
-                "lockdownEntered": .bool(state.exposure.lockdownEntered)
+                "lockdownEntered": .bool(state.exposure.lockdownEntered),
+                // D-101: authoritative, so it is in the digest.
+                "quietApproach": .bool(state.exposure.quietApproach)
             ]),
             "upgrade": state.upgrade.selected.map { .string($0.rawValue) } ?? .null,
             "extraction": .object([
