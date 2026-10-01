@@ -11,7 +11,7 @@ import Testing
 /// SpriteKit measures angles counter-clockwise, so a renderer must draw a field
 /// at screen angle `−heading`. Getting that sign wrong mirrors every field
 /// across the X axis and shows surveillance coverage where there is none. Every
-/// authored Camera in `civic-seam-arena-003` is off-axis, so the mirroring is
+/// authored Camera in `civic-seam-arena-004` is off-axis, so the mirroring is
 /// never a coincidental no-op.
 @Suite(.serialized)
 struct ConeOrientationTests {

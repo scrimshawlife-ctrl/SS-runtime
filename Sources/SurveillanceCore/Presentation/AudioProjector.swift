@@ -63,17 +63,23 @@ public struct AudioProjection: Equatable, Sendable {
     /// the boss state selects among four phase beds.
     public var musicBedAssetId: String
     public var captions: [String]
+    /// This tick's captioned cues, whatever the audio settings. Captions
+    /// always appear (D-015), so the D-094 caption stack reads these rather
+    /// than `cues`, which is empty while effects are off.
+    public var captionCues: [ProjectedCue]
 
     public init(
         cues: [ProjectedCue],
         musicState: MusicState,
         musicBedAssetId: String? = nil,
-        captions: [String]
+        captions: [String],
+        captionCues: [ProjectedCue] = []
     ) {
         self.cues = cues
         self.musicState = musicState
         self.musicBedAssetId = musicBedAssetId ?? "music_\(musicState.rawValue)"
         self.captions = captions
+        self.captionCues = captionCues
     }
 
     public static let silent = AudioProjection(cues: [], musicState: .explore, captions: [])
@@ -214,7 +220,8 @@ public struct AudioProjector: Equatable, Sendable {
             cues: settings.effectsEnabled ? voices : [],
             musicState: Self.musicState(world),
             musicBedAssetId: Self.musicBedAssetId(world),
-            captions: captionHistory
+            captions: captionHistory,
+            captionCues: voices.filter { !$0.caption.isEmpty }
         )
     }
 

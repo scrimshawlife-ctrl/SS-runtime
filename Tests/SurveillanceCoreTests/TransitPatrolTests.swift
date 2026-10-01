@@ -463,7 +463,7 @@ struct TransitPatrolTests {
     /// coordinate, an unknown archetype, the elite, one waypoint, or a
     /// waypoint in a solid or trigger or outside its zone all fail closed.
     @Test func patrolsBlockFailsClosed() throws {
-        let data = BundledResource.data(name: "civic-seam-arena-003", subdirectory: "contracts")
+        let data = BundledResource.data(name: "civic-seam-arena-004", subdirectory: "contracts")
         let bundled = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
         func load(_ edit: (inout [[String: Any]]) -> Void, drop: Bool = false) -> Error? {
             var root = bundled

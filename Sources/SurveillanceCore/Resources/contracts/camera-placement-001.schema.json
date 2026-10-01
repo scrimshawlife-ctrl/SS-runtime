@@ -7,7 +7,7 @@
   "required": ["cameraPlacementVersion", "arenaVersion", "sockets"],
   "properties": {
     "cameraPlacementVersion": {"const": "camera-placement-001"},
-    "arenaVersion": {"const": "civic-seam-arena-003"},
+    "arenaVersion": {"const": "civic-seam-arena-004"},
     "sockets": {
       "type": "array",
       "minItems": 18,

@@ -1,4 +1,4 @@
-/// Millidegree trigonometry. Angles are clockwise from +X as specified by civic-seam-arena-003.
+/// Millidegree trigonometry. Angles are clockwise from +X as specified by civic-seam-arena-004.
 public enum MilliDeg {
     public static let circle = 360_000
     public static let right = 90_000

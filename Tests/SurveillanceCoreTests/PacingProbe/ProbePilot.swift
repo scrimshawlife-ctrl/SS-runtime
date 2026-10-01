@@ -36,6 +36,10 @@ import SurveillanceCore
 /// Its route knowledge is perfect and its reactions are instant unless the
 /// profile says otherwise. It is a measuring instrument, not a model of a
 /// person. It reads only `PresentationSnapshot` and never writes state.
+///
+/// Shared source: Debug app builds compile this file too (`project.yml`), so
+/// `-SSAutopilot run` plays whole runs with this pilot. It must keep to the
+/// public `SurveillanceCore` API and to Foundation; Release excludes it.
 struct ProbePilot {
     struct Profile: Sendable {
         /// How the pilot treats Cameras (D-082, D-083).

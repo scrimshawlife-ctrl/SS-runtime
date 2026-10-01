@@ -35,7 +35,7 @@ public enum EnemyAwareness: String, Equatable, Sendable {
 /// unaware; once alerted the member runs its archetype's state machine and
 /// never resumes patrol.
 public struct PatrolState: Equatable, Sendable {
-    /// Index of the route in `civic-seam-arena-003` `patrols`.
+    /// Index of the route in `civic-seam-arena-004` `patrols`.
     public var route: Int
     /// The waypoint the member is heading for (or holding at).
     public var target: Int

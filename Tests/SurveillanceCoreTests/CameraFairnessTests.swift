@@ -27,7 +27,7 @@ struct CameraFairnessTests {
         #expect(poolOk)
         #expect(legalCount == legal.count)
         #expect(!legal.isEmpty)
-        // Pinned civic-seam-arena-003.json coordinates are authority; do not rewrite them.
+        // Pinned civic-seam-arena-004.json coordinates are authority; do not rewrite them.
         // D-087 moved cam-z02-d off the kiosk: no field origin in a solid, and
         // every socket has a Civic Pulse stand, in every legal set that selects it.
         // cam-z02-b field still leaks into walkable Z-01; spawn-point alley protection still holds.
