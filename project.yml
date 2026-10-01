@@ -24,10 +24,18 @@ targets:
     platform: iOS
     sources:
       - path: App
+      # The T305 probe pilot, shared with the debug autopilot so
+      # `-SSAutopilot run` plays a whole run with the same routing the
+      # pacing probes use. Debug only: Release excludes it below, and
+      # `DebugAutopilot` (its only app user) is `#if DEBUG`.
+      - path: Tests/SurveillanceCoreTests/PacingProbe/ProbePilot.swift
     dependencies:
       - package: SurveillanceCore
         product: SurveillanceCore
     settings:
+      configs:
+        Release:
+          EXCLUDED_SOURCE_FILE_NAMES: ProbePilot.swift
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.zer0state.surveillancesurvivor
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES

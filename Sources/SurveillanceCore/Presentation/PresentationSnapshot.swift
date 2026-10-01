@@ -93,6 +93,10 @@ public struct PresentationSnapshot: Equatable, Sendable {
     /// derives environment asset IDs from `permanentSolids`, so the id is the
     /// link between a collision box and the sprite drawn over it.
     public var solidIds: [String]
+    /// Every arena gate id. A closed gate is one of `solids`; D-094 draws it
+    /// as a security barrier rather than as a blockout, so the renderer has
+    /// to know which solids are gates. Open gates are not in `solids`.
+    public var gateIds: Set<String> = []
     /// Arena extent, so the ground plane knows how far to tile.
     public var arenaBounds: AABB
     /// Authored zones with their rectangles. The ground surface is chosen per
@@ -204,6 +208,7 @@ public struct PresentationSnapshot: Equatable, Sendable {
         let live = state.liveSolids
         solids = live.map(\.box)
         solidIds = live.map(\.id)
+        gateIds = Set(state.gates.map(\.id))
         arenaBounds = state.arena.boundsUnits.aabb
         zones = state.arena.zones.map { ZoneRect(id: $0.id, box: $0.aabb) }
         decorations = state.arena.placedDecorations

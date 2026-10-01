@@ -19,6 +19,8 @@ final class GameSession {
     private var reactions = (try? ReactionClipTracker.bundled()) ?? .empty
     /// Last tick's audio projection, consumed by the device layer.
     private(set) var audio = AudioProjection.silent
+    /// D-094 on-screen caption stack, fed from each tick's captioned cues.
+    private(set) var captionBoard = CaptionBoard()
     var audioSettings: PresentationAudioSettings = .enabled
     private(set) var cameraHUDProjection = CameraHUDProjection(
         notchesVisible: false,
@@ -94,6 +96,7 @@ final class GameSession {
             heat: simulation.state.content.heat
         )
         applyAudio(result)
+        captionBoard.ingest(tick: result.tick, cues: audio.captionCues)
         awarenessHintCopy = awarenessHint.project(PresentationSnapshot(simulation.state))
         persistTerminalReceiptIfNeeded()
     }
@@ -112,6 +115,7 @@ final class GameSession {
         scenarioSeeded = false
         terminalReceiptStored = false
         audioProjector.reset()
+        captionBoard.reset()
         heatCaption.reset()
         reinforcementCopy = nil
         awarenessHint.reset()
@@ -182,6 +186,8 @@ final class GameScene: SKScene {
     private let vfx = VFXRenderer()
     private let cameraNode = SKCameraNode()
     private let hud = HUDRenderer()
+    /// D-094 Lockdown tint: world layer only, under the HUD.
+    private let lockdownTint = LockdownTintLayer()
     private let soundEngine = AudioEngine()
     private var controller = TouchController()
     private var projector: HUDProjector?
@@ -221,6 +227,7 @@ final class GameScene: SKScene {
         addChild(renderer.root)
         addChild(cameraNode)
         camera = cameraNode
+        cameraNode.addChild(lockdownTint.node)
         vfx.install(in: self, camera: cameraNode, worldRoot: renderer.root)
         // `ignoresSiblingOrder` makes draw order depend on zPosition alone, and
         // ties are undefined. WorldRenderer assigns its layers 0...8 while the
@@ -293,6 +300,8 @@ final class GameScene: SKScene {
             sceneSize: size
         )
         self.projector = projector
+        // D-094 outlines are one screen point wide.
+        renderer.outlineWidthUnits = 1 / projector.pointsPerSceneUnit
         hud.configure(
             projector: projector,
             // Handedness is a local setting, not authoritative state.
@@ -392,6 +401,7 @@ final class GameScene: SKScene {
                     armed=\(snapshot.extractionArmed) outcome=\(snapshot.outcome.rawValue) \
                     music=\(soundEngine.musicState.rawValue) \
                     sprites=\(renderer.spriteCoverage.backed)/\(renderer.spriteCoverage.total) \
+                    gates=\(snapshot.solidIds.filter { snapshot.gateIds.contains($0) }.joined(separator: ",")) \
                     pilot=[\(autopilot!.lastDecision)]
                     """
                 Self.autopilotLog.notice("\(line, privacy: .public)")
@@ -430,6 +440,12 @@ final class GameScene: SKScene {
             )
         }
 #endif
+    }
+
+    /// Outlines follow the frame each animation action just chose.
+    override func didEvaluateActions() {
+        super.didEvaluateActions()
+        renderer.syncOutlines()
     }
 
     private func applyController() {
@@ -524,6 +540,7 @@ final class GameScene: SKScene {
         loadGhost()
         soundEngine.reset()
         renderer.reset()
+        lockdownTint.reset()
         vfx.reset()
         instrumentation.reset()
         // `GameSession.restartRun` zeroes the session's command, but the
@@ -674,9 +691,10 @@ final class GameScene: SKScene {
             ghost: ghostPresentation(liveTick: snap.tick)
         )
         vfx.render(snap)
+        lockdownTint.update(snap, settings: settings.vfx)
         hud.knobOffsetPoints = controller.knobOffset
         hud.dodgePressed = controller.dodgeTouch != nil
-        hud.captions = session.audio.captions
+        hud.captions = session.captionBoard.visible(at: snap.tick, setting: settings.captions)
         hud.reinforcementCopy = session.reinforcementCopy
         hud.awarenessHintCopy = session.awarenessHintCopy
         hud.render(snap, cameraHUD: session.cameraHUDProjection, paused: runPaused)

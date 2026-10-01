@@ -11,6 +11,12 @@ import SurveillanceCore
 /// No gameplay state depends on points, scale, safe area, or handedness.
 @MainActor
 final class HUDRenderer {
+    /// Font sizes and stroke widths here are authored in scene units at the
+    /// pre-D-094 896-unit framing. D-094 shows 704 units across the same
+    /// screen, which would draw them 27% larger; scaling by the framing
+    /// ratio keeps the HUD the size it was on screen while the world zooms.
+    static let framingScale = CGFloat(PresentationCamera.visibleWidth) / 896
+
     let root = SKNode()
     private var nodes: [String: SKNode] = [:]
     private var seen: Set<String> = []
@@ -112,7 +118,7 @@ final class HUDRenderer {
             shape.name = assetId
             shape.fillColor = .clear
             shape.strokeColor = HUDPalette.frame
-            shape.lineWidth = 1
+            shape.lineWidth = 1 * Self.framingScale
             return shape
         }
         frame.position = centre
@@ -176,7 +182,7 @@ final class HUDRenderer {
             let notch = node("exposure-notch-\(threshold)") { () -> SKShapeNode in
                 let shape = SKShapeNode()
                 shape.strokeColor = HUDPalette.frame
-                shape.lineWidth = 1
+                shape.lineWidth = 1 * Self.framingScale
                 return shape
             }
             let path = CGMutablePath()
@@ -204,7 +210,7 @@ final class HUDRenderer {
         )
         marks.position = CGPoint(x: centre.x - width / 2, y: centre.y)
         marks.strokeColor = HUDPalette.patternInk
-        marks.lineWidth = 1
+        marks.lineWidth = 1 * Self.framingScale
     }
 
     /// hud-tutorial-001 §Exposure presentation bar patterns.
@@ -341,7 +347,7 @@ final class HUDRenderer {
             shape.name = RuntimeAssetRegistry.HUD.extractionRing
             shape.fillColor = .clear
             shape.strokeColor = HUDPalette.accolade
-            shape.lineWidth = 3
+            shape.lineWidth = 3 * Self.framingScale
             return shape
         }
         // The ring uses exact tick progress; the number uses ceil(ticks / 60).
@@ -490,11 +496,14 @@ final class HUDRenderer {
         )
     }
 
-    /// Caption history in a right-hand column, newest at the bottom.
+    /// The D-094 caption stack in a right-hand column, newest at the bottom.
     ///
     /// The layout table does not place captions, so they take the free strip
     /// under the upgrade badge — clear of the tutorial card at the bottom
     /// centre, which carries higher-priority copy and must never be occluded.
+    /// `CaptionBoard` has already capped and ordered them; a safety-critical
+    /// caption draws bright with a leading bar, a routine one dim without,
+    /// so the class is carried by shape as well as by tone.
     private func drawCaptions(_ projector: HUDProjector) {
         guard !captions.isEmpty else { return }
         let column = projector.mapped(
@@ -506,15 +515,14 @@ final class HUDRenderer {
             fromPoints: CGPoint(x: CGFloat(column.x + column.width), y: CGFloat(column.y))
         )
         let line = projector.sceneLength(points: 13)
-        let visible = captions.suffix(8)
-        for (index, caption) in visible.enumerated() {
-            let fromNewest = visible.count - 1 - index
+        for (index, caption) in captions.prefix(CaptionBoard.maxVisible).enumerated() {
+            let safety = caption.captionClass == .safety
             label(
                 key: "caption-\(index)",
-                text: caption.uppercased(),
+                text: (safety ? "▌ " : "") + caption.text.uppercased(),
                 at: CGPoint(x: right.x, y: right.y - line * CGFloat(index)),
                 size: 8,
-                colour: fromNewest == 0 ? HUDPalette.text : HUDPalette.dim,
+                colour: safety ? HUDPalette.text : HUDPalette.dim,
                 alignment: .right
             )
         }
@@ -547,7 +555,7 @@ final class HUDRenderer {
             shape.name = RuntimeAssetRegistry.HUD.stickBase
             shape.fillColor = HUDPalette.controlFill
             shape.strokeColor = HUDPalette.controlStroke
-            shape.lineWidth = 2
+            shape.lineWidth = 2 * Self.framingScale
             return shape
         }
         base.position = stickCentre
@@ -573,7 +581,7 @@ final class HUDRenderer {
             let shape = SKShapeNode(circleOfRadius: dodge.size.width / 2)
             shape.name = RuntimeAssetRegistry.HUD.dodge
             shape.strokeColor = HUDPalette.controlStroke
-            shape.lineWidth = 2
+            shape.lineWidth = 2 * Self.framingScale
             return shape
         }
         dodgeNode.position = dodge.centre
@@ -616,9 +624,10 @@ final class HUDRenderer {
     var knobOffsetPoints: CGPoint = .zero
     var dodgePressed = false
     /// audio-haptics-001 §Accessibility: "Every safety-critical audio event has
-    /// a visual caption/event equivalent." The projector keeps the last eight
-    /// and clears them on restart; this only draws them.
-    var captions: [String] = []
+    /// a visual caption/event equivalent." D-094: the visible stack from
+    /// `CaptionBoard` (at most three, safety-critical first, per the caption
+    /// setting); this only draws it.
+    var captions: [CaptionBoard.Entry] = []
     /// D-083 heat caption from `HeatCaptionProjector`, or nil. This only draws it.
     var reinforcementCopy: String?
     /// D-089 tutorial copy from `AwarenessHintProjector`, or nil. This only draws it.
@@ -837,7 +846,7 @@ final class HUDRenderer {
                 )
                 shape.fillColor = HUDPalette.panel
                 shape.strokeColor = HUDPalette.frame
-                shape.lineWidth = 2
+                shape.lineWidth = 2 * Self.framingScale
                 shape.isAccessibilityElement = true
                 shape.accessibilityLabel = card.voiceOverLabel
                 return shape
@@ -900,7 +909,7 @@ final class HUDRenderer {
             return node
         }
         node.text = text
-        node.fontSize = size
+        node.fontSize = size * Self.framingScale
         node.fontColor = colour
         node.horizontalAlignmentMode = alignment
         node.position = alignment == .left && leftEdge != nil

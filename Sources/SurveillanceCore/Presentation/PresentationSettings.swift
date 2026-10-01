@@ -27,6 +27,10 @@ public struct PresentationSettings: Equatable, Sendable, Codable {
     /// turned off. Presentation only; not receipt metadata, because the ghost
     /// cannot change what happened in a run (RS-014).
     public var ghostEnabled: Bool
+    /// D-094 (`audio-haptics.md` "On-screen captions"): Important (default),
+    /// All, or Off. Presentation only; not receipt metadata, since it changes
+    /// neither the run nor how its result reads.
+    public var captions: CaptionSetting
 
     public init(
         mix: MixLevels = .defaults,
@@ -36,7 +40,8 @@ public struct PresentationSettings: Equatable, Sendable, Codable {
         handedness: Handedness = .right,
         pinCameraCounter: Bool = false,
         tutorialsEnabled: Bool = true,
-        ghostEnabled: Bool = true
+        ghostEnabled: Bool = true,
+        captions: CaptionSetting = .important
     ) {
         self.mix = mix
         self.audio = audio
@@ -46,11 +51,14 @@ public struct PresentationSettings: Equatable, Sendable, Codable {
         self.pinCameraCounter = pinCameraCounter
         self.tutorialsEnabled = tutorialsEnabled
         self.ghostEnabled = ghostEnabled
+        self.captions = captions
     }
 
-    /// Settings saved before the ghost existed have no `ghostEnabled` key. They
-    /// keep every stored choice and take the § 10.2 default for the new one,
-    /// rather than failing to decode and losing the player's settings.
+    /// Settings saved before the ghost existed have no `ghostEnabled` key, and
+    /// settings saved before D-094 have no `captions` key. They keep every
+    /// stored choice and take the default for the missing one, rather than
+    /// failing to decode and losing the player's settings. An unknown
+    /// `captions` value (a newer build's file) also falls back to the default.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.init(
@@ -61,7 +69,8 @@ public struct PresentationSettings: Equatable, Sendable, Codable {
             handedness: try container.decode(Handedness.self, forKey: .handedness),
             pinCameraCounter: try container.decode(Bool.self, forKey: .pinCameraCounter),
             tutorialsEnabled: try container.decode(Bool.self, forKey: .tutorialsEnabled),
-            ghostEnabled: try container.decodeIfPresent(Bool.self, forKey: .ghostEnabled) ?? true
+            ghostEnabled: try container.decodeIfPresent(Bool.self, forKey: .ghostEnabled) ?? true,
+            captions: (try? container.decodeIfPresent(CaptionSetting.self, forKey: .captions)) ?? .important
         )
     }
 

@@ -49,10 +49,17 @@ struct SettingsView: View {
             Toggle("Effects", isOn: $store.settings.audio.effectsEnabled)
             Toggle("Music", isOn: $store.settings.audio.musicEnabled)
             Toggle("Haptics", isOn: $store.settings.audio.hapticsEnabled)
+
+            Picker("Captions", selection: $store.settings.captions) {
+                Text("Important").tag(CaptionSetting.important)
+                Text("All").tag(CaptionSetting.all)
+                Text("Off").tag(CaptionSetting.off)
+            }
+            .accessibilityHint("Important shows safety warnings only. All adds routine sounds. Off hides captions.")
         } header: {
             Text("Audio")
         } footer: {
-            Text("Captions always appear, whatever these are set to. No audio event is the only carrier of a safety-critical warning.")
+            Text("Captions follow their own setting, whatever the audio is set to. Important shows damage, telegraphs, detection, Lockdown, and Extraction. Every safety warning also shows on the HUD or in the world, so no audio event is its only carrier.")
         }
     }
 

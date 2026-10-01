@@ -18,7 +18,7 @@ import SurveillanceCore
 ///
 /// | Scenario | Behaviour |
 /// |---|---|
-/// | `run` | play the objective graph through to Extraction |
+/// | `run` | play the objective graph through to Extraction (`ProbePilot`) |
 /// | `mobA` … `boss`, `extraction` | walk to one objective and hold |
 ///
 /// `-SSAutopilotUpgrade <signalJammer\|ricochetPulse\|ghostStep>` picks which
@@ -34,6 +34,12 @@ struct DebugAutopilot {
     private let mode: Mode
     private let arena: ArenaManifest
     let upgradeChoice: UpgradeID
+
+    /// `run` plays with the T305 probe pilot (`ProbePilot`, competent
+    /// profile): grid navigation over the live solids, line-of-fire hunting,
+    /// hazard reading, and anti-rocking. The wall-follow below never finished
+    /// a run; it stalled at M-C (#63). The waypoint scenarios keep it.
+    private var probe: ProbePilot?
 
     /// Ticks spent without the objective changing, so a wedged run gives up
     /// instead of grinding forever.
@@ -97,7 +103,9 @@ struct DebugAutopilot {
             arena.encounterTriggers.first { $0.id == "trigger-\(encounterId)" }?.center
         }
         switch scenario {
-        case "run", "tour": mode = .fullRun
+        case "run", "tour":
+            mode = .fullRun
+            probe = ProbePilot(profile: .competent, arena: arena)
         case "mobA": guard let t = trigger("M-A") else { return nil }; mode = .waypoint(t)
         case "mobB": guard let t = trigger("M-B") else { return nil }; mode = .waypoint(t)
         case "mobC": guard let t = trigger("M-C") else { return nil }; mode = .waypoint(t)
@@ -127,7 +135,7 @@ struct DebugAutopilot {
             ?? arena.extraction.center
     }
 
-    var stalled: Bool { ticksOnObjective >= Self.objectiveTimeoutTicks }
+    var stalled: Bool { probe?.stalled ?? (ticksOnObjective >= Self.objectiveTimeoutTicks) }
 
     /// Why the pilot did what it did last tick, for the autopilot log. A stall
     /// is only diagnosable if the intent behind a frozen position is visible.
@@ -143,6 +151,13 @@ struct DebugAutopilot {
     }
 
     mutating func command(_ snapshot: PresentationSnapshot) -> Command {
+        if var pilot = probe {
+            let steer = pilot.command(snapshot)
+            probe = pilot
+            lastDecision = "probe node=\(snapshot.objectiveNode.rawValue)"
+                + " cmd=\(steer.moveX),\(steer.moveY) dodge=\(steer.dodge)"
+            return Command(moveX: steer.moveX, moveY: steer.moveY, dodge: steer.dodge)
+        }
         if snapshot.objectiveNode != lastObjective {
             lastObjective = snapshot.objectiveNode
             ticksOnObjective = 0

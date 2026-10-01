@@ -50,6 +50,8 @@ final class WorldRenderer {
         case telegraphs
         case mines
         case spawnSockets
+        /// D-094 ground shadows, under every actor and over every surface.
+        case actorShadows
         case actors
         case projectiles
         case markers
@@ -75,6 +77,12 @@ final class WorldRenderer {
     /// Static solids are rebuilt only when the live solid set actually changes
     /// (a gate opening or closing), not every tick.
     private var solidSignature: Int?
+    /// D-094 fog thinning, advanced by the snapshot's tick.
+    private(set) var fogThinning = FogThinning()
+    /// D-094 outline textures, generated once per source frame.
+    private let outlines = OutlineTextures()
+    /// D-094 soft ground shadow, generated once and shared by every actor.
+    private lazy var shadowTexture = Self.makeShadowTexture()
 
     init() {
         for layer in Layer.allCases {
@@ -92,6 +100,7 @@ final class WorldRenderer {
             nodes[layer] = [:]
         }
         solidSignature = nil
+        fogThinning.reset()
         activeClips = [:]
         decorationsBuilt = false
         fogBuilt = false
@@ -477,6 +486,20 @@ final class WorldRenderer {
             // renderCameras always draws something, clip or circle.
             if let id, id.hasPrefix(SelectedCamera.mountSolidPrefix) { continue }
 
+            // D-094: a closed gate is a security barrier, never a blockout.
+            if let id, snap.gateIds.contains(id) {
+                if let layer {
+                    layer.addChild(
+                        gateBarrier(
+                            id: id,
+                            box: solid,
+                            viewer: VecI(x: snap.player.x, y: snap.player.y)
+                        )
+                    )
+                }
+                continue
+            }
+
             let size = CGSize(
                 width: CGFloat(solid.halfSize.x * 2),
                 height: CGFloat(solid.halfSize.y * 2)
@@ -501,6 +524,80 @@ final class WorldRenderer {
             }
         }
     }
+
+    /// Node name prefix for a closed gate's barrier, `gate-barrier-<gate id>`.
+    nonisolated static let gateBarrierPrefix = "gate-barrier-"
+    nonisolated static let gateTileName = "gate-tile"
+    nonisolated static let gateStripName = "gate-strip"
+    nonisolated static let gateLightName = "gate-light"
+
+    /// D-094 (`animation.md` § 8b): barricade art tiled along the gate's box,
+    /// with a thin warning-light strip on its open face. The tiles partition
+    /// the collision box and the strip lies inside it, so the art covers
+    /// exactly what blocks. Without the barricade texture the tiles fall
+    /// back to a drawn barrier (steel with hazard bands), still not the
+    /// blockout fill.
+    func gateBarrier(id: String, box: AABB, viewer: VecI) -> SKNode {
+        let texture = environment.texture(assetId: Self.barricadeAssetId)
+        let aspect = texture.map { Double($0.size().width / max($0.size().height, 1)) } ?? Self.barricadeFallbackAspect
+        let layout = GateBarrier.layout(box: box, viewer: viewer, textureAspect: aspect)
+        let root = SKNode()
+        root.name = Self.gateBarrierPrefix + id
+
+        for rect in layout.tiles {
+            let along = CGFloat(layout.vertical ? rect.height : rect.width)
+            let depth = CGFloat(layout.vertical ? rect.width : rect.height)
+            let tile: SKNode
+            if let texture {
+                let sprite = SKSpriteNode(texture: texture, size: CGSize(width: along, height: depth))
+                sprite.zRotation = layout.vertical ? .pi / 2 : 0
+                tile = sprite
+            } else {
+                let sprite = SKSpriteNode(color: Palette.barrierSteel, size: CGSize(width: along, height: depth))
+                sprite.zRotation = layout.vertical ? .pi / 2 : 0
+                let band = SKSpriteNode(color: Palette.barrierHazard, size: CGSize(width: along * 0.5, height: depth * 0.4))
+                sprite.addChild(band)
+                tile = sprite
+            }
+            tile.name = Self.gateTileName
+            tile.position = CGPoint(x: rect.centerX, y: rect.centerY)
+            root.addChild(tile)
+        }
+
+        // The strip: a dark rail with amber lights along it. Its pattern,
+        // not its colour alone, marks it as a barrier edge.
+        let strip = SKSpriteNode(
+            color: Palette.barrierRail,
+            size: CGSize(width: layout.strip.width, height: layout.strip.height)
+        )
+        strip.name = Self.gateStripName
+        strip.position = CGPoint(x: layout.strip.centerX, y: layout.strip.centerY)
+        strip.zPosition = 0.1
+        let length = CGFloat(layout.vertical ? layout.strip.height : layout.strip.width)
+        let thickness = CGFloat(GateBarrier.stripThickness)
+        let pitch = CGFloat(GateBarrier.lightLength + GateBarrier.lightGap)
+        let count = max(1, Int((length / pitch).rounded(.down)))
+        let used = CGFloat(count) * pitch - CGFloat(GateBarrier.lightGap)
+        var along = -used / 2 + CGFloat(GateBarrier.lightLength) / 2
+        for _ in 0..<count {
+            let light = SKSpriteNode(
+                color: Palette.barrierLight,
+                size: layout.vertical
+                    ? CGSize(width: thickness - 1, height: CGFloat(GateBarrier.lightLength))
+                    : CGSize(width: CGFloat(GateBarrier.lightLength), height: thickness - 1)
+            )
+            light.name = Self.gateLightName
+            light.position = layout.vertical ? CGPoint(x: 0, y: along) : CGPoint(x: along, y: 0)
+            strip.addChild(light)
+            along += pitch
+        }
+        root.addChild(strip)
+        return root
+    }
+
+    nonisolated static let barricadeAssetId = "env_prop_barricade"
+    /// `env_prop_barricade` is 128 × 48; the drawn fallback keeps its shape.
+    nonisolated static let barricadeFallbackAspect = 128.0 / 48.0
 
     private func renderExtraction(_ snap: PresentationSnapshot) {
         beginLayer(.extraction)
@@ -741,6 +838,8 @@ final class WorldRenderer {
             shape.position = ghost.position
             shape.alpha = Self.ghostAlpha * ghost.fade
         }
+        beginLayer(.actorShadows)
+        outlineTargets = []
         if !playerDrawn {
             let player = node(.actors, "player") {
                 let shape = SKShapeNode(path: Geometry.silhouettePath(snap.player.silhouette))
@@ -751,6 +850,14 @@ final class WorldRenderer {
             }
             player.position = playerPosition
         }
+        addContrast(
+            key: "player",
+            spriteDrawn: playerDrawn,
+            at: playerPosition,
+            radius: snap.player.radius,
+            silhouette: snap.player.silhouette,
+            faction: .player
+        )
 
         for enemy in snap.enemies {
             let key = "enemy-\(enemy.id.raw)"
@@ -778,7 +885,16 @@ final class WorldRenderer {
                 }
                 body.position = position
             }
+            addContrast(
+                key: key,
+                spriteDrawn: drawn,
+                at: position,
+                radius: enemy.radius,
+                silhouette: enemy.silhouette,
+                faction: .enemy
+            )
         }
+        endLayer(.actorShadows)
 
         // Defeated enemies play their defeat clip where it is backed. There is
         // deliberately no blockout fallback: a defeated enemy must not look alive.
@@ -796,6 +912,114 @@ final class WorldRenderer {
             )
         }
         endLayer(.actors)
+        syncOutlines()
+    }
+
+    // MARK: - D-094 actor contrast
+
+    nonisolated static let outlineName = "faction-outline"
+    nonisolated static let shadowKeyPrefix = "shadow-"
+    /// The shadow sits a little below the actor's centre, where its feet are.
+    private static let shadowDrop: CGFloat = 0.3
+
+    /// Outline weight in scene units: one screen point. `GameScene` sets it
+    /// from the HUD projector; the default is the reference 844-point canvas.
+    var outlineWidthUnits: CGFloat = CGFloat(PresentationCamera.visibleWidth) / 844
+
+    /// Sprites whose outline follows their current animation frame.
+    private var outlineTargets: [(sprite: SKSpriteNode, faction: ActorContrast.Faction)] = []
+
+    /// The ground shadow and the faction outline for one actor.
+    private func addContrast(
+        key: String,
+        spriteDrawn: Bool,
+        at position: CGPoint,
+        radius: Int,
+        silhouette: ActorSilhouette,
+        faction: ActorContrast.Faction
+    ) {
+        let size = ActorContrast.shadowSize(radius: radius)
+        let shadow = node(.actorShadows, Self.shadowKeyPrefix + key) { () -> SKNode in
+            let sprite = SKSpriteNode(texture: shadowTexture)
+            sprite.size = CGSize(width: size.width, height: size.height)
+            return sprite
+        }
+        shadow.position = CGPoint(x: position.x, y: position.y - CGFloat(radius) * Self.shadowDrop)
+
+        if spriteDrawn, let sprite = nodes[.actors]?["sprite-\(key)"] as? SKSpriteNode {
+            outlineTargets.append((sprite, faction))
+        } else if let shape = nodes[.actors]?[key] as? SKShapeNode {
+            // Blockout: the outline is a stroke on the silhouette, dashed for
+            // enemies, so the fallback carries faction by shape too.
+            shape.strokeColor = .clear
+            let outline = (shape.childNode(withName: Self.outlineName) as? SKShapeNode) ?? {
+                let path = Geometry.silhouettePath(silhouette)
+                let made = SKShapeNode(
+                    path: ActorContrast.dashed(faction)
+                        ? path.copy(dashingWithPhase: 0, lengths: [4, 3])
+                        : path
+                )
+                made.name = Self.outlineName
+                made.fillColor = .clear
+                shape.addChild(made)
+                return made
+            }()
+            outline.strokeColor = Palette.outline(faction)
+            outline.lineWidth = outlineWidthUnits
+        }
+    }
+
+    /// Points each live sprite's outline at its current frame. Called after
+    /// actions are evaluated (`GameScene.didEvaluateActions`) so the outline
+    /// never trails the animation, and at the end of every render.
+    func syncOutlines() {
+        for (sprite, faction) in outlineTargets {
+            let outline = (sprite.childNode(withName: Self.outlineName) as? SKSpriteNode) ?? {
+                let made = SKSpriteNode()
+                made.name = Self.outlineName
+                sprite.addChild(made)
+                return made
+            }()
+            guard let texture = sprite.texture,
+                  let entry = outlines.outline(for: texture, faction: faction)
+            else {
+                outline.isHidden = true
+                continue
+            }
+            outline.isHidden = false
+            if outline.texture !== entry.texture { outline.texture = entry.texture }
+            let source = texture.size()
+            let pad = CGFloat(entry.pad)
+            let grownW = (source.width + 2 * pad) / max(source.width, 1)
+            let grownH = (source.height + 2 * pad) / max(source.height, 1)
+            outline.size = CGSize(width: sprite.size.width * grownW, height: sprite.size.height * grownH)
+            outline.anchorPoint = CGPoint(
+                x: (sprite.anchorPoint.x * source.width + pad) / (source.width + 2 * pad),
+                y: (sprite.anchorPoint.y * source.height + pad) / (source.height + 2 * pad)
+            )
+            outline.position = .zero
+        }
+    }
+
+    /// One soft ellipse at 35% black, feathered at the rim, shared by every
+    /// actor. Generated once.
+    private static func makeShadowTexture() -> SKTexture {
+        let width = 64
+        let height = 32
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let feather = 0.3
+        for y in 0..<height {
+            for x in 0..<width {
+                let nx = (Double(x) + 0.5 - Double(width) / 2) / (Double(width) / 2)
+                let ny = (Double(y) + 0.5 - Double(height) / 2) / (Double(height) / 2)
+                let d = (nx * nx + ny * ny).squareRoot()
+                let edge = max(0, min(1, (1 - d) / feather))
+                let alpha = UInt8((ActorContrast.shadowOpacity * edge * 255).rounded())
+                pixels[(y * width + x) * 4 + 3] = alpha
+            }
+        }
+        return OutlineTextures.texture(pixels: pixels, width: width, height: height, smooth: true)
+            ?? SKTexture()
     }
 
     /// combat-001 projectiles. Drawn from the authoritative swept segment so a
@@ -878,8 +1102,14 @@ extension WorldRenderer {
     /// runs one tile past the arena on each side, so the wrap never exposes an
     /// edge.
     func renderFog(_ snap: PresentationSnapshot, reducedMotion: Bool) {
+        // D-094: both layers drop to half their authored opacity while an
+        // aware enemy is on screen, easing over 0.5 s. Layer alpha multiplies
+        // the authored texture alpha, so this scales, never replaces, it.
+        let opacity = CGFloat(fogThinning.update(snap))
         guard environment.hasFog else { return }
         buildFogIfNeeded(snap)
+        layers[.fogLow]?.alpha = opacity
+        layers[.fogHigh]?.alpha = opacity
 
         for (layer, speed) in [
             (Layer.fogLow, Self.fogLowDriftMilli),
@@ -979,6 +1209,18 @@ enum Palette {
     static let mineArming = SKColor(white: 0.6, alpha: 0.15)
     static let mineStroke = SKColor(red: 0.9, green: 0.5, blue: 0.35, alpha: 0.8)
     static let telegraphStroke = SKColor(red: 0.95, green: 0.55, blue: 0.35, alpha: 0.9)
+    /// D-094 gate barrier: the rail the warning lights sit on, the lights,
+    /// and the drawn fallback used only if the barricade art is missing.
+    static let barrierRail = SKColor(white: 0.10, alpha: 0.95)
+    static let barrierLight = SKColor(red: 1.0, green: 0.72, blue: 0.18, alpha: 1)
+    static let barrierSteel = SKColor(white: 0.46, alpha: 1)
+    static let barrierHazard = SKColor(red: 0.92, green: 0.70, blue: 0.16, alpha: 1)
+
+    /// D-094 faction outline colours (`ActorContrast.outlineColour`).
+    static func outline(_ faction: ActorContrast.Faction) -> SKColor {
+        let rgb = ActorContrast.outlineColour(faction)
+        return SKColor(red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1)
+    }
 
     static func telegraphFill(progress: CGFloat, locked: Bool) -> SKColor {
         let alpha = locked ? 0.42 : 0.10 + 0.22 * progress
