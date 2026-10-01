@@ -543,6 +543,9 @@ final class WorldRenderer {
         let layout = GateBarrier.layout(box: box, viewer: viewer, textureAspect: aspect)
         let root = SKNode()
         root.name = Self.gateBarrierPrefix + id
+        // Above the permanent solids' art it abuts (rail cuts, walls), which
+        // share the layer: ties in zPosition draw in undefined order.
+        root.zPosition = 0.5
 
         for rect in layout.tiles {
             let along = CGFloat(layout.vertical ? rect.height : rect.width)
