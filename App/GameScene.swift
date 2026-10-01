@@ -228,9 +228,13 @@ final class GameScene: SKScene {
     private(set) var flavour: DailyFlavour?
     /// Display frames drawn, for the near-miss pulse. Presentation clock only.
     private var presentationFrame: UInt64 = 0
+    /// The live run's tick, for intro evidence and tests.
+    var currentTick: UInt64 { session.simulation.state.tick }
 #if DEBUG
     /// `-SSHoldIntro <frame>`: hold the intro at that frame for a screenshot.
     private var introHoldFrame: Int?
+    private var feelHoldArmed = false
+    private var nearMissLogged = false
 #endif
 #if DEBUG
     private var autopilot: DebugAutopilot?
@@ -455,6 +459,9 @@ final class GameScene: SKScene {
         session.step()
         // D-097: the takedown's hit-stop and ring, after the step that made it.
         vfx.takedown(targets: session.feel.lastTakedowns)
+#if DEBUG
+        noteFeelEvidence()
+#endif
         if !session.lastEvents.isEmpty {
             vfx.ingest(
                 tick: session.simulation.state.tick,
@@ -540,33 +547,52 @@ final class GameScene: SKScene {
     /// Advances the intro one display frame. True while it is still running,
     /// meaning this frame must not step the simulation.
     private func advanceIntroIfRunning() -> Bool {
-        guard var current = intro, !current.isFinished else {
-            if intro != nil {
-                intro = nil
-                redraw()
-            }
-            return false
-        }
 #if DEBUG
-        if let hold = introHoldFrame, current.frame >= hold {
-            return true
-        }
+        let hold = introHoldFrame
+#else
+        let hold: Int? = nil
 #endif
-        for id in current.advance() {
+        let wasRunning = intro != nil
+        let frame = Self.introFrame(&intro, holdAt: hold)
+        for id in frame.chirps {
             soundEngine.playPresentationCue(.presentation(audioId: IntroSequence.chirpCueId, sourceEntityId: id))
         }
-        intro = current
 #if DEBUG
-        if current.frame == 1 || current.isFinished {
+        if let current = intro, current.frame == 1 || current.isFinished, !frame.held {
             Self.autopilotLog.notice("intro frame=\(current.frame, privacy: .public) finished=\(current.isFinished, privacy: .public) tick=\(self.session.simulation.state.tick, privacy: .public)")
         }
 #endif
-        redraw()
-        return true
+        if wasRunning { redraw() }
+        return !frame.mayStep
+    }
+
+    /// One display frame of the D-098 intro gate, apart from the scene so it
+    /// can be tested against a real session: while the intro runs, the frame
+    /// advances it and the simulation may not step; on the first frame after
+    /// it ends (or is skipped) the intro is cleared and stepping resumes.
+    struct IntroFrame: Equatable {
+        var mayStep: Bool
+        var chirps: [EntityID]
+        var held = false
+    }
+
+    nonisolated static func introFrame(_ intro: inout IntroSequence?, holdAt hold: Int? = nil) -> IntroFrame {
+        guard var current = intro else { return IntroFrame(mayStep: true, chirps: []) }
+        guard !current.isFinished else {
+            intro = nil
+            return IntroFrame(mayStep: true, chirps: [])
+        }
+        if let hold, current.frame >= hold {
+            return IntroFrame(mayStep: false, chirps: [], held: true)
+        }
+        let chirps = current.advance()
+        intro = current
+        return IntroFrame(mayStep: false, chirps: chirps)
     }
 
     /// D-098: any touch skips the intro.
-    private func skipIntroIfRunning() -> Bool {
+    @discardableResult
+    func skipIntroIfRunning() -> Bool {
         guard var current = intro, !current.isFinished else { return false }
         current.skip()
         intro = current
@@ -764,6 +790,36 @@ final class GameScene: SKScene {
     }
 
 #if DEBUG
+    /// `-SSHoldOnFeel <takedown|nearMiss>:<frames>` freezes the view that many
+    /// frames after the first takedown or the first lit near-miss edge, so a
+    /// screenshot can catch it. Evidence harness only; both are logged.
+    private func noteFeelEvidence() {
+        let feel = session.feel
+        let tick = session.simulation.state.tick
+        if !feel.lastTakedowns.isEmpty {
+            Self.autopilotLog.notice("takedown tick=\(tick, privacy: .public) ids=\(feel.lastTakedowns.map(\.decimalString).joined(separator: ","), privacy: .public) streak=\(feel.takedowns.streak, privacy: .public)")
+        }
+        if !feel.nearMiss.isEmpty, !nearMissLogged {
+            nearMissLogged = true
+            Self.autopilotLog.notice("near miss tick=\(tick, privacy: .public) ids=\(feel.nearMiss.map(\.decimalString).joined(separator: ","), privacy: .public)")
+        }
+        guard !feelHoldArmed,
+              let flag = ProcessInfo.processInfo.arguments.firstIndex(of: "-SSHoldOnFeel"),
+              flag + 1 < ProcessInfo.processInfo.arguments.count
+        else { return }
+        let parts = ProcessInfo.processInfo.arguments[flag + 1].split(separator: ":")
+        let kind = parts.first.map(String.init) ?? ""
+        let frames = parts.count > 1 ? Int(parts[1]) ?? 0 : 0
+        let hit = (kind == "takedown" && !feel.lastTakedowns.isEmpty) || (kind == "nearMiss" && !feel.nearMiss.isEmpty)
+        guard hit else { return }
+        feelHoldArmed = true
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(max(0, frames)) * 16_666_667)
+            self?.view?.isPaused = true
+            Self.autopilotLog.notice("feel hold kind=\(kind, privacy: .public) after \(frames, privacy: .public) frames")
+        }
+    }
+
     /// `-SSHoldOnVFX <recipeId>:<frames>` freezes the view that many frames
     /// after the named recipe is first drawn, so a screenshot can catch an
     /// effect mid-flight. Evidence harness only; every drawn recipe is logged.

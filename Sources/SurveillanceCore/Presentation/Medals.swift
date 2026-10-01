@@ -93,9 +93,14 @@ public struct MedalTracker: Equatable, Sendable {
             case .shadow: !patrolAlertedBeforeMobA
             case .blackout: state.networkBlackout
             case .surgical: Self.surgical(integrity: state.player.integrity, max: state.player.maxIntegrity)
-            case .swift: state.tick < Medal.swiftTicks
+            case .swift: Self.swift(ticks: state.tick)
             }
         }
+    }
+
+    /// § 12 `SWIFT`: elapsed time under 5:30.
+    public static func swift(ticks: UInt64) -> Bool {
+        ticks < Medal.swiftTicks
     }
 
     /// § 12 `SURGICAL`: at least half of `player.integrity` (RS-020: 74 of
