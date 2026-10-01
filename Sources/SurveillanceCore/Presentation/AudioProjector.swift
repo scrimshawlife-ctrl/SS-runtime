@@ -54,6 +54,34 @@ public struct ProjectedCue: Equatable, Sendable {
     public var sector: Int?
     public var sequence: Int
     public var variant: Int?
+    /// D-097: a pitch offset in cents for this one voice (the takedown plays
+    /// `impact_enemy` 4 semitones down, -400). Zero plays the cue as authored.
+    public var pitchCents: Int = 0
+
+    /// A cue the presentation layer raises itself, outside the projector: the
+    /// D-097 takedown caption and the D-098 intro chirps. It never reads or
+    /// writes simulation state.
+    public static func presentation(
+        audioId: String,
+        caption: String = "",
+        priority: Int = 7,
+        sourceEntityId: EntityID? = nil,
+        sequence: Int = 0,
+        pitchCents: Int = 0
+    ) -> ProjectedCue {
+        ProjectedCue(
+            audioId: audioId,
+            haptic: .none,
+            caption: caption,
+            priority: priority,
+            consumesEffectVoice: true,
+            sourceEntityId: sourceEntityId,
+            sector: nil,
+            sequence: sequence,
+            variant: nil,
+            pitchCents: pitchCents
+        )
+    }
 }
 
 public struct AudioProjection: Equatable, Sendable {
