@@ -27,6 +27,11 @@ public struct QuietApproachProjector: Equatable, Sendable {
     public struct Frame: Equatable, Sendable {
         public var tagVisible: Bool
         public var caption: String?
+
+        public init(tagVisible: Bool, caption: String?) {
+            self.tagVisible = tagVisible
+            self.caption = caption
+        }
     }
 
     /// The latch at the previous frame; nil before the first, which is a
