@@ -66,6 +66,10 @@ public struct QuietApproachProjector: Equatable, Sendable {
             guard let shownAt, tick >= shownAt, tick - shownAt < Self.visibleTicks else { return nil }
             return copy
         }
-        return Frame(tagVisible: quiet && !paid, caption: live)
+        // The boss being up (or beaten) ends the tag even when this
+        // projector never saw the activation tick (a resumed or seeded run).
+        let bossReached = state.bossDefeated
+            || state.enemies.contains { $0.archetype == .algorithmicModerate }
+        return Frame(tagVisible: quiet && !paid && !bossReached, caption: live)
     }
 }

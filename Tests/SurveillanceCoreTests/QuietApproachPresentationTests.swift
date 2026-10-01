@@ -43,6 +43,20 @@ struct QuietApproachPresentationTests {
         #expect(!frame.tagVisible, "paid out: the caption replaces the tag")
     }
 
+    /// A run already past activation when the projector starts (a seeded
+    /// boss scenario) shows no tag either.
+    @Test func noTagOnceTheBossIsUpEvenWithoutTheActivationEvent() throws {
+        var sim = try Simulation.make(seed: 1)
+        sim.testing_completeMobAndEliteGraph()
+        let trigger = try #require(sim.state.arena.encounterTriggers.first { ($0.encounterId ?? $0.id) == "algorithmicModerate" })
+        sim.testing_setPlayerPosition(trigger.aabb.center)
+        _ = sim.step(command: .neutral(tick: 1))
+        #expect(sim.state.exposure.quietApproach)
+        var projector = QuietApproachProjector()
+        let frame = projector.project(tick: 2, events: [], state: sim.state)
+        #expect(!frame.tagVisible)
+    }
+
     @Test func aLostApproachHasNoPayoutCaption() throws {
         var sim = try Simulation.make(seed: 1)
         sim.testing_completeMobAndEliteGraph()
