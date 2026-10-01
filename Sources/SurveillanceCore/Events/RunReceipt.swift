@@ -7,6 +7,9 @@ public struct RunReceipt: Equatable, Sendable {
     public var finalDigest: String
     public var playerIntegrity: Int
     public var damageTaken: Int
+    /// D-096: Integrity the Captain Court threshold restored on boss
+    /// activation (0 when the Player was already at or above it).
+    public var integrityRestored: Int
     public var exposureFinal: Int
     public var exposurePeak: Int
     public var detection: DetectionState
@@ -41,6 +44,7 @@ public struct RunReceipt: Equatable, Sendable {
         finalDigest = state.terminalDigest ?? state.digest()
         playerIntegrity = state.player.integrity
         damageTaken = state.player.damageTaken
+        integrityRestored = state.player.integrityRestored
         exposureFinal = state.exposure.exposure
         exposurePeak = state.exposure.peak
         detection = state.exposure.detectionState
@@ -88,7 +92,8 @@ public struct RunReceipt: Equatable, Sendable {
             "finalDigest": .string(finalDigest),
             "player": .object([
                 "finalIntegrity": .integer(Int64(playerIntegrity)),
-                "damageTaken": .integer(Int64(damageTaken))
+                "damageTaken": .integer(Int64(damageTaken)),
+                "integrityRestored": .integer(Int64(integrityRestored))
             ]),
             "exposure": .object([
                 "final": .integer(Int64(exposureFinal)),

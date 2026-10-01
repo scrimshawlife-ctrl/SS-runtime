@@ -4,7 +4,7 @@ import Testing
 
 /// D-089 awareness and ambush, with the D-090 values and drift:
 /// `enemies-and-encounters.md` § Awareness, vectors EN-016 to EN-023 and
-/// EN-031; `combat.md` CB-011 and CB-012; the `combat-content-004`
+/// EN-031; `combat.md` CB-011 and CB-012; the `combat-content-005`
 /// `awareness` block; and `simulation-order.md` phase 5. These vectors run
 /// without the Transit Patrol, which has its own (`TransitPatrolTests`).
 @Suite(.serialized)
@@ -387,7 +387,7 @@ struct AwarenessTests {
 
     @Test func awarenessBlockFailsClosed() throws {
         let bundled = try #require(
-            try JSONSerialization.jsonObject(with: BundledResource.data(name: "combat-content-004", subdirectory: "contracts"))
+            try JSONSerialization.jsonObject(with: BundledResource.data(name: "combat-content-005", subdirectory: "contracts"))
                 as? [String: Any]
         )
         func decodeError(_ key: String?, _ value: Any?) -> CombatContentError? {

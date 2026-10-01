@@ -1230,6 +1230,24 @@ public struct Simulation: Equatable, Sendable {
         if let gate = state.gates.firstIndex(where: { $0.id == "gate-mc-forward" }) {
             state.gates[gate].closed = true
         }
+        applyCourtThreshold()
+    }
+
+    /// Captain Court threshold (D-096, bosses.md, BO-020/BO-021): on the
+    /// `bossActivated` tick, ordered after the activation in phase 16, the
+    /// Player is raised to at least `courtThresholdRestorePercent` of
+    /// `player.integrity` and never lowered. It is a restore, not damage:
+    /// `damageTaken` and the damage remainder are untouched, and the receipt
+    /// records it as `player.integrityRestored`.
+    ///
+    /// Kept out of `step` for the same debug-stack reason as
+    /// `resolveAwareness` (SS-runtime #104).
+    @inline(never)
+    private mutating func applyCourtThreshold() {
+        let floor = min(state.content.player.courtThresholdIntegrity, state.player.maxIntegrity)
+        guard state.player.isAlive, state.player.integrity < floor else { return }
+        state.player.integrityRestored += floor - state.player.integrity
+        state.player.integrity = floor
     }
 
     private mutating func closeForwardGate(for encounter: String) {

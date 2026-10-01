@@ -4,11 +4,11 @@ import Testing
 
 /// S3: combat content loading fails closed. Every `as!` in
 /// `CombatContent.decode` became a typed `CombatContentError` that names the
-/// field that failed, so a malformed `combat-content-004` payload is reported
+/// field that failed, so a malformed `combat-content-005` payload is reported
 /// by field path instead of crashing the kernel at an untyped cast.
 @Suite(.serialized)
 struct CombatContentFailClosedTests {
-    /// D-090 values (`combat-content-004`): Integrity x1.5, the boss 1600
+    /// D-090 values (`combat-content-005`): Integrity x1.5, the boss 1600
     /// with bands 1200/800/400/1, the patrol block, and the Player's 50%.
     @Test func bundledContentStillDecodesWithKnownValues() {
         let content = CombatContent.bundled()
@@ -25,6 +25,10 @@ struct CombatContentFailClosedTests {
         ))
         #expect(content.player.damageTakenPercent == 50)
         #expect(content.player.integrity == 150)
+        // D-096: the Captain Court threshold and the lowered boss contact.
+        #expect(content.player.courtThresholdRestorePercent == 60)
+        #expect(content.player.courtThresholdIntegrity == 90)
+        #expect(content.bossContactDps == 10)
         #expect(content.encounters["M-A"]?.totals == 14)
         #expect(content.encounters["M-B"]?.totals == 17)
         #expect(content.encounters["M-C"]?.totals == 25)
@@ -78,7 +82,7 @@ struct CombatContentFailClosedTests {
     /// or nil if it decoded.
     private static func mutated(_ mutate: (inout [String: Any]) -> Void) -> CombatContentError? {
         var root = (try? JSONSerialization.jsonObject(
-            with: BundledResource.data(name: "combat-content-004", subdirectory: "contracts")
+            with: BundledResource.data(name: "combat-content-005", subdirectory: "contracts")
         )) as? [String: Any] ?? [:]
         mutate(&root)
         do {
@@ -125,6 +129,17 @@ struct CombatContentFailClosedTests {
         #expect(Self.withKey("player", "damageTakenPercent", 50.5) == .wrongType("player.damageTakenPercent"))
         #expect(Self.withKey("player", "damageTakenPercent", true) == .wrongType("player.damageTakenPercent"))
         #expect(Self.withKey("player", "invulnerable", false) == .wrongType("player.invulnerable"))
+        // D-096 `player.courtThresholdRestorePercent`: required, a strict
+        // integer 0-100.
+        let restore = "courtThresholdRestorePercent"
+        #expect(Self.withKey("player", restore, nil) == .missingField("player.\(restore)"))
+        #expect(Self.withKey("player", restore, 101) == .wrongType("player.\(restore)"))
+        #expect(Self.withKey("player", restore, -1) == .wrongType("player.\(restore)"))
+        #expect(Self.withKey("player", restore, 60.5) == .wrongType("player.\(restore)"))
+        #expect(Self.withKey("player", restore, "60") == .wrongType("player.\(restore)"))
+        #expect(Self.withKey("player", restore, true) == .wrongType("player.\(restore)"))
+        #expect(Self.withKey("player", restore, 0) == nil)
+        #expect(Self.withKey("player", restore, 100) == nil)
         // D-092 `player.integrity`: required, a strict integer, at least 1.
         #expect(Self.withKey("player", "integrity", nil) == .missingField("player.integrity"))
         #expect(Self.withKey("player", "integrity", 0) == .wrongType("player.integrity"))

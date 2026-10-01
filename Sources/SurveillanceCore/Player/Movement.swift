@@ -13,7 +13,7 @@ public struct PlayerBody: Equatable, Sendable {
     public var facing: VecQ8
     public var integrity: Int
     /// Spawn Integrity and the clamp's ceiling: `player.integrity` in
-    /// `combat-content-004` (150, D-092).
+    /// `combat-content-005` (150, D-092).
     public var maxIntegrity: Int
     public var dodgeActiveRemaining: Int
     public var dodgeStartedAt: UInt64?
@@ -27,6 +27,10 @@ public struct PlayerBody: Equatable, Sendable {
     /// every scaled Integrity loss, in hundredths of a point, always 0...99.
     /// Authoritative and in the state digest.
     public var damageRemainderHundredths: Int = 0
+    /// Integrity restored by the Captain Court threshold (D-096, bosses.md):
+    /// receipt bookkeeping, like `damageTaken`, so a restore is never read as
+    /// negative damage. The restored Integrity itself is in the digest.
+    public var integrityRestored: Int = 0
     /// World units travelled on the last simulated tick. Presentation-supporting
     /// bookkeeping, like `damageTaken`; it is not part of the state digest and
     /// no rule reads it.
