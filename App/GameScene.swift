@@ -198,6 +198,8 @@ final class GameScene: SKScene {
     private let hud = HUDRenderer()
     /// D-094 Lockdown tint: world layer only, under the HUD.
     private let lockdownTint = LockdownTintLayer()
+    /// D-096 court light and boss telegraph countdown rings.
+    let court = BossCourtRenderer()
     private let soundEngine = AudioEngine()
     private var controller = TouchController()
     private var projector: HUDProjector?
@@ -258,6 +260,8 @@ final class GameScene: SKScene {
         addChild(cameraNode)
         camera = cameraNode
         cameraNode.addChild(lockdownTint.node)
+        cameraNode.addChild(court.lightNode)
+        renderer.root.addChild(court.ringLayer)
         // D-099 grade and D-097 near-miss edges sit inside the world tree at
         // fractional depths between `WorldRenderer` layers; D-098's intro
         // card is screen space, under the HUD.
@@ -672,6 +676,7 @@ final class GameScene: SKScene {
         soundEngine.reset()
         renderer.reset()
         lockdownTint.reset()
+        court.reset()
         vfx.reset()
         nearMissEdges.reset()
         // Restart is not Start: the intro plays only after Start (D-098).
@@ -880,6 +885,7 @@ final class GameScene: SKScene {
         )
         vfx.render(snap)
         lockdownTint.update(snap, settings: settings.vfx)
+        court.update(snap, settings: settings.vfx)
         hud.knobOffsetPoints = controller.knobOffset
         hud.dodgePressed = controller.dodgeTouch != nil
         hud.captions = session.captionBoard.visible(at: snap.tick, setting: settings.captions)

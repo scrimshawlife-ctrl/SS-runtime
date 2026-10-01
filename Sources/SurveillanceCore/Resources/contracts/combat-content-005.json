@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "combat-content-004",
+  "schemaVersion": "combat-content-005",
   "contracts": {"enemies": "enemies-encounters-001", "upgrades": "upgrades-001", "bosses": "bosses-001"},
   "standardEnemies": {
     "fogAnalyticsCloud": {"hp":30,"radius":18,"speed":84,"contactDps":4,"pulse":{"first":120,"cooldown":180,"telegraph":45,"range":220,"exposure":20}},
@@ -25,7 +25,7 @@
   },
   "elite": {"id":"improperSearchDaemon","hp":450,"radius":26,"speed":108,"contactDps":14,"spawnDelay":90,"cycle":[["pursuit",120],["queryTelegraph",45],["queryResolve",0],["dashTelegraph",36],["dash",30],["recover",60]]},
   "boss": {
-    "id":"algorithmicModerate","hp":1600,"radius":30,"baseSpeed":120,"baseContactDps":16,"initialDelay":90,"transitionRecovery":45,
+    "id":"algorithmicModerate","hp":1600,"radius":30,"baseSpeed":120,"baseContactDps":10,"initialDelay":90,"transitionRecovery":45,
     "phases":[
       {"id":"publicSafety","minHp":1200,"observation":[105,100],"speed":[100,100],"contact":[100,100],"orbit":[0,100],"sequence":["safetyRationale","narrowTailoring"]},
       {"id":"civilLiberties","minHp":800,"observation":[108,100],"speed":[90,100],"contact":[104,100],"orbit":[72,100],"sequence":["narrowTailoring","safetyRationale","temporaryOrder"]},
@@ -45,5 +45,5 @@
   "heat": {"reinforcementArchetype":"autonomousInformant","encounters":["M-A","M-B"],"byDetectionState":{"hidden":0,"observed":0,"tracked":1,"hunted":2,"lockdown":2}},
   "awareness": {"appliesTo":["fogAnalyticsCloud","cableCarCorrelator","sutroSignalWitch","autonomousInformant","victorianVendor"],"sightRangeUnits":320,"allyAlertRadiusUnits":128,"surveillanceAlertState":"tracked","ambushDamageMultiplier":3,"awareEncounters":["M-C"],"heatReinforcementsSpawnAware":true,"unawareDriftPercent":25,"unawareDriftStopUnits":48},
   "patrol": {"integrityPercent":200,"speedPercent":40,"dwellTicks":30,"sightUnits":240,"sightHalfAngleMilliDegrees":45000,"arrivalUnits":4},
-  "player": {"integrity":150,"damageTakenPercent":50}
+  "player": {"integrity":150,"damageTakenPercent":50,"courtThresholdRestorePercent":50}
 }

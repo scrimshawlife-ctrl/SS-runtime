@@ -38,6 +38,12 @@ struct PacingProbe {
         var networkBlackout: Bool
         /// Integrity lost, by the archetype of the damaging entity.
         var damageBySource: [String: Int]
+        /// D-096: Integrity lost after the boss activated, by source.
+        var bossDamageBySource: [String: Int]
+        /// D-096: Integrity on the activation tick before the threshold
+        /// restore, and the amount restored.
+        var integrityBeforeCourt: Int?
+        var integrityRestored: Int
         /// `arena.md` § 5 segment starts (D-079), measured by the core.
         var timeline: PacingTimeline
         /// D-083: every M-A/M-B wave start, the Detection State the director
@@ -129,6 +135,9 @@ struct PacingProbe {
         var history: [PresentationSnapshot] = []
         var stalledOn: String?
         var damageBySource: [String: Int] = [:]
+        var bossDamageBySource: [String: Int] = [:]
+        var bossActive = false
+        var integrityBeforeCourt: Int?
         var timeline = PacingTimeline()
         var waveHeat: [WaveHeat] = []
         var mobCStartTick: UInt64?
@@ -226,6 +235,15 @@ struct PacingProbe {
                 if case .integer(let value)? = event.payload["amount"] { amount = Int(value) }
                 let source = event.secondaryEntityId.flatMap { id -> String? in
                     if let enemy = sim.state.enemies.first(where: { $0.id == id }) {
+                        // D-096: the boss's direct hits are contact and the
+                        // Safety Rationale cone, both booked to the boss. The
+                        // contact step removes at most one point a tick (its
+                        // summed DPS stays under 60) before scaling, while a
+                        // cone hit is 18 before scaling, so any boss event
+                        // above one point is the cone.
+                        if enemy.archetype == .algorithmicModerate, amount > 1 {
+                            return "algorithmicModerateSafetyRationale"
+                        }
                         return enemy.archetype.rawValue
                     }
                     // Projectile hits name the projectile; attribute it to its owner.
@@ -234,7 +252,12 @@ struct PacingProbe {
                     return owner + "Projectile"
                 } ?? "unattributed"
                 damageBySource[source, default: 0] += amount
+                if bossActive { bossDamageBySource[source, default: 0] += amount }
                 if mobCStartTick == nil { damageBeforeMobC += amount }
+            }
+            if !bossActive, result.events.contains(where: { $0.type == .bossActivated }) {
+                bossActive = true
+                integrityBeforeCourt = sim.state.player.integrity - sim.state.player.integrityRestored
             }
             for event in result.events where event.type == .waveStarted {
                 guard case .string(let encounter)? = event.payload["encounterId"],
@@ -307,6 +330,9 @@ struct PacingProbe {
             lockdownEntered: sim.state.exposure.lockdownEntered,
             networkBlackout: sim.state.networkBlackout,
             damageBySource: damageBySource,
+            bossDamageBySource: bossDamageBySource,
+            integrityBeforeCourt: integrityBeforeCourt,
+            integrityRestored: sim.state.player.integrityRestored,
             timeline: timeline,
             waveHeat: waveHeat,
             mobCStartTick: mobCStartTick,
@@ -376,6 +402,8 @@ struct PacingProbe {
             + "\"patrolKills\":\(r.patrolKills),\"patrolAmbushKills\":\(r.patrolAmbushKills),"
             + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave),\"camerasBefore\":\($0.camerasDestroyedBefore)}" }.joined(separator: ","))],"
             + "\"damageBySource\":\(map(r.damageBySource)),"
+            + "\"bossDamageBySource\":\(map(r.bossDamageBySource)),"
+            + "\"integrityBeforeCourt\":\(r.integrityBeforeCourt.map(String.init) ?? "null"),\"integrityRestored\":\(r.integrityRestored),"
             + "\"zoneEntry\":\(map(r.zoneEntry)),\"milestones\":\(map(r.milestones)),"
             + "\"segmentStarts\":\(map(Dictionary(uniqueKeysWithValues: r.timeline.starts.map { ($0.key.rawValue, $0.value) }))),"
             + "\"segmentsOffTarget\":[\(r.timeline.segmentsOffTarget.map { "\"\($0.rawValue)\"" }.joined(separator: ","))]}"

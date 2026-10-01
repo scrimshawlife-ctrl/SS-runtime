@@ -1,6 +1,6 @@
 {
   "fixtureVersion":"kernel-vectors-001",
-  "rulesetVersion":"ss-rules-004",
+  "rulesetVersion":"ss-rules-005",
   "vectors":[
     {"id":"EX-001","initial":{"exposure":0,"state":"hidden","noContactTicks":0},"ticks":100,"contactsPerTick":1,"expected":{"exposure":200,"state":"observed"}},
     {"id":"EX-005","initial":{"exposure":300,"state":"observed","noContactTicks":0},"ticks":61,"contactsPerTick":0,"expected":{"exposure":298,"state":"observed","noContactTicks":61}},
