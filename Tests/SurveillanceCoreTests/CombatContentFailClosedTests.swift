@@ -4,11 +4,11 @@ import Testing
 
 /// S3: combat content loading fails closed. Every `as!` in
 /// `CombatContent.decode` became a typed `CombatContentError` that names the
-/// field that failed, so a malformed `combat-content-005` payload is reported
+/// field that failed, so a malformed `combat-content-006` payload is reported
 /// by field path instead of crashing the kernel at an untyped cast.
 @Suite(.serialized)
 struct CombatContentFailClosedTests {
-    /// D-090 values (`combat-content-005`): Integrity x1.5, the boss 1600
+    /// D-090 values (`combat-content-006`): Integrity x1.5, the boss 1600
     /// with bands 1200/800/400/1, the patrol block, and the Player's 50%.
     @Test func bundledContentStillDecodesWithKnownValues() {
         let content = CombatContent.bundled()
@@ -28,6 +28,8 @@ struct CombatContentFailClosedTests {
         // D-096: the Captain Court threshold and the lowered boss contact.
         #expect(content.player.courtThresholdRestorePercent == 50)
         #expect(content.player.courtThresholdIntegrity == 75)
+        #expect(content.player.courtQuietRestorePercent == 60)
+        #expect(content.player.courtQuietIntegrity == 90)
         #expect(content.bossContactDps == 10)
         #expect(content.encounters["M-A"]?.totals == 14)
         #expect(content.encounters["M-B"]?.totals == 17)
@@ -82,7 +84,7 @@ struct CombatContentFailClosedTests {
     /// or nil if it decoded.
     private static func mutated(_ mutate: (inout [String: Any]) -> Void) -> CombatContentError? {
         var root = (try? JSONSerialization.jsonObject(
-            with: BundledResource.data(name: "combat-content-005", subdirectory: "contracts")
+            with: BundledResource.data(name: "combat-content-006", subdirectory: "contracts")
         )) as? [String: Any] ?? [:]
         mutate(&root)
         do {
@@ -99,6 +101,15 @@ struct CombatContentFailClosedTests {
             inner[key] = value
             root[block] = inner
         }
+    }
+
+    /// D-101 `player.courtQuietRestorePercent`: required, a strict integer,
+    /// 0 through 100.
+    @Test func quietRestoreFailsClosed() {
+        #expect(Self.withKey("player", "courtQuietRestorePercent", nil) == .missingField("player.courtQuietRestorePercent"))
+        #expect(Self.withKey("player", "courtQuietRestorePercent", "60") == .wrongType("player.courtQuietRestorePercent"))
+        #expect(Self.withKey("player", "courtQuietRestorePercent", 101) == .wrongType("player.courtQuietRestorePercent"))
+        #expect(Self.withKey("player", "courtQuietRestorePercent", 100) == nil)
     }
 
     /// D-091 `patrol`: every key required and a strict integer; no other

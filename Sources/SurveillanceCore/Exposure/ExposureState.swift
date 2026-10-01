@@ -31,6 +31,9 @@ public struct ExposureState: Equatable, Sendable {
     public var noContactTicks: Int
     public var lockdownEntered: Bool
     public var peak: Int
+    /// D-101 (exposure.md § Quiet approach): true until the Detection State
+    /// reaches `tracked` or higher before M-C activates; latched false.
+    public var quietApproach: Bool
 
     public init(
         exposure: Int = 0,
@@ -43,6 +46,7 @@ public struct ExposureState: Equatable, Sendable {
         self.noContactTicks = noContactTicks
         self.lockdownEntered = lockdownEntered
         self.peak = exposure
+        self.quietApproach = true
     }
 
     /// `exposure.md` constants: Camera Tamper Spike per destruction (D-086).

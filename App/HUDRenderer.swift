@@ -79,6 +79,7 @@ final class HUDRenderer {
         if !snap.outcome.isTerminal { drawTutorial(snap, projector) }
         drawCameraNotches(cameraHUD, projector)
         drawReinforcements(projector)
+        if !snap.outcome.isTerminal { drawQuietApproach(projector) }
         if !snap.outcome.isTerminal { drawAwarenessHint(projector) }
         drawCaptions(projector)
         drawControls(snap, projector, paused: paused)
@@ -486,6 +487,37 @@ final class HUDRenderer {
         )
     }
 
+    /// D-101 (hud-tutorial.md § Exposure presentation): the `QUIET` tag with
+    /// the hidden-state open-eye glyph beside the state label, and the loss
+    /// or payout caption in the row `QuietApproachProjector.captionRect` names.
+    private func drawQuietApproach(_ projector: HUDProjector) {
+        if quietFrame.tagVisible {
+            let mapped = projector.mapped(QuietApproachProjector.tagRect, hudScale: hudScale, informational: true)
+            label(
+                key: Self.quietTagKey,
+                text: "( ) \(QuietApproachProjector.tagCopy)",
+                at: projector.sceneCentre(of: mapped),
+                size: 10,
+                colour: HUDPalette.accolade
+            )
+            nodes[Self.quietTagKey]?.isAccessibilityElement = true
+            nodes[Self.quietTagKey]?.accessibilityLabel = QuietApproachProjector.tagAccessibilityLabel
+        }
+        if let caption = quietFrame.caption {
+            let mapped = projector.mapped(QuietApproachProjector.captionRect, hudScale: hudScale, informational: true)
+            label(
+                key: Self.quietCaptionKey,
+                text: caption,
+                at: projector.sceneCentre(of: mapped),
+                size: 11,
+                colour: caption == QuietApproachProjector.lostCopy ? HUDPalette.dim : HUDPalette.accolade
+            )
+        }
+    }
+
+    static let quietTagKey = "quiet-tag"
+    static let quietCaptionKey = "quiet-caption"
+
     /// `UNSEEN ENEMIES HOLD • STRIKE FIRST FOR DOUBLE DAMAGE` (hud-tutorial.md,
     /// D-089) in the row `AwarenessHintProjector.referenceRect` names. A
     /// tutorial hint, so the tutorial setting hides it.
@@ -639,6 +671,9 @@ final class HUDRenderer {
     var captions: [CaptionBoard.Entry] = []
     /// D-083 heat caption from `HeatCaptionProjector`, or nil. This only draws it.
     var reinforcementCopy: String?
+    /// D-101 quiet-approach tag and caption from `QuietApproachProjector`.
+    /// This only draws it.
+    var quietFrame = QuietApproachProjector.Frame(tagVisible: false, caption: nil)
     /// D-089 tutorial copy from `AwarenessHintProjector`, or nil. Since D-098
     /// the hint reaches the screen through `tutorialLine`; kept for evidence.
     var awarenessHintCopy: String?

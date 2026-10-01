@@ -52,20 +52,18 @@ struct MedalTests {
 
     // MARK: - RS-018 GHOST
 
+    /// D-101: `GHOST` reads the authoritative quiet-approach latch, so the
+    /// events no longer decide it (RS-024 in `QuietApproachTests`).
     @Test func rs018BelowTrackedUntilMobCEarnsGhost() {
-        let earned = Self.medals([
-            [Self.detection(.observed)],
-            [Self.wave(.mobA)],
-            [Self.wave(.mobC)],
-            // After M-C started, tracked no longer matters.
-            [Self.detection(.tracked), Self.detection(.hunted)]
-        ])
-        #expect(earned.contains(.ghost))
+        var quiet = Self.success
+        quiet.exposure.quietApproach = true
+        #expect(Self.medals([[Self.detection(.observed)], [Self.wave(.mobA)], [Self.wave(.mobC)]], state: quiet).contains(.ghost))
     }
 
     @Test func trackedBeforeMobCLosesGhost() {
-        #expect(!Self.medals([[Self.detection(.tracked)], [Self.wave(.mobC)]]).contains(.ghost))
-        #expect(!Self.medals([[Self.detection(.lockdown)]]).contains(.ghost))
+        var lost = Self.success
+        lost.exposure.quietApproach = false
+        #expect(!Self.medals([[Self.detection(.tracked)], [Self.wave(.mobC)]], state: lost).contains(.ghost))
     }
 
     // MARK: - RS-019 SHADOW

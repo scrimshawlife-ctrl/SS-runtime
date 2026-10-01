@@ -3,15 +3,19 @@ import Testing
 @testable import SurveillanceCore
 
 /// D-096 Captain Court climax (bosses.md § Captain Court threshold, § Phase
-/// presentation; BO-020, BO-021; `combat-content-005`).
+/// presentation; BO-020, BO-021; `combat-content-006`).
 @Suite(.serialized)
 struct CourtClimaxTests {
     /// A run with the mob and elite graph complete and the Player standing in
     /// the boss trigger at `integrity`, stepped once: the boss activates on
     /// that tick.
-    private static func activateBoss(playerIntegrity integrity: Int) throws -> (Simulation, TickResult) {
+    ///
+    /// `quiet` sets the D-101 quiet-approach latch; the D-096 vectors run
+    /// with it lost, so they measure the base 50% floor.
+    private static func activateBoss(playerIntegrity integrity: Int, quiet: Bool = false) throws -> (Simulation, TickResult) {
         var sim = try Simulation.make(seed: 1)
         sim.testing_completeMobAndEliteGraph()
+        sim.testing_setQuietApproach(quiet)
         let trigger = try #require(sim.state.arena.encounterTriggers.first {
             ($0.encounterId ?? $0.id) == "algorithmicModerate"
         })
@@ -36,6 +40,27 @@ struct CourtClimaxTests {
         let (sim, result) = try Self.activateBoss(playerIntegrity: 120)
         #expect(result.events.contains { $0.type == .bossActivated })
         #expect(sim.state.player.integrity == 120)
+        #expect(sim.state.player.integrityRestored == 0)
+    }
+
+    // MARK: D-101 quiet approach
+
+    @Test func bo022QuietApproachRaisesPlayerFrom40To90() throws {
+        let (sim, _) = try Self.activateBoss(playerIntegrity: 40, quiet: true)
+        #expect(sim.state.player.integrity == 90)
+        #expect(sim.state.player.integrityRestored == 50)
+        #expect(sim.state.player.damageTaken == 0)
+    }
+
+    @Test func bo023LostQuietApproachRaisesPlayerFrom40To75() throws {
+        let (sim, _) = try Self.activateBoss(playerIntegrity: 40, quiet: false)
+        #expect(sim.state.player.integrity == 75)
+        #expect(sim.state.player.integrityRestored == 35)
+    }
+
+    @Test func bo024QuietApproachLeaves100Unchanged() throws {
+        let (sim, _) = try Self.activateBoss(playerIntegrity: 100, quiet: true)
+        #expect(sim.state.player.integrity == 100)
         #expect(sim.state.player.integrityRestored == 0)
     }
 

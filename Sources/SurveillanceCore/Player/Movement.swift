@@ -13,7 +13,7 @@ public struct PlayerBody: Equatable, Sendable {
     public var facing: VecQ8
     public var integrity: Int
     /// Spawn Integrity and the clamp's ceiling: `player.integrity` in
-    /// `combat-content-005` (150, D-092).
+    /// `combat-content-006` (150, D-092).
     public var maxIntegrity: Int
     public var dodgeActiveRemaining: Int
     public var dodgeStartedAt: UInt64?
