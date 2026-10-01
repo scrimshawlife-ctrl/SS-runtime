@@ -1,5 +1,5 @@
-/// `arena.md` § 5 (D-079): the seven pacing segments of a competent run, how
-/// each one starts, and its target window.
+/// `arena.md` § 5 (D-079, rescaled by D-090): the seven pacing segments of a
+/// competent run, how each one starts, and its target window.
 ///
 /// This is measurement, not authority. Nothing here reads or writes simulation
 /// state; it turns a run's authoritative events and the Player's zone into
@@ -35,22 +35,26 @@ public enum PacingSegment: String, CaseIterable, Sendable {
         case .cameraCorridor: .zoneEntry("Z-02")
         case .civicPlaza: .wave(encounterId: "M-A")
         case .pressureRoute: .wave(encounterId: "M-B")
-        case .lockdownRing: .event(.eliteActivated)
+        // D-090: the Lockdown Ring starts with M-C, the forced-Lockdown
+        // fight in its own zone, and includes the elite.
+        case .lockdownRing: .wave(encounterId: "M-C")
         case .captainCourt: .event(.bossActivated)
         case .extraction: .event(.extractionArmed)
         }
     }
 
-    /// Target elapsed time in seconds, start to end, from the table.
+    /// Target elapsed time in seconds, start to end, from the table as
+    /// rescaled to the arena as built (D-090): the map crosses in about ten
+    /// seconds, so the opening is short and the minutes come from the fights.
     public var targetSeconds: ClosedRange<Int> {
         switch self {
-        case .spawnAlley: 0...30
-        case .cameraCorridor: 30...75
-        case .civicPlaza: 75...135
-        case .pressureRoute: 135...195
-        case .lockdownRing: 195...240
-        case .captainCourt: 240...360
-        case .extraction: 360...390
+        case .spawnAlley: 0...5
+        case .cameraCorridor: 5...30
+        case .civicPlaza: 30...65
+        case .pressureRoute: 65...110
+        case .lockdownRing: 110...240
+        case .captainCourt: 240...330
+        case .extraction: 330...360
         }
     }
 

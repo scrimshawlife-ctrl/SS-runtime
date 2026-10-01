@@ -18,7 +18,11 @@ struct AwarenessPresentationTests {
     }
 
     @Test func unawareEnemiesCarryAQuestionMarkAndAlertedOnesDoNot() throws {
-        var sim = try Simulation.make(seed: 1)
+        // Without the Transit Patrol, whose three unaware members would add
+        // their own markers on the first tick (PatrolConePresentationTests).
+        var arena = try ArenaManifest.bundled()
+        arena.patrols = []
+        var sim = try Simulation(seed: 1, arena: arena, content: .bundled())
         sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: 700, y: 300), awareness: .unaware)
         sim.testing_spawnStandard(.fogAnalyticsCloud, at: VecI(x: 760, y: 300), awareness: .unaware)
         sim.testing_spawnStandard(.autonomousInformant, at: VecI(x: 820, y: 300), awareness: .aware)

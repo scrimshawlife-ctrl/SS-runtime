@@ -3,7 +3,7 @@
 
 Sibling of `admit_original_art.py`, with one important difference: the sizes are
 not free. A solid's art is drawn over its collision box, so it is verified
-against `civic-seam-arena-002` rather than against an authored sprite box —
+against `civic-seam-arena-003` rather than against an authored sprite box —
 art that does not match its solid is refused rather than resampled, because
 silently stretching a building to fit is how a player ends up blocked by
 something that looks passable.
@@ -41,7 +41,7 @@ def sha256_of(path: Path) -> str:
 
 def expected_sizes() -> dict[str, tuple[int, int]]:
     """Authoritative sizes, derived rather than authored twice."""
-    arena = json.loads((CONTRACTS / "civic-seam-arena-002.json").read_text())
+    arena = json.loads((CONTRACTS / "civic-seam-arena-003.json").read_text())
     sizes: dict[str, tuple[int, int]] = {}
     for solid in arena["permanentSolids"]:
         half = solid["halfSize"]

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/scrimshawlife-ctrl/SS-specs/contracts/civic-seam-arena-002.schema.json",
+  "$id": "https://github.com/scrimshawlife-ctrl/SS-specs/contracts/civic-seam-arena-003.schema.json",
   "title": "Civic Seam Arena Manifest",
   "type": "object",
   "required": [
@@ -22,14 +22,15 @@
     "captainCameraEmitters",
     "cameraSockets",
     "extraction",
-    "viewport"
+    "viewport",
+    "patrols"
   ],
   "properties": {
     "schemaVersion": {
       "const": "arena-manifest-001"
     },
     "arenaVersion": {
-      "const": "civic-seam-arena-002"
+      "const": "civic-seam-arena-003"
     },
     "cellSizeUnits": {
       "const": 64
@@ -212,6 +213,56 @@
             "type": "integer",
             "minimum": -360000,
             "maximum": 360000
+          }
+        }
+      }
+    },
+    "patrols": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "zoneId",
+          "archetype",
+          "waypoints"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "zoneId": {
+            "type": "string"
+          },
+          "archetype": {
+            "enum": [
+              "fogAnalyticsCloud",
+              "cableCarCorrelator",
+              "sutroSignalWitch",
+              "autonomousInformant",
+              "victorianVendor"
+            ]
+          },
+          "waypoints": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": [
+                "x",
+                "y"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "integer"
+                },
+                "y": {
+                  "type": "integer"
+                }
+              }
+            }
           }
         }
       }

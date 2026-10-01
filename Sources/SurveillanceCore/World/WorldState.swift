@@ -63,6 +63,30 @@ public struct WorldState: Equatable, Sendable {
 }
 
 public enum StateDigest {
+    /// One living enemy. D-089 awareness and the D-091 patrol state are
+    /// authoritative, so both are in it; the patrol object appears only on a
+    /// patrol member.
+    static func enemyDigest(_ enemy: EnemyBody) -> CanonicalJSON {
+        var fields: [String: CanonicalJSON] = [
+            "id": .unsigned(enemy.id.raw),
+            "archetype": .string(enemy.archetype.rawValue),
+            "x": .integer(enemy.position.x.raw),
+            "y": .integer(enemy.position.y.raw),
+            "integrity": .integer(Int64(enemy.integrity)),
+            "awareness": .string(enemy.awareness.rawValue)
+        ]
+        if let patrol = enemy.patrol {
+            fields["patrol"] = .object([
+                "route": .integer(Int64(patrol.route)),
+                "target": .integer(Int64(patrol.target)),
+                "dwellRemaining": .integer(Int64(patrol.dwellRemaining)),
+                "facingX": .integer(patrol.facing.x.raw),
+                "facingY": .integer(patrol.facing.y.raw)
+            ])
+        }
+        return .object(fields)
+    }
+
     public static func hash(_ state: WorldState) -> String {
         canonical(state).sha256Hex()
     }
@@ -82,7 +106,9 @@ public enum StateDigest {
                 "y": .integer(state.player.position.y.raw),
                 "integrity": .integer(Int64(state.player.integrity)),
                 "dodgeActiveRemaining": .integer(Int64(state.player.dodgeActiveRemaining)),
-                "dodgeReadyTick": .unsigned(state.player.dodgeReadyTick)
+                "dodgeReadyTick": .unsigned(state.player.dodgeReadyTick),
+                // D-090: the damage remainder is authoritative.
+                "damageRemainderHundredths": .integer(Int64(state.player.damageRemainderHundredths))
             ]),
             "cameras": .array(state.cameras.sorted { $0.entityId < $1.entityId }.map { camera in
                 .object([
@@ -92,17 +118,7 @@ public enum StateDigest {
                     "housing": .string(camera.housingFamily.rawValue)
                 ])
             }),
-            "enemies": .array(state.enemies.filter(\.alive).sorted { $0.id < $1.id }.map { enemy in
-                .object([
-                    "id": .unsigned(enemy.id.raw),
-                    "archetype": .string(enemy.archetype.rawValue),
-                    "x": .integer(enemy.position.x.raw),
-                    "y": .integer(enemy.position.y.raw),
-                    "integrity": .integer(Int64(enemy.integrity)),
-                    // D-089: authoritative, so digested.
-                    "awareness": .string(enemy.awareness.rawValue)
-                ])
-            }),
+            "enemies": .array(state.enemies.filter(\.alive).sorted { $0.id < $1.id }.map(enemyDigest)),
             "exposure": .object([
                 "value": .integer(Int64(state.exposure.exposure)),
                 "state": .string(state.exposure.detectionState.rawValue),

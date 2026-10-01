@@ -414,7 +414,9 @@ struct GameFeelTests {
                 command = PlayerCommand(tick: tick, moveX: 0, moveY: 32767, dodgePressed: false)
             } else {
                 let steer = pilot.command(PresentationSnapshot(sim.state))
-                if pilot.stalled { break }
+                // A stall ends the run before this frame steps; it is not a
+                // frame (the frame count must stay ticks + frozen frames).
+                if pilot.stalled { frames -= 1; break }
                 command = sim.state.upgrade.pending
                     ? PlayerCommand(tick: tick, moveX: 0, moveY: 0, dodgePressed: false, upgradeChoiceIndex: upgrade.selectionIndex)
                     : PlayerCommand(tick: tick, moveX: steer.moveX, moveY: steer.moveY, dodgePressed: steer.dodge)

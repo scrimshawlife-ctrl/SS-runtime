@@ -11,15 +11,15 @@ struct CompleteRunVectorTests {
     private static let expectedVectors: [UpgradeID: ExpectedVector] = [
         .signalJammer: ExpectedVector(
             elapsedTicks: 302,
-            terminalDigest: "da653b9745da9bdc9b4a8d65ae5abaa22d4cd9b862f5b4fcca25fdd1c9151428"
+            terminalDigest: "4fef2c19f7048bc4d1fe58d3054608260d9aaa27c31622dcd142de6816765014"
         ),
         .ricochetPulse: ExpectedVector(
             elapsedTicks: 302,
-            terminalDigest: "8ed7082b674baee26a42b4b5838a7b13548cca1ec3785d6b309b9197e6fa7119"
+            terminalDigest: "0184112de6578c5e154339effc7b405f2b2bd3be5eeb90d09aa5cecce03e1c1e"
         ),
         .ghostStep: ExpectedVector(
             elapsedTicks: 302,
-            terminalDigest: "0986f12370c9d3e43ccc2cd67660c48fecfc5154ae2aec05df1a9d94f05b853d"
+            terminalDigest: "8d344302dc30a0600ff36a01074da2c030328f5bd6062ae49111b187122662b0"
         )
     ]
 
@@ -99,7 +99,8 @@ struct CompleteRunVectorTests {
         sim.testing_injectHostileBolt()
         let hitTick = sim.state.tick + 1
         _ = sim.step(command: .neutral(tick: hitTick))
-        #expect(sim.state.player.integrity == before - 10)
+        // D-090: 50% of the bolt's 10.
+        #expect(sim.state.player.integrity == before - 5)
     }
 
     @Test func completeRunT706RicochetCannotDoubleHitSameTarget() {

@@ -104,28 +104,64 @@ struct PacingProbeTests {
     func heatD083StyleSweep() throws {
         let environment = ProcessInfo.processInfo.environment
         let seedCount = try #require(environment["SS_HEAT_SEEDS"].flatMap(UInt64.init))
-        var lines: [String] = []
-        for seed in 1...seedCount {
+        struct Job: Sendable {
+            var seed: UInt64
+            var profile: ProbePilot.Profile
+            var upgrade: UpgradeID
+            var sustained: Bool
+        }
+        // Legal runs may use more seeds than sustained ones
+        // (`SS_HEAT_LEGAL_SEEDS`), for a usable win-rate sample.
+        let legalSeedCount = environment["SS_HEAT_LEGAL_SEEDS"].flatMap(UInt64.init) ?? seedCount
+        var jobs: [Job] = []
+        for seed in 1...max(seedCount, legalSeedCount) {
             for profile in [ProbePilot.Profile.stealth, .loud, .competent] {
                 for upgrade in UpgradeID.allCases {
-                    for sustained in [false, true] {
-                        let run = try PacingProbe.run(seed: seed, upgrade: upgrade, profile: profile, sustained: sustained)
-                        for wave in run.waveHeat {
-                            #expect(wave.queued == wave.authored + wave.added, "\(profile.name) seed \(seed) \(wave.wave)")
-                        }
-                        var digests: [String] = []
-                        if !sustained {
-                            let replay = PacingProbe.replay(run)
-                            #expect(replay?.digest == run.digest)
-                            digests = replay.map { [$0.digest] } ?? []
-                        }
-                        lines.append(PacingProbe.reportLine(run, replayDigests: digests))
+                    for sustained in [false, true] where seed <= (sustained ? seedCount : legalSeedCount) {
+                        jobs.append(Job(seed: seed, profile: profile, upgrade: upgrade, sustained: sustained))
                     }
                 }
             }
         }
+        // Independent runs, so they run in parallel; results are collected
+        // in job order and asserted here, on the test's own thread.
+        let sink = ProbeSink()
+        let frozen = jobs
+        DispatchQueue.concurrentPerform(iterations: frozen.count) { index in
+            let job = frozen[index]
+            do {
+                let run = try PacingProbe.run(seed: job.seed, upgrade: job.upgrade, profile: job.profile, sustained: job.sustained)
+                var problems: [String] = []
+                for wave in run.waveHeat where wave.queued != wave.authored + wave.added {
+                    problems.append("\(job.profile.name) seed \(job.seed) \(wave.wave): queued \(wave.queued)")
+                }
+                var digests: [String] = []
+                if !job.sustained, ProcessInfo.processInfo.environment["SS_PROBE_NO_PATROL"] == nil {
+                    let replay = PacingProbe.replay(run)
+                    if replay?.digest != run.digest { problems.append("\(job.profile.name) seed \(job.seed): replay digest differs") }
+                    digests = replay.map { [$0.digest] } ?? []
+                }
+                sink.add(index, PacingProbe.reportLine(run, replayDigests: digests), problems)
+            } catch {
+                sink.add(index, "{\"error\":\"\(error)\"}", ["\(error)"])
+            }
+        }
+        #expect(sink.problems.isEmpty, "\(sink.problems)")
         if let path = environment["SS_HEAT_REPORT"] {
-            try (lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            try (sink.lines.joined(separator: "\n") + "\n").write(toFile: path, atomically: true, encoding: .utf8)
         }
     }
+}
+
+/// Thread-safe, order-restoring collector for the parallel sweep.
+private final class ProbeSink: @unchecked Sendable {
+    private let lock = NSLock()
+    private var entries: [(Int, String, [String])] = []
+    func add(_ index: Int, _ line: String, _ problems: [String]) {
+        lock.lock()
+        entries.append((index, line, problems))
+        lock.unlock()
+    }
+    var lines: [String] { entries.sorted { $0.0 < $1.0 }.map(\.1) }
+    var problems: [String] { entries.sorted { $0.0 < $1.0 }.flatMap(\.2) }
 }

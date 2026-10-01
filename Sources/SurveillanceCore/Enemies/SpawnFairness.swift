@@ -111,7 +111,7 @@ public enum SpawnFairness {
         return true
     }
 
-    /// Point-in-solid sockets. Pinned `civic-seam-arena-002.json` defects; do not rewrite coordinates.
+    /// Point-in-solid sockets. Pinned `civic-seam-arena-003.json` defects; do not rewrite coordinates.
     public static func socketsBlockedByPermanentSolids(_ manifest: ArenaManifest) -> [String] {
         let solids = manifest.permanentSolids
         var ids: [String] = []

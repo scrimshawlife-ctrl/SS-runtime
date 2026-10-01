@@ -78,7 +78,8 @@ struct ExtractionCountdownTests {
         sim.testing_armExtraction()
         sim.testing_setPlayerPosition(extractCenter(sim))
         sim.testing_setExtractionRemaining(1)
-        sim.testing_setPlayerIntegrity(10)
+        // D-090: a 10-damage bolt removes 5 Integrity, so 5 is lethal.
+        sim.testing_setPlayerIntegrity(5)
         sim.testing_injectHostileBolt(damage: 10)
         let result = sim.step(command: .neutral(tick: 1))
         #expect(result.outcome == .failure)

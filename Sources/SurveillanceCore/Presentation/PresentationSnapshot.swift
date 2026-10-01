@@ -82,6 +82,8 @@ public struct PresentationSnapshot: Equatable, Sendable {
     public var outcome: RunOutcome
     public var player: CircleSprite
     public var playerIntegrity: Int
+    /// The Integrity bar's full value (D-092): `player.integrity` from content.
+    public var playerMaxIntegrity: Int = 0
     public var exposure: Int
     public var detection: DetectionState
     public var solids: [AABB]
@@ -161,6 +163,9 @@ public struct PresentationSnapshot: Equatable, Sendable {
     public var mines: [MineSprite]
     public var boss: BossHUD?
     public var telegraphs: [TelegraphShape]
+    /// D-091: the vision cone of every unaware Transit Patrol member, clipped
+    /// at solids. Empty once each is alerted or dead.
+    public var patrolCones: [PatrolCone] = []
 
     /// Which Player clip the authoritative state calls for. Ordered by
     /// precedence: a terminal outcome outranks Extraction, which outranks
@@ -193,6 +198,7 @@ public struct PresentationSnapshot: Equatable, Sendable {
             direction: ClipFrameLibrary.direction(forFacing: state.player.facing)
         )
         playerIntegrity = state.player.integrity
+        playerMaxIntegrity = state.player.maxIntegrity
         exposure = state.exposure.exposure
         detection = state.exposure.detectionState
         let live = state.liveSolids
@@ -364,5 +370,6 @@ public struct PresentationSnapshot: Equatable, Sendable {
         playerDirection = ClipFrameLibrary.direction(forFacing: state.player.facing)
         playerClipId = Self.playerClip(state)
         telegraphs = TelegraphProjection.project(state)
+        patrolCones = PatrolConeProjection.project(state)
     }
 }

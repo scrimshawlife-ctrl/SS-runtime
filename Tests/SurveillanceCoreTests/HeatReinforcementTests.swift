@@ -118,7 +118,7 @@ struct HeatReinforcementTests {
         sim.testing_fillCivicPool(count: Targeting.activeCeiling)
         for _ in 0..<600 {
             let queuedBefore = sim.state.encounters["M-A"]?.spawnQueue.count ?? 0
-            sim.testing_setPlayerIntegrity(PlayerBody.maxIntegrity)
+            sim.testing_setPlayerIntegrity(sim.state.player.maxIntegrity)
             _ = sim.step(command: .neutral(tick: sim.state.tick + 1))
             for enemy in sim.state.enemies where enemy.encounterId == "M-A" && !known.contains(enemy.id) {
                 known.insert(enemy.id)
@@ -162,7 +162,7 @@ struct HeatReinforcementTests {
             if encounter != "M-C" {
                 sim.testing_setExposure(0)
             }
-            sim.testing_setPlayerIntegrity(PlayerBody.maxIntegrity)
+            sim.testing_setPlayerIntegrity(sim.state.player.maxIntegrity)
             killEnemies(in: encounter, sim: &sim) { _ in true }
         }
         let runtime = try #require(sim.state.encounters[encounter])
@@ -182,7 +182,7 @@ struct HeatReinforcementTests {
 
     @Test func heatBlockFailsClosed() throws {
         let bundled = try #require(
-            try JSONSerialization.jsonObject(with: BundledResource.data(name: "combat-content-003", subdirectory: "contracts"))
+            try JSONSerialization.jsonObject(with: BundledResource.data(name: "combat-content-004", subdirectory: "contracts"))
                 as? [String: Any]
         )
         func decodeError(_ mutate: (inout [String: Any]) -> Void) -> CombatContentError? {

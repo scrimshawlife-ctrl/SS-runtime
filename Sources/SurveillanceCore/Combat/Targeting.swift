@@ -50,11 +50,14 @@ public enum Targeting {
 
     /// D-031 / D-082 / `camera-destruction-001` §6 / T409: class, then squared
     /// distance to anchor, then stable ID. Only a chosen Camera is a candidate.
+    /// D-092: an unaware patrol member is a candidate only within
+    /// `unawarePatrolRange` of the Player (`patrol.sightUnits`, inclusive).
     public static func select(
         player: PlayerBody,
         enemies: [EnemyBody],
         cameras: [SelectedCamera],
-        solids: [(id: String, box: AABB)]
+        solids: [(id: String, box: AABB)],
+        unawarePatrolRange: Int? = nil
     ) -> (EntityID, VecQ8)? {
         struct Candidate {
             var id: EntityID
@@ -66,6 +69,7 @@ public enum Targeting {
         for enemy in enemies where enemy.alive {
             let distSq = player.position.distanceSquared(to: enemy.position)
             if !inRange(distSq) { continue }
+            if !patrolCandidate(enemy, distSq: distSq, range: unawarePatrolRange, player: player) { continue }
             if !Collision.lineOfFireClear(from: player.position, to: enemy.position, solids: solids) { continue }
             let close = distSq <= Int64(closeEnemyRange) * Int64(closeEnemyRange) * Q8.scale * Q8.scale
             list.append(
@@ -158,6 +162,16 @@ public enum Targeting {
     ) -> Bool {
         let own = camera.mountSolidId
         return !solids.contains { $0.id != own && Collision.segmentIntersects(origin, camera.targetAnchor, box: $0.box) }
+    }
+
+    /// D-092 / D-093: an unaware patrol member is a candidate only within
+    /// `range` of the Player **and** only while the Player moves toward it (the
+    /// D-082 chosen-Camera test), so walking past holds fire.
+    @inline(never)
+    static func patrolCandidate(_ enemy: EnemyBody, distSq: Int64, range: Int?, player: PlayerBody) -> Bool {
+        guard let range, enemy.isPatrolMember, enemy.isUnaware else { return true }
+        let r = Int64(range) * Q8.scale
+        return distSq <= r * r && isChosen(velocity: player.velocity, from: player.position, to: enemy.position)
     }
 
     public static func inRange(_ distSqQ8: Int64) -> Bool {

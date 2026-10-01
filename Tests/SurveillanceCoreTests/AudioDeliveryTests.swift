@@ -113,7 +113,7 @@ struct AudioDeliveryTests {
     @Test func everyBossCueTheProjectorBuildsIsRegistered() throws {
         let eventIds = Set(try presentation()["audioEventIds"] as! [String])
         let content = try JSONSerialization.jsonObject(
-            with: SpecBundle.contract("combat-content-003")
+            with: SpecBundle.contract("combat-content-004")
         ) as! [String: Any]
         let boss = content["boss"] as! [String: Any]
         let phases = (boss["phases"] as! [[String: Any]]).map { $0["id"] as! String }

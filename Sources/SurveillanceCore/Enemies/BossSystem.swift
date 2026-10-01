@@ -16,15 +16,6 @@ public enum BossPhase: String, Equatable, Sendable {
         return receiptOrder.map(\.rawValue).filter { seen.contains($0) }
     }
 
-    public static func from(hp: Int) -> BossPhase {
-        switch hp {
-        case 600...800: .publicSafety
-        case 400..<600: .civilLiberties
-        case 200..<400: .temporarySafeguard
-        default: .independentReview
-        }
-    }
-
     public var sequence: [BossAttackID] {
         switch self {
         case .publicSafety: [.safetyRationale, .narrowTailoring]
@@ -54,6 +45,8 @@ public struct BossRuntime: Equatable, Sendable {
     public var lockedHeadingMilli: Int?
     public var fieldRemaining: Int
     public var activeEmitter: CaptainEmitter?
+    /// The health bands from content (`boss.phases[].minHp`, bosses.md).
+    public var bands: BossPhaseBands
 
     public var observationNumerator: Int {
         switch phase {
@@ -91,8 +84,9 @@ public struct BossRuntime: Equatable, Sendable {
         }
     }
 
-    public init(phase: BossPhase = .publicSafety) {
+    public init(phase: BossPhase = .publicSafety, bands: BossPhaseBands) {
         self.phase = phase
+        self.bands = bands
         sequenceIndex = 0
         recoveryRemaining = 90
         telegraphRemaining = 0
@@ -107,7 +101,7 @@ public struct BossRuntime: Equatable, Sendable {
 
     public mutating func syncPhase(hp: Int) -> (before: BossPhase, after: BossPhase)? {
         let before = phase
-        let next = BossPhase.from(hp: hp)
+        let next = bands.phase(hp: hp)
         guard next != before else { return nil }
         phase = next
         sequenceIndex = 0

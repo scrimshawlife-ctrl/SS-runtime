@@ -1,8 +1,8 @@
 {
   "schemaVersion":"runtime-kernel-001",
-  "rulesetVersion":"ss-rules-003",
-  "contentVersion":"civic-seam-content-003",
-  "arenaVersion":"civic-seam-arena-002",
+  "rulesetVersion":"ss-rules-004",
+  "contentVersion":"civic-seam-content-004",
+  "arenaVersion":"civic-seam-arena-003",
   "seed":1,
   "commands":[
     {"tick":1,"moveX":32767,"moveY":0,"dodgePressed":false},

@@ -1,6 +1,9 @@
 public struct Simulation: Equatable, Sendable {
     public private(set) var state: WorldState
     private var events = EventBuffer()
+    /// Trigger centres, patrol routes, and the unaware rules, derived once
+    /// from the arena and content this run was built with (D-090, D-091).
+    private let unawareMovement: UnawareMovement
 
     public init(seed: UInt64, arena: ArenaManifest, content: CombatContent) throws {
         var allocator = EntityAllocator()
@@ -28,6 +31,7 @@ public struct Simulation: Equatable, Sendable {
                 cleanupTick: nil
             )
         }
+        unawareMovement = UnawareMovement(arena: arena, content: content)
         let gates = arena.gates.map {
             GateState(id: $0.id, closed: $0.initiallyClosed ?? false, box: $0.aabb)
         }
@@ -44,7 +48,8 @@ public struct Simulation: Equatable, Sendable {
             terminalDigest: nil,
             player: PlayerBody(
                 id: playerID,
-                spawn: VecI(x: arena.playerSpawn.x, y: arena.playerSpawn.y)
+                spawn: VecI(x: arena.playerSpawn.x, y: arena.playerSpawn.y),
+                integrity: content.player.integrity
             ),
             cameras: cameras,
             enemies: [],
@@ -164,7 +169,8 @@ public struct Simulation: Equatable, Sendable {
             mines: &state.mines,
             exposurePulses: &fogPulses,
             playerDamage: &enemyPlayerDamage,
-            alertedThisTick: alertedThisTick
+            alertedThisTick: alertedThisTick,
+            unaware: unawareMovement
         )
         for (source, amount) in enemyPlayerDamage {
             applyPlayerDamage(source, amount: amount, tick: tick)
@@ -351,7 +357,8 @@ public struct Simulation: Equatable, Sendable {
             player: state.player,
             enemies: state.enemies,
             cameras: state.cameras,
-            solids: state.liveSolids
+            solids: state.liveSolids,
+            unawarePatrolRange: state.content.patrol.sightUnits
         ) else { return }
 
         if state.cameras.contains(where: { $0.entityId == target.0 && $0.isDamageable }) {
@@ -796,8 +803,21 @@ public struct Simulation: Equatable, Sendable {
         }
     }
 
+    /// Every Player Integrity loss, from any source, lands here: contact,
+    /// hostile bolts, mines, the Daemon query, and the Captain's attacks.
+    ///
+    /// D-090 (`player-controller.md` § Damage response): the loss is scaled
+    /// by `player.damageTakenPercent` through an exact remainder in
+    /// hundredths, so over a run exactly that percentage lands with no
+    /// rounding drift. A loss that removes no whole point publishes nothing.
     private mutating func applyPlayerDamage(_ source: EntityID, amount: Int, tick: UInt64) {
-        let applied = min(amount, state.player.integrity)
+        let removed = Self.scaleDamageTaken(
+            amount,
+            percent: state.content.player.damageTakenPercent,
+            remainder: &state.player.damageRemainderHundredths
+        )
+        guard removed > 0 else { return }
+        let applied = min(removed, state.player.integrity)
         state.player.integrity -= applied
         state.player.damageTaken += applied
         events.emit(
@@ -815,6 +835,14 @@ public struct Simulation: Equatable, Sendable {
         if state.player.integrity <= 0 {
             fail(.playerDeath, tick: tick)
         }
+    }
+
+    /// `amount × percent` hundredths are added to `remainder`; the whole
+    /// points are removed and returned, and the rest (0...99) is carried.
+    static func scaleDamageTaken(_ amount: Int, percent: Int, remainder: inout Int) -> Int {
+        let hundredths = remainder + max(0, amount) * percent
+        remainder = hundredths % 100
+        return hundredths / 100
     }
 
     private mutating func resolvePlayerDeathAndContact(tick: UInt64) {
@@ -862,6 +890,7 @@ public struct Simulation: Equatable, Sendable {
     }
 
     private mutating func advanceEncounters(tick: UInt64, forceLockdown: inout Bool) {
+        if tick == 1 { spawnPatrols(tick: tick) }
         for trigger in state.arena.encounterTriggers {
             let id = trigger.encounterId ?? trigger.id
             if id == "improperSearchDaemon" {
@@ -982,7 +1011,8 @@ public struct Simulation: Equatable, Sendable {
             player: state.player.position,
             detection: state.exposure.detectionState,
             spec: state.content.awareness,
-            solids: state.liveSolids
+            solids: state.liveSolids,
+            patrol: state.content.patrol
         )
         for alert in alerts {
             events.emit(
@@ -997,6 +1027,39 @@ public struct Simulation: Equatable, Sendable {
             )
         }
         return Set(alerts.map(\.entityId))
+    }
+
+    /// D-091 (EN-024): every `patrols` member spawns unaware at its first
+    /// waypoint in the first tick's spawn phase, in route order. No spawn
+    /// fairness applies: the waypoints are authored and validated.
+    @inline(never)
+    private mutating func spawnPatrols(tick: UInt64) {
+        for (index, route) in state.arena.patrols.enumerated() {
+            guard let stats = state.content.standardEnemies[route.archetype] else { continue }
+            let id = state.allocator.next()
+            state.enemies.append(
+                PatrolSystem.member(
+                    route: route,
+                    index: index,
+                    id: id,
+                    stats: stats,
+                    integrityPercent: state.content.patrol.integrityPercent,
+                    tick: tick,
+                    nextSpecialTick: Self.firstSpecialTick(route.archetype, spawnTick: tick)
+                )
+            )
+        }
+    }
+
+    /// The tick of a standard enemy's first special attack, from its spawn.
+    private static func firstSpecialTick(_ archetype: ArchetypeID, spawnTick tick: UInt64) -> UInt64 {
+        switch archetype {
+        case .fogAnalyticsCloud: tick + 120
+        case .cableCarCorrelator: tick + 90
+        case .sutroSignalWitch: tick + 60
+        case .victorianVendor: tick + 90
+        default: tick
+        }
     }
 
     private func waveQueue(_ wave: WaveSpec, encounter: String) -> (queue: [ArchetypeID], reinforcements: Int) {
@@ -1039,14 +1102,7 @@ public struct Simulation: Equatable, Sendable {
             lethalVolumes: lethalVolumes()
         ) else { return false }
         let id = state.allocator.next()
-        var nextSpecial = tick
-        switch archetype {
-        case .fogAnalyticsCloud: nextSpecial = tick + 120
-        case .cableCarCorrelator: nextSpecial = tick + 90
-        case .sutroSignalWitch: nextSpecial = tick + 60
-        case .victorianVendor: nextSpecial = tick + 90
-        default: break
-        }
+        let nextSpecial = Self.firstSpecialTick(archetype, spawnTick: tick)
         state.enemies.append(
             EnemyBody(
                 id: id,
@@ -1161,7 +1217,7 @@ public struct Simulation: Equatable, Sendable {
         )
         state.bossPhase = "publicSafety"
         state.phasesReached = ["publicSafety"]
-        state.bossRuntime = BossRuntime()
+        state.bossRuntime = BossRuntime(bands: state.content.bossPhaseBands)
         events.emit(tick: tick, phase: 16, type: .bossActivated, payload: ["bossId": .string(ArchetypeID.algorithmicModerate.rawValue)])
         events.emit(
             tick: tick,
@@ -1340,7 +1396,7 @@ public struct Simulation: Equatable, Sendable {
     }
 
     mutating func testing_setPlayerIntegrity(_ value: Int) {
-        state.player.integrity = max(0, value)
+        state.player.integrity = min(max(0, value), state.player.maxIntegrity)
     }
 
     mutating func testing_keepOnlyCamera(at index: Int, integrity: Int) {
@@ -1371,7 +1427,7 @@ public struct Simulation: Equatable, Sendable {
         state.projectiles.append(projectile)
     }
 
-    mutating func testing_installBoss(integrity: Int = 800) {
+    mutating func testing_installBoss(integrity: Int? = nil) {
         guard !state.enemies.contains(where: { $0.archetype == .algorithmicModerate }) else { return }
         let spawn = state.arena.bossSpawn
         let id = state.allocator.next()
@@ -1381,7 +1437,7 @@ public struct Simulation: Equatable, Sendable {
                 archetype: .algorithmicModerate,
                 position: VecI(x: spawn.x, y: spawn.y).asQ8,
                 velocity: .zero,
-                integrity: integrity,
+                integrity: integrity ?? state.content.bossHP,
                 radius: state.content.bossRadius,
                 speedUnitsPerSecond: state.content.bossSpeed,
                 contactDps: state.content.bossContactDps,
@@ -1395,7 +1451,7 @@ public struct Simulation: Equatable, Sendable {
         )
         state.bossPhase = BossPhase.publicSafety.rawValue
         state.phasesReached = [BossPhase.publicSafety.rawValue]
-        state.bossRuntime = BossRuntime()
+        state.bossRuntime = BossRuntime(bands: state.content.bossPhaseBands)
     }
 
     mutating func testing_insertMine(at position: VecI, armRemaining: Int, radius: Int = 40) {
@@ -1668,7 +1724,8 @@ public struct Simulation: Equatable, Sendable {
         integrity: Int? = nil,
         speed: Int? = nil,
         awareness: EnemyAwareness = .aware,
-        nextSpecialTick: UInt64 = 0
+        nextSpecialTick: UInt64 = 0,
+        encounter: String = "test"
     ) -> EntityID {
         let stats = state.content.standardEnemies[archetype]!
         let id = state.allocator.next()
@@ -1687,7 +1744,7 @@ public struct Simulation: Equatable, Sendable {
                 spawnTick: state.tick,
                 nextSpecialTick: nextSpecialTick,
                 lockPosition: nil,
-                encounterId: "test",
+                encounterId: encounter,
                 awareness: awareness
             )
         )

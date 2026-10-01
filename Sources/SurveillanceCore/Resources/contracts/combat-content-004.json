@@ -1,12 +1,12 @@
 {
-  "schemaVersion": "combat-content-003",
+  "schemaVersion": "combat-content-004",
   "contracts": {"enemies": "enemies-encounters-001", "upgrades": "upgrades-001", "bosses": "bosses-001"},
   "standardEnemies": {
-    "fogAnalyticsCloud": {"hp":20,"radius":18,"speed":84,"contactDps":4,"pulse":{"first":120,"cooldown":180,"telegraph":45,"range":220,"exposure":20}},
-    "cableCarCorrelator": {"hp":40,"radius":20,"speed":108,"contactDps":12,"charge":{"first":90,"cooldown":180,"telegraph":30,"ticks":24,"speed":300,"recover":45}},
-    "sutroSignalWitch": {"hp":30,"radius":18,"speed":72,"contactDps":6,"range":[220,300],"shot":{"first":60,"cooldown":120,"telegraph":30,"speed":360,"radius":6,"lifetime":90,"damage":10}},
-    "autonomousInformant": {"hp":20,"radius":16,"speed":144,"contactDps":8},
-    "victorianVendor": {"hp":60,"radius":22,"speed":60,"contactDps":10,"range":[160,220],"mine":{"first":90,"cooldown":180,"telegraph":36,"maximum":2,"arm":30,"lifetime":240,"radius":42,"damage":12}}
+    "fogAnalyticsCloud": {"hp":30,"radius":18,"speed":84,"contactDps":4,"pulse":{"first":120,"cooldown":180,"telegraph":45,"range":220,"exposure":20}},
+    "cableCarCorrelator": {"hp":60,"radius":20,"speed":108,"contactDps":12,"charge":{"first":90,"cooldown":180,"telegraph":30,"ticks":24,"speed":300,"recover":45}},
+    "sutroSignalWitch": {"hp":45,"radius":18,"speed":72,"contactDps":6,"range":[220,300],"shot":{"first":60,"cooldown":120,"telegraph":30,"speed":360,"radius":6,"lifetime":90,"damage":10}},
+    "autonomousInformant": {"hp":30,"radius":16,"speed":144,"contactDps":8},
+    "victorianVendor": {"hp":90,"radius":22,"speed":60,"contactDps":10,"range":[160,220],"mine":{"first":90,"cooldown":180,"telegraph":36,"maximum":2,"arm":30,"lifetime":240,"radius":42,"damage":12}}
   },
   "encounters": {
     "M-A": {"zone":"Z-03","totals":14,"waves":[
@@ -23,13 +23,13 @@
       {"id":"C3","interval":18,"delay":75,"members":{"cableCarCorrelator":3,"victorianVendor":2,"autonomousInformant":2}},
       {"id":"C4","interval":18,"members":{"fogAnalyticsCloud":2,"sutroSignalWitch":2,"victorianVendor":2,"autonomousInformant":2}}]}
   },
-  "elite": {"id":"improperSearchDaemon","hp":300,"radius":26,"speed":108,"contactDps":14,"spawnDelay":90,"cycle":[["pursuit",120],["queryTelegraph",45],["queryResolve",0],["dashTelegraph",36],["dash",30],["recover",60]]},
+  "elite": {"id":"improperSearchDaemon","hp":450,"radius":26,"speed":108,"contactDps":14,"spawnDelay":90,"cycle":[["pursuit",120],["queryTelegraph",45],["queryResolve",0],["dashTelegraph",36],["dash",30],["recover",60]]},
   "boss": {
-    "id":"algorithmicModerate","hp":800,"radius":30,"baseSpeed":120,"baseContactDps":16,"initialDelay":90,"transitionRecovery":45,
+    "id":"algorithmicModerate","hp":1600,"radius":30,"baseSpeed":120,"baseContactDps":16,"initialDelay":90,"transitionRecovery":45,
     "phases":[
-      {"id":"publicSafety","minHp":600,"observation":[105,100],"speed":[100,100],"contact":[100,100],"orbit":[0,100],"sequence":["safetyRationale","narrowTailoring"]},
-      {"id":"civilLiberties","minHp":400,"observation":[108,100],"speed":[90,100],"contact":[104,100],"orbit":[72,100],"sequence":["narrowTailoring","safetyRationale","temporaryOrder"]},
-      {"id":"temporarySafeguard","minHp":200,"observation":[112,100],"speed":[118,100],"contact":[110,100],"orbit":[18,100],"sequence":["temporaryOrder","narrowTailoring","safetyRationale"]},
+      {"id":"publicSafety","minHp":1200,"observation":[105,100],"speed":[100,100],"contact":[100,100],"orbit":[0,100],"sequence":["safetyRationale","narrowTailoring"]},
+      {"id":"civilLiberties","minHp":800,"observation":[108,100],"speed":[90,100],"contact":[104,100],"orbit":[72,100],"sequence":["narrowTailoring","safetyRationale","temporaryOrder"]},
+      {"id":"temporarySafeguard","minHp":400,"observation":[112,100],"speed":[118,100],"contact":[110,100],"orbit":[18,100],"sequence":["temporaryOrder","narrowTailoring","safetyRationale"]},
       {"id":"independentReview","minHp":1,"observation":[116,100],"speed":[104,100],"contact":[116,100],"orbit":[-55,100],"sequence":["independentReview","narrowTailoring","temporaryOrder"]}],
     "attacks": {
       "safetyRationale":{"telegraph":45,"range":260,"angle":70000,"damage":18,"cooldown":90},
@@ -43,5 +43,7 @@
     "ghostStep":{"index":2,"dodgeSpeed":540,"dodgeTicks":12,"cooldown":90,"postDodgeCameraImmunity":18}
   },
   "heat": {"reinforcementArchetype":"autonomousInformant","encounters":["M-A","M-B"],"byDetectionState":{"hidden":0,"observed":0,"tracked":1,"hunted":2,"lockdown":2}},
-  "awareness": {"appliesTo":["fogAnalyticsCloud","cableCarCorrelator","sutroSignalWitch","autonomousInformant","victorianVendor"],"sightRangeUnits":160,"allyAlertRadiusUnits":128,"surveillanceAlertState":"tracked","ambushDamageMultiplier":2,"awareEncounters":["M-C"],"heatReinforcementsSpawnAware":true}
+  "awareness": {"appliesTo":["fogAnalyticsCloud","cableCarCorrelator","sutroSignalWitch","autonomousInformant","victorianVendor"],"sightRangeUnits":320,"allyAlertRadiusUnits":128,"surveillanceAlertState":"tracked","ambushDamageMultiplier":3,"awareEncounters":["M-C"],"heatReinforcementsSpawnAware":true,"unawareDriftPercent":25,"unawareDriftStopUnits":48},
+  "patrol": {"integrityPercent":200,"speedPercent":40,"dwellTicks":30,"sightUnits":240,"sightHalfAngleMilliDegrees":45000,"arrivalUnits":4},
+  "player": {"integrity":150,"damageTakenPercent":50}
 }

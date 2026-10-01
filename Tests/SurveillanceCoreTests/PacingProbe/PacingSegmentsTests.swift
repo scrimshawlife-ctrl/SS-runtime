@@ -17,6 +17,32 @@ struct PacingSegmentsTests {
         #expect(PacingSegment.targetRunSeconds == 300...480)
     }
 
+    /// `arena.md` § 5 as rescaled by D-090 (SS-specs a9e023d): the windows,
+    /// and the Lockdown Ring starting at the M-C wave, not `eliteActivated`.
+    @Test func windowsMatchTheD090Table() {
+        let expected: [PacingSegment: ClosedRange<Int>] = [
+            .spawnAlley: 0...5, .cameraCorridor: 5...30, .civicPlaza: 30...65,
+            .pressureRoute: 65...110, .lockdownRing: 110...240, .captainCourt: 240...330,
+            .extraction: 330...360,
+        ]
+        for segment in PacingSegment.allCases {
+            #expect(segment.targetSeconds == expected[segment], "\(segment)")
+        }
+        #expect(PacingSegment.lockdownRing.start == .wave(encounterId: "M-C"))
+        #expect(PacingSegment.captainCourt.start == .event(.bossActivated))
+        #expect(PacingSegment.extraction.targetSeconds.upperBound == 360, "the table ends at 6:00")
+
+        var timeline = PacingTimeline()
+        timeline.observe(
+            tick: 7_300,
+            events: [AuthoritativeEvent(tick: 0, phase: 15, type: .waveStarted, payload: ["encounterId": .string("M-C"), "waveId": .string("C1")], insertion: 0)],
+            playerZone: "Z-05"
+        )
+        #expect(timeline.starts[.lockdownRing] == 7_300)
+        timeline.observe(tick: 9_000, events: [AuthoritativeEvent(tick: 0, phase: 16, type: .eliteActivated, insertion: 0)], playerZone: "Z-05")
+        #expect(timeline.starts[.lockdownRing] == 7_300, "eliteActivated no longer starts it")
+    }
+
     @Test func everyBoundaryNamesSomethingTheContractsDefine() throws {
         let arena = try ArenaManifest.bundled()
         let zones = Set(arena.zones.map(\.id))

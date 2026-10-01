@@ -1,6 +1,6 @@
 {
   "schemaVersion": "arena-manifest-001",
-  "arenaVersion": "civic-seam-arena-002",
+  "arenaVersion": "civic-seam-arena-003",
   "cellSizeUnits": 64,
   "gridSizeCells": {
     "width": 36,
@@ -1126,6 +1126,69 @@
         "x": 1990,
         "y": 110
       }
+    }
+  ],
+  "patrols": [
+    {
+      "id": "p02-a",
+      "zoneId": "Z-02",
+      "archetype": "fogAnalyticsCloud",
+      "waypoints": [
+        {
+          "x": 576,
+          "y": 416
+        },
+        {
+          "x": 736,
+          "y": 400
+        },
+        {
+          "x": 736,
+          "y": 600
+        },
+        {
+          "x": 480,
+          "y": 624
+        }
+      ]
+    },
+    {
+      "id": "p02-b",
+      "zoneId": "Z-02",
+      "archetype": "autonomousInformant",
+      "waypoints": [
+        {
+          "x": 604,
+          "y": 248
+        },
+        {
+          "x": 620,
+          "y": 380
+        }
+      ]
+    },
+    {
+      "id": "p02-c",
+      "zoneId": "Z-02",
+      "archetype": "fogAnalyticsCloud",
+      "waypoints": [
+        {
+          "x": 736,
+          "y": 600
+        },
+        {
+          "x": 480,
+          "y": 624
+        },
+        {
+          "x": 576,
+          "y": 416
+        },
+        {
+          "x": 736,
+          "y": 400
+        }
+      ]
     }
   ]
 }

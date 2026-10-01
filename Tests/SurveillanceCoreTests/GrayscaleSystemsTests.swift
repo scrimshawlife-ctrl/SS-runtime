@@ -107,20 +107,44 @@ struct GrayscaleSystemsTests {
         #expect(HUDLayout.cameraObjectiveTotal == 8)
     }
 
+    /// BO-002 (D-090): boss HP 1600/1200/1199/800/799/400/399/1, against the
+    /// bands `combat-content-004` authors (`boss.phases[].minHp`), not a
+    /// table in code.
     @Test func bossPhaseBO002HealthBands() {
-        #expect(BossPhase.from(hp: 800) == .publicSafety)
-        #expect(BossPhase.from(hp: 600) == .publicSafety)
-        #expect(BossPhase.from(hp: 599) == .civilLiberties)
-        #expect(BossPhase.from(hp: 400) == .civilLiberties)
-        #expect(BossPhase.from(hp: 399) == .temporarySafeguard)
-        #expect(BossPhase.from(hp: 200) == .temporarySafeguard)
-        #expect(BossPhase.from(hp: 199) == .independentReview)
-        #expect(BossPhase.from(hp: 1) == .independentReview)
+        let content = CombatContent.bundled()
+        #expect(content.bossHP == 1600)
+        #expect(content.bossPhaseBands.minHp == [1200, 800, 400, 1])
+        let bands = content.bossPhaseBands
+        #expect(bands.phase(hp: 1600) == .publicSafety)
+        #expect(bands.phase(hp: 1200) == .publicSafety)
+        #expect(bands.phase(hp: 1199) == .civilLiberties)
+        #expect(bands.phase(hp: 800) == .civilLiberties)
+        #expect(bands.phase(hp: 799) == .temporarySafeguard)
+        #expect(bands.phase(hp: 400) == .temporarySafeguard)
+        #expect(bands.phase(hp: 399) == .independentReview)
+        #expect(bands.phase(hp: 1) == .independentReview)
     }
 
+    /// BO-002 through the runtime: a boss whose Integrity is set to each band
+    /// edge enters that band's phase from its own content-driven bands.
+    @Test func bossPhaseBO002RuntimeUsesContentBands() {
+        let bands = CombatContent.bundled().bossPhaseBands
+        for (hp, phase) in [(1199, BossPhase.civilLiberties), (799, .temporarySafeguard), (399, .independentReview)] {
+            var runtime = BossRuntime(bands: bands)
+            #expect(runtime.syncPhase(hp: hp)?.after == phase)
+        }
+        var runtime = BossRuntime(bands: bands)
+        #expect(runtime.syncPhase(hp: 1200) == nil, "1200 is still Public Safety")
+    }
+
+    /// BO-003's intent (one batch across two thresholds is one transition),
+    /// at the D-090 scale: 1220 -> 780 skips Civil Liberties. The spec row
+    /// still reads 610 -> 390, which under the 1600 bands starts and ends in
+    /// different phases than it names.
     @Test func bossBO003BatchSkipsToTemporarySafeguard() {
-        var runtime = BossRuntime()
-        let transition = runtime.syncPhase(hp: 390)
+        var runtime = BossRuntime(bands: CombatContent.bundled().bossPhaseBands)
+        _ = runtime.syncPhase(hp: 1220)
+        let transition = runtime.syncPhase(hp: 780)
         #expect(transition?.before == .publicSafety)
         #expect(transition?.after == .temporarySafeguard)
         #expect(runtime.recoveryRemaining == 45)

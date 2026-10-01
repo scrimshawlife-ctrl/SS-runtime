@@ -95,7 +95,7 @@ public struct WaveSpec: Equatable, Sendable {
     public var members: [WaveMember]
 }
 
-/// `combat-content-003` `heat` (D-083): Autonomous Informants appended to an
+/// `combat-content-004` `heat` (D-083): Autonomous Informants appended to an
 /// M-A or M-B wave by the Detection State read when the wave starts.
 public struct HeatSpec: Equatable, Sendable {
     public var reinforcementArchetype: ArchetypeID
@@ -112,7 +112,7 @@ public struct HeatSpec: Equatable, Sendable {
     }
 }
 
-/// `combat-content-003` `awareness` (D-089, `enemies-and-encounters.md`
+/// `combat-content-004` `awareness` (D-089, `enemies-and-encounters.md`
 /// § Awareness): which standard enemies can be unaware, how they become
 /// alerted, and the ambush multiplier.
 public struct AwarenessSpec: Equatable, Sendable {
@@ -131,6 +131,11 @@ public struct AwarenessSpec: Equatable, Sendable {
     public var awareEncounters: [String]
     /// Heat reinforcements (D-083) spawn aware.
     public var heatReinforcementsSpawnAware: Bool
+    /// D-090 drift: an unaware encounter enemy moves toward its encounter's
+    /// trigger centre at this percent of its archetype speed...
+    public var unawareDriftPercent: Int
+    /// ...and stops once it is within this many units of that centre.
+    public var unawareDriftStopUnits: Int
 
     /// True when `state` is `surveillanceAlertState` or above.
     public func surveillanceAlerts(_ state: DetectionState) -> Bool {
@@ -157,6 +162,69 @@ public struct AwarenessSpec: Equatable, Sendable {
             || surveillanceAlerts(state)
             || awareEncounters.contains(encounter)
             || (heatReinforcement && heatReinforcementsSpawnAware)
+    }
+}
+
+/// `combat-content-004` `patrol` (D-091, `enemies-and-encounters.md`
+/// § Transit Patrol): how an unaware patrol member moves and sees. The routes
+/// themselves are arena data (`civic-seam-arena-003` `patrols`).
+public struct PatrolSpec: Equatable, Sendable {
+    /// A member's spawn Integrity, as a percent of its archetype's (D-093).
+    public var integrityPercent: Int
+    /// Patrol speed, as a percent of the member's archetype speed.
+    public var speedPercent: Int
+    /// Ticks a member holds at each waypoint it reaches.
+    public var dwellTicks: Int
+    /// Cone sight range, inclusive, in arena units.
+    public var sightUnits: Int
+    /// Cone half-angle about the member's facing.
+    public var sightHalfAngleMilliDegrees: Int
+    /// A member within this many units of its waypoint has arrived.
+    public var arrivalUnits: Int
+
+    /// The half-angles whose squared cosine is an exact small fraction, so
+    /// the cone stays the D-082 integer test (`dot > 0` and
+    /// `denominator · dot² ≥ numerator · |f|² · |d|²`). Any other half-angle
+    /// is refused at decode rather than approximated.
+    static let exactCosineSquared: [Int: (numerator: UInt64, denominator: UInt64)] = [
+        30_000: (3, 4),
+        45_000: (1, 2),
+        60_000: (1, 4)
+    ]
+
+    /// cos² of the half-angle as a fraction. Decoding guarantees it exists.
+    public var cosineSquared: (numerator: UInt64, denominator: UInt64) {
+        Self.exactCosineSquared[sightHalfAngleMilliDegrees]!
+    }
+}
+
+/// `combat-content-004` `player` (D-090, `player-controller.md` § Damage
+/// response).
+public struct PlayerDamageSpec: Equatable, Sendable {
+    /// Spawn Integrity, and the clamp's ceiling (D-092, 150).
+    public var integrity: Int
+    /// Every Integrity loss the Player would take is scaled by this percent,
+    /// with an exact remainder in hundredths carried forward.
+    public var damageTakenPercent: Int
+}
+
+/// `combat-content-004` `boss.phases[].minHp` (bosses.md): the lowest HP
+/// after a damage batch at which each phase still holds.
+public struct BossPhaseBands: Equatable, Sendable {
+    /// Minimum HP of each phase, in `BossPhase.receiptOrder`, strictly
+    /// decreasing, the last 1.
+    public var minHp: [Int]
+
+    public init(minHp: [Int]) {
+        self.minHp = minHp
+    }
+
+    /// The phase for `hp` after the tick's damage batch.
+    public func phase(hp: Int) -> BossPhase {
+        for (index, floor) in minHp.enumerated() where hp >= floor {
+            return BossPhase.receiptOrder[index]
+        }
+        return BossPhase.receiptOrder[BossPhase.receiptOrder.count - 1]
     }
 }
 
@@ -213,11 +281,14 @@ public struct CombatContent: Equatable, Sendable {
     public var bossSpeed: Int
     public var bossContactDps: Int
     public var bossInitialDelay: Int
+    public var bossPhaseBands: BossPhaseBands
     public var heat: HeatSpec
     public var awareness: AwarenessSpec
+    public var patrol: PatrolSpec
+    public var player: PlayerDamageSpec
 
     public static func bundled() -> CombatContent {
-        let data = BundledResource.data(name: "combat-content-003", subdirectory: "contracts")
+        let data = BundledResource.data(name: "combat-content-004", subdirectory: "contracts")
         return try! decode(data)
     }
 
@@ -249,14 +320,98 @@ public struct CombatContent: Equatable, Sendable {
             bossSpeed: try boss.int("baseSpeed", within: "boss"),
             bossContactDps: try boss.int("baseContactDps", within: "boss"),
             bossInitialDelay: try boss.int("initialDelay", within: "boss"),
+            bossPhaseBands: try parseBossBands(boss["phases"], hp: try boss.int("hp", within: "boss")),
             heat: try parseHeat(root["heat"]),
-            awareness: try parseAwareness(root["awareness"])
+            awareness: try parseAwareness(root["awareness"]),
+            patrol: try parsePatrol(root["patrol"]),
+            player: try parsePlayer(root["player"])
         )
+    }
+
+    /// `boss.phases`: exactly the four phases, in `BossPhase.receiptOrder`,
+    /// each with an integer `minHp`, strictly decreasing, the first at most
+    /// the boss HP and the last 1 (bosses.md: the last band ends at 1).
+    private static func parseBossBands(_ raw: Any?, hp: Int) throws -> BossPhaseBands {
+        let phases = try decodeArray(raw, path: "boss.phases")
+        guard phases.count == BossPhase.receiptOrder.count else {
+            throw CombatContentError.wrongType("boss.phases")
+        }
+        var floors: [Int] = []
+        for (index, entry) in phases.enumerated() {
+            let path = "boss.phases[\(index)]"
+            let phase = try decodeObject(entry, path: path)
+            guard try phase.string("id", within: path) == BossPhase.receiptOrder[index].rawValue else {
+                throw CombatContentError.wrongType("\(path).id")
+            }
+            guard let value = phase["minHp"] else { throw CombatContentError.missingField("\(path).minHp") }
+            guard !isJSONBool(value), let floor = value as? Int, floor >= 1, floor <= hp,
+                  floors.last.map({ floor < $0 }) ?? true
+            else {
+                throw CombatContentError.wrongType("\(path).minHp")
+            }
+            floors.append(floor)
+        }
+        guard floors.last == 1 else { throw CombatContentError.wrongType("boss.phases[3].minHp") }
+        return BossPhaseBands(minHp: floors)
+    }
+
+    /// A flat block of integers: every key required and exactly typed. An
+    /// unknown key, a missing key, a JSON boolean, a non-integer, or a value
+    /// below its minimum fails closed at `block.key`.
+    private static func strictInts(
+        _ raw: Any?,
+        block name: String,
+        minimums: [String: Int]
+    ) throws -> [String: Int] {
+        let block = try decodeObject(raw, path: name)
+        for key in block.keys.sorted() where minimums[key] == nil {
+            throw CombatContentError.wrongType("\(name).\(key)")
+        }
+        var values: [String: Int] = [:]
+        for (key, minimum) in minimums.sorted(by: { $0.key < $1.key }) {
+            guard let value = block[key] else { throw CombatContentError.missingField("\(name).\(key)") }
+            guard !isJSONBool(value), let number = value as? Int, number >= minimum else {
+                throw CombatContentError.wrongType("\(name).\(key)")
+            }
+            values[key] = number
+        }
+        return values
+    }
+
+    /// `patrol` (D-091). The half-angle must be one the integer cone test can
+    /// express exactly (`PatrolSpec.exactCosineSquared`).
+    private static func parsePatrol(_ raw: Any?) throws -> PatrolSpec {
+        let values = try strictInts(raw, block: "patrol", minimums: [
+            "integrityPercent": 1, "speedPercent": 1, "dwellTicks": 0, "sightUnits": 1,
+            "sightHalfAngleMilliDegrees": 1, "arrivalUnits": 1
+        ])
+        let half = values["sightHalfAngleMilliDegrees"]!
+        guard PatrolSpec.exactCosineSquared[half] != nil else {
+            throw CombatContentError.wrongType("patrol.sightHalfAngleMilliDegrees")
+        }
+        return PatrolSpec(
+            integrityPercent: values["integrityPercent"]!,
+            speedPercent: values["speedPercent"]!,
+            dwellTicks: values["dwellTicks"]!,
+            sightUnits: values["sightUnits"]!,
+            sightHalfAngleMilliDegrees: half,
+            arrivalUnits: values["arrivalUnits"]!
+        )
+    }
+
+    /// `player`: Integrity (D-092, at least 1) and the damage-taken percent
+    /// (D-090, 0 through 100).
+    private static func parsePlayer(_ raw: Any?) throws -> PlayerDamageSpec {
+        let values = try strictInts(raw, block: "player", minimums: ["integrity": 1, "damageTakenPercent": 0])
+        let percent = values["damageTakenPercent"]!
+        guard percent <= 100 else { throw CombatContentError.wrongType("player.damageTakenPercent") }
+        return PlayerDamageSpec(integrity: values["integrity"]!, damageTakenPercent: percent)
     }
 
     private static let awarenessKeys: Set<String> = [
         "appliesTo", "sightRangeUnits", "allyAlertRadiusUnits", "surveillanceAlertState",
-        "ambushDamageMultiplier", "awareEncounters", "heatReinforcementsSpawnAware"
+        "ambushDamageMultiplier", "awareEncounters", "heatReinforcementsSpawnAware",
+        "unawareDriftPercent", "unawareDriftStopUnits"
     ]
 
     /// Every field is required and exactly typed; an unknown key, a
@@ -310,7 +465,9 @@ public struct CombatContent: Equatable, Sendable {
             surveillanceAlertState: alertState,
             ambushDamageMultiplier: try strictInt("ambushDamageMultiplier", minimum: 1),
             awareEncounters: encounters,
-            heatReinforcementsSpawnAware: reinforcementsAware
+            heatReinforcementsSpawnAware: reinforcementsAware,
+            unawareDriftPercent: try strictInt("unawareDriftPercent", minimum: 0),
+            unawareDriftStopUnits: try strictInt("unawareDriftStopUnits", minimum: 0)
         )
     }
 

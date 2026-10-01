@@ -607,9 +607,46 @@ final class WorldRenderer {
                 shape.strokeColor = .clear
             }
         }
+        renderPatrolCones(snap)
         endLayer(.cameraFields)
         endLayer(.cameraHousings)
         // .actors is closed in renderActors, which also emits into it.
+    }
+
+    /// D-091 (animation.md § 8a): each unaware patrol member's vision cone on
+    /// the ground, from the snapshot's solid-clipped outline. A pale fill
+    /// under a dashed boundary, so it reads apart from the solid-edged amber
+    /// Camera fields and the grey Captain cone. It goes when the member is
+    /// alerted (it leaves `patrolCones`). Nothing sweeps, so Reduced Motion
+    /// draws it unchanged.
+    nonisolated static let patrolConeName = "patrol-cone"
+    nonisolated static let patrolEdgeName = "patrol-cone-edge"
+
+    private func renderPatrolCones(_ snap: PresentationSnapshot) {
+        for cone in snap.patrolCones {
+            let fillNode = node(.cameraFields, "patrol-cone-\(cone.id.raw)") {
+                let shape = SKShapeNode()
+                shape.name = Self.patrolConeName
+                return shape
+            }
+            let edgeNode = node(.cameraFields, "patrol-edge-\(cone.id.raw)") {
+                let shape = SKShapeNode()
+                shape.name = Self.patrolEdgeName
+                return shape
+            }
+            let path = Geometry.polygonPath(cone.outline)
+            if let fill = fillNode as? SKShapeNode {
+                fill.path = path
+                fill.fillColor = Palette.patrolCone
+                fill.strokeColor = .clear
+            }
+            if let edge = edgeNode as? SKShapeNode {
+                edge.path = path.copy(dashingWithPhase: 0, lengths: Palette.patrolConeDash)
+                edge.fillColor = .clear
+                edge.strokeColor = Palette.patrolConeEdge
+                edge.lineWidth = 2
+            }
+        }
     }
 
     /// bosses.md telegraphs. Wind-up is carried by outline weight and fill so a
@@ -925,6 +962,11 @@ enum Palette {
     static let cameraField = SKColor(red: 0.9, green: 0.7, blue: 0.1, alpha: 0.12)
     static let cameraFieldDetecting = SKColor(red: 0.9, green: 0.7, blue: 0.1, alpha: 0.28)
     static let captainField = SKColor(white: 0.75, alpha: 0.18)
+    /// D-091 patrol cone: a cool, pale wash with a dashed edge, apart from
+    /// the amber Camera fields and the grey Captain cone.
+    static let patrolCone = SKColor(red: 0.55, green: 0.75, blue: 0.95, alpha: 0.14)
+    static let patrolConeEdge = SKColor(red: 0.70, green: 0.85, blue: 1.0, alpha: 0.75)
+    static let patrolConeDash: [CGFloat] = [10, 8]
     static let spawnSocket = SKColor(white: 0.45, alpha: 0.5)
     static let queryMarker = SKColor(white: 0.8, alpha: 0.7)
     /// D-089 `?` marker. Neutral: the glyph, not the colour, carries the state.
@@ -989,6 +1031,16 @@ enum Geometry {
             endAngle: heading + half,
             clockwise: false
         )
+        path.closeSubpath()
+        return path
+    }
+
+    /// A closed polygon through arena points, drawn in world coordinates.
+    static func polygonPath(_ points: [VecI]) -> CGPath {
+        let path = CGMutablePath()
+        guard let first = points.first else { return path }
+        path.move(to: CGPoint(x: first.x, y: first.y))
+        for point in points.dropFirst() { path.addLine(to: CGPoint(x: point.x, y: point.y)) }
         path.closeSubpath()
         return path
     }
