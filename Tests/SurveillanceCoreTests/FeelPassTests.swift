@@ -197,6 +197,23 @@ struct StealthTextureTests {
         #expect(tracker.streak == 0)
     }
 
+    /// D-100: an enemy that spawns already aware (M-C, reinforcements, the
+    /// elite, the boss) resets the streak, as an alert does.
+    @Test func streakResetsWhenAnEnemySpawnsAware() {
+        let members = Self.state.enemies.filter { $0.patrol != nil }.map(\.id).sorted()
+        var tracker = TakedownTracker()
+        let before = Self.state.enemies
+        tracker.ingest(events: [Self.died(members[0])], before: before, after: before)
+        tracker.ingest(events: [Self.died(members[1])], before: before, after: before)
+        #expect(tracker.streak == 2)
+        var spawned = before[0]
+        spawned.id = EntityID(9_999)
+        spawned.awareness = .aware
+        tracker.ingest(events: [], before: before, after: before + [spawned])
+        #expect(tracker.streak == 0, "a newly spawned aware enemy ends the streak")
+        #expect(tracker.hudCopy == nil)
+    }
+
     @Test func takedownAudioIsPitchedFourSemitonesDownWithARoutineCaption() {
         let id = MedalTests.patrolMember
         var audio = AudioProjection.silent
@@ -299,6 +316,13 @@ struct OpeningTests {
         #expect(intro.frame == 30)
         #expect(chirps == 0)
         #expect(Self.cameras.allSatisfy { intro.isPowered($0) })
+    }
+
+    /// D-100: the chirp is `extraction_tick` until a power-up cue is admitted,
+    /// and a new encounter label holds tutorial lines for the 2.5 s caption time.
+    @Test func chirpCueAndEncounterLabelHoldMatchD100() {
+        #expect(IntroSequence.chirpCueId == "extraction_tick")
+        #expect(EncounterLabelGate.freshTicks == UInt64(SimulationClock.ticksPerSecond) * 5 / 2)
     }
 
     @Test func anyTouchSkips() {
