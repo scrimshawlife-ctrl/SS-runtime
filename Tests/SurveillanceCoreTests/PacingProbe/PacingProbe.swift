@@ -235,6 +235,15 @@ struct PacingProbe {
                 if case .integer(let value)? = event.payload["amount"] { amount = Int(value) }
                 let source = event.secondaryEntityId.flatMap { id -> String? in
                     if let enemy = sim.state.enemies.first(where: { $0.id == id }) {
+                        // D-096: the boss's direct hits are contact and the
+                        // Safety Rationale cone, both booked to the boss. The
+                        // contact step removes at most one point a tick (its
+                        // summed DPS stays under 60) before scaling, while a
+                        // cone hit is 18 before scaling, so any boss event
+                        // above one point is the cone.
+                        if enemy.archetype == .algorithmicModerate, amount > 1 {
+                            return "algorithmicModerateSafetyRationale"
+                        }
                         return enemy.archetype.rawValue
                     }
                     // Projectile hits name the projectile; attribute it to its owner.
