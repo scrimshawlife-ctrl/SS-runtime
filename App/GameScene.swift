@@ -46,6 +46,9 @@ final class GameSession {
     /// Such a run cannot be replayed from its commands, so it is never stored
     /// as a best.
     private(set) var scenarioSeeded = false
+    /// D-095 medals and D-097/D-098 feel. Fed after each step; never read by
+    /// the simulation.
+    private(set) var feel = FeelPassPresenter()
 
     init(seed: UInt64 = 1) {
         simulation = try! Simulation.make(seed: seed)
@@ -54,6 +57,7 @@ final class GameSession {
     func step() {
         let tick = simulation.state.tick + 1
         let enemiesBefore = simulation.state.enemies
+        feel.willStep(simulation.state)
         let result: TickResult
         var command: PlayerCommand?
         if simulation.state.upgrade.pending {
@@ -95,7 +99,9 @@ final class GameSession {
             detection: simulation.state.exposure.detectionState,
             heat: simulation.state.content.heat
         )
+        feel.didStep(events: result.events, enemiesBefore: enemiesBefore, state: simulation.state)
         applyAudio(result)
+        audio = feel.decorate(audio)
         captionBoard.ingest(tick: result.tick, cues: audio.captionCues)
         awarenessHintCopy = awarenessHint.project(PresentationSnapshot(simulation.state))
         persistTerminalReceiptIfNeeded()
@@ -120,6 +126,7 @@ final class GameSession {
         reinforcementCopy = nil
         awarenessHint.reset()
         awarenessHintCopy = nil
+        feel.reset()
         reactions.reset()
         audio = AudioProjection.silent
         pendingUpgradeChoice = nil
@@ -164,7 +171,10 @@ final class GameSession {
 #if DEBUG
     func seedScenario(_ scenario: String) -> Bool {
         let seeded = simulation.debug_seedScenario(scenario)
-        if seeded { scenarioSeeded = true }
+        if seeded {
+            scenarioSeeded = true
+            feel.observe(simulation.state)
+        }
         return seeded
     }
 #endif
@@ -207,6 +217,21 @@ final class GameScene: SKScene {
     private var ghostGeneration = 0
     /// `run-shell.md` § 11: built once, when the run reaches a terminal outcome.
     private var runCard: RunCard?
+    /// D-098 intro beat; non-nil and unfinished means no tick may run.
+    private(set) var intro: IntroSequence?
+    private let introOverlay = IntroOverlay()
+    /// D-097 near-miss cone edges, drawn beside the cones.
+    private let nearMissEdges = NearMissEdgeLayer()
+    /// D-099 world grade, ground only.
+    private let gradeLayer = DailyGradeLayer()
+    /// D-099 today's look, set with the Daily Run.
+    private(set) var flavour: DailyFlavour?
+    /// Display frames drawn, for the near-miss pulse. Presentation clock only.
+    private var presentationFrame: UInt64 = 0
+#if DEBUG
+    /// `-SSHoldIntro <frame>`: hold the intro at that frame for a screenshot.
+    private var introHoldFrame: Int?
+#endif
 #if DEBUG
     private var autopilot: DebugAutopilot?
     private var frameLogTick: UInt64 = 0
@@ -228,6 +253,12 @@ final class GameScene: SKScene {
         addChild(cameraNode)
         camera = cameraNode
         cameraNode.addChild(lockdownTint.node)
+        // D-099 grade and D-097 near-miss edges sit inside the world tree at
+        // fractional depths between `WorldRenderer` layers; D-098's intro
+        // card is screen space, under the HUD.
+        renderer.root.addChild(gradeLayer.node)
+        renderer.root.addChild(nearMissEdges.node)
+        cameraNode.addChild(introOverlay.node)
         vfx.install(in: self, camera: cameraNode, worldRoot: renderer.root)
         // `ignoresSiblingOrder` makes draw order depend on zPosition alone, and
         // ties are undefined. WorldRenderer assigns its layers 0...8 while the
@@ -250,6 +281,11 @@ final class GameScene: SKScene {
         let arguments = ProcessInfo.processInfo.arguments
         // `-SSMute` silences a harness run. Verification launches the app dozens
         // of times, and a simulator has no volume control of its own.
+        if let flag = arguments.firstIndex(of: "-SSHoldIntro"),
+           arguments.index(after: flag) < arguments.endIndex
+        {
+            introHoldFrame = Int(arguments[arguments.index(after: flag)])
+        }
         if arguments.contains("-SSMute") {
             session.audioSettings = PresentationAudioSettings(
                 effectsEnabled: false,
@@ -368,6 +404,9 @@ final class GameScene: SKScene {
             cameraNode.position = vfx.frozenCameraPosition()
             return
         }
+        // D-098 intro beat: frames pass, ticks do not. No command is sampled
+        // and the simulation is not stepped until it finishes or is skipped.
+        if advanceIntroIfRunning() { return }
 #if DEBUG
         if autopilot != nil {
             let snapshot = session.snapshot
@@ -414,6 +453,8 @@ final class GameScene: SKScene {
         }
 #endif
         session.step()
+        // D-097: the takedown's hit-stop and ring, after the step that made it.
+        vfx.takedown(targets: session.feel.lastTakedowns)
         if !session.lastEvents.isEmpty {
             vfx.ingest(
                 tick: session.simulation.state.tick,
@@ -479,7 +520,57 @@ final class GameScene: SKScene {
     /// `run-shell.md` § 8 Start: begins the Daily Run the title computed.
     func beginDailyRun(_ run: DailyRun) {
         dailyRun = run
+        let look = DailyFlavour(day: run.day)
+        flavour = look
+        renderer.fogDensity = CGFloat(look.fogMultiplier)
         restartRun(seed: run.seed)
+        gradeLayer.apply(look.grade, arena: session.simulation.state.arena.boundsUnits.aabb)
+        startIntro()
+    }
+
+    /// D-098: "After Start, a 2-second intro plays before the first tick."
+    private func startIntro() {
+        intro = IntroSequence(
+            cameraIds: session.simulation.state.cameras.map(\.entityId),
+            reducedMotion: settings.vfx.reducedMotion
+        )
+        redraw()
+    }
+
+    /// Advances the intro one display frame. True while it is still running,
+    /// meaning this frame must not step the simulation.
+    private func advanceIntroIfRunning() -> Bool {
+        guard var current = intro, !current.isFinished else {
+            if intro != nil {
+                intro = nil
+                redraw()
+            }
+            return false
+        }
+#if DEBUG
+        if let hold = introHoldFrame, current.frame >= hold {
+            return true
+        }
+#endif
+        for id in current.advance() {
+            soundEngine.playPresentationCue(.presentation(audioId: IntroSequence.chirpCueId, sourceEntityId: id))
+        }
+        intro = current
+#if DEBUG
+        if current.frame == 1 || current.isFinished {
+            Self.autopilotLog.notice("intro frame=\(current.frame, privacy: .public) finished=\(current.isFinished, privacy: .public) tick=\(self.session.simulation.state.tick, privacy: .public)")
+        }
+#endif
+        redraw()
+        return true
+    }
+
+    /// D-098: any touch skips the intro.
+    private func skipIntroIfRunning() -> Bool {
+        guard var current = intro, !current.isFinished else { return false }
+        current.skip()
+        intro = current
+        return true
     }
 
     /// § 10.2 / § 11 bookkeeping for a run that just ended: build the run card
@@ -499,12 +590,25 @@ final class GameScene: SKScene {
         if storesBest, let record = GhostRecord(successfulRun: state, commands: session.commandLog) {
             GhostStore.storeIfBest(record)
         }
+        // § 12: medals from this run's own events and terminal state, stored
+        // beside the day's best under the same rule (a debug-seeded run is
+        // never stored, so it never claims `NEW`).
+        let medals = session.feel.earnedMedals(state)
+        var newMedals: Set<Medal> = []
+        if storesBest, let dailyRun {
+            newMedals = MedalStore.record(earned: medals, seed: dailyRun.seed)
+        }
         let card = RunCard(
             state: state,
             dateLabel: dailyRun?.day.label,
             bestTicks: bestTicks,
-            storesBest: storesBest
+            storesBest: storesBest,
+            medals: medals,
+            newMedals: newMedals
         )
+#if DEBUG
+        Self.autopilotLog.notice("run card outcome=\(state.outcome.rawValue, privacy: .public) medals=\(medals.map(\.name).joined(separator: ","), privacy: .public) new=\(newMedals.map(\.name).sorted().joined(separator: ","), privacy: .public) takedowns=\(self.session.feel.takedowns.total, privacy: .public)")
+#endif
         runCard = card
         hud.runCard = card
     }
@@ -542,6 +646,9 @@ final class GameScene: SKScene {
         renderer.reset()
         lockdownTint.reset()
         vfx.reset()
+        nearMissEdges.reset()
+        // Restart is not Start: the intro plays only after Start (D-098).
+        intro = nil
         instrumentation.reset()
         // `GameSession.restartRun` zeroes the session's command, but the
         // controller holds its own copy and `applyController` overwrites the
@@ -567,6 +674,8 @@ final class GameScene: SKScene {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let projector else { return }
+        // D-098: any touch skips the intro, and does nothing else.
+        if skipIntroIfRunning() { return }
         let snap = session.snapshot
 
         for touch in touches {
@@ -683,8 +792,26 @@ final class GameScene: SKScene {
 #endif
 
     private func redraw() {
-        let snap = session.snapshot
+        presentationFrame &+= 1
+        var snap = session.snapshot
+        // D-098: during the intro a Camera's field is drawn only once it has
+        // powered on. Presentation copy of the snapshot; state is untouched.
+        if let intro, !intro.isFinished {
+            for index in snap.cameras.indices where !intro.isPowered(snap.cameras[index].id) {
+                snap.cameras[index].fieldVisible = false
+            }
+        }
         cameraNode.position = vfx.cameraPosition(base: CGPoint(x: snap.camera.center.x, y: snap.camera.center.y))
+        nearMissEdges.update(
+            snap,
+            nearMiss: session.feel.nearMiss,
+            frame: presentationFrame,
+            reducedMotion: settings.vfx.reducedMotion
+        )
+        introOverlay.update(intro, dailyLabel: dailyRun?.titleLabel, headline: flavour?.headline)
+        hud.objectiveCopy = session.feel.objectiveCopy
+        hud.tutorialLine = intro.map { $0.isFinished } == false ? nil : session.feel.tutorialLine
+        hud.takedownStreakCopy = session.feel.streakCopy
         renderer.render(
             snap,
             reducedMotion: settings.vfx.reducedMotion,

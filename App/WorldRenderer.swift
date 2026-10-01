@@ -79,6 +79,8 @@ final class WorldRenderer {
     private var solidSignature: Int?
     /// D-094 fog thinning, advanced by the snapshot's tick.
     private(set) var fogThinning = FogThinning()
+    /// D-099 daily fog density (`run-shell.md` § 10.3): 0.8, 1.0, or 1.2.
+    var fogDensity: CGFloat = 1
     /// D-094 outline textures, generated once per source frame.
     private let outlines = OutlineTextures()
     /// D-094 soft ground shadow, generated once and shared by every actor.
@@ -1111,8 +1113,17 @@ extension WorldRenderer {
         let opacity = CGFloat(fogThinning.update(snap))
         guard environment.hasFog else { return }
         buildFogIfNeeded(snap)
-        layers[.fogLow]?.alpha = opacity
-        layers[.fogHigh]?.alpha = opacity
+        // D-099 daily fog density scales the authored opacity before D-094
+        // thinning, so fog still thins in a fight. Node alpha cannot exceed
+        // 1, so density above 100% adds a second copy of each tile at the
+        // excess (see `FogDensity`).
+        let split = FogDensity.split(density: fogDensity * opacity)
+        for layer in [Layer.fogLow, Layer.fogHigh] {
+            layers[layer]?.alpha = split.base
+            for tile in layers[layer]?.children ?? [] {
+                tile.childNode(withName: FogDensity.boostName)?.alpha = split.boost
+            }
+        }
 
         for (layer, speed) in [
             (Layer.fogLow, Self.fogLowDriftMilli),
@@ -1160,6 +1171,7 @@ extension WorldRenderer {
                 while x < maxX {
                     let sprite = SKSpriteNode(texture: texture, size: CGSize(width: tile, height: tile))
                     sprite.position = CGPoint(x: x + tile / 2, y: y + tile / 2)
+                    sprite.addChild(FogDensity.boostSprite(texture: texture, size: sprite.size))
                     node.addChild(sprite)
                     x += tile
                 }
