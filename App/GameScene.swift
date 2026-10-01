@@ -188,6 +188,8 @@ final class GameScene: SKScene {
     private let hud = HUDRenderer()
     /// D-094 Lockdown tint: world layer only, under the HUD.
     private let lockdownTint = LockdownTintLayer()
+    /// D-096 court light and boss telegraph countdown rings.
+    let court = BossCourtRenderer()
     private let soundEngine = AudioEngine()
     private var controller = TouchController()
     private var projector: HUDProjector?
@@ -228,6 +230,8 @@ final class GameScene: SKScene {
         addChild(cameraNode)
         camera = cameraNode
         cameraNode.addChild(lockdownTint.node)
+        cameraNode.addChild(court.lightNode)
+        renderer.root.addChild(court.ringLayer)
         vfx.install(in: self, camera: cameraNode, worldRoot: renderer.root)
         // `ignoresSiblingOrder` makes draw order depend on zPosition alone, and
         // ties are undefined. WorldRenderer assigns its layers 0...8 while the
@@ -541,6 +545,7 @@ final class GameScene: SKScene {
         soundEngine.reset()
         renderer.reset()
         lockdownTint.reset()
+        court.reset()
         vfx.reset()
         instrumentation.reset()
         // `GameSession.restartRun` zeroes the session's command, but the
@@ -692,6 +697,7 @@ final class GameScene: SKScene {
         )
         vfx.render(snap)
         lockdownTint.update(snap, settings: settings.vfx)
+        court.update(snap, settings: settings.vfx)
         hud.knobOffsetPoints = controller.knobOffset
         hud.dodgePressed = controller.dodgeTouch != nil
         hud.captions = session.captionBoard.visible(at: snap.tick, setting: settings.captions)

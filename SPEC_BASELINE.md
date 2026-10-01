@@ -5,9 +5,9 @@ Status: PINNED
 | Identity | Value |
 |---|---|
 | Specification repository | `scrimshawlife-ctrl/SS-specs` |
-| Specification commit | `0ed9ff96e6cc2293c73ccfbdcab419d9bd459389` |
-| Ruleset | `ss-rules-004` |
-| Content | `civic-seam-content-004` |
+| Specification commit | `e24f25e7dc7ce4cffd185d4a19d8930b06dc3adb` |
+| Ruleset | `ss-rules-005` |
+| Content | `civic-seam-content-005` |
 | Arena | `civic-seam-arena-004` |
 | Replay schema | `runtime-kernel-001` |
 
