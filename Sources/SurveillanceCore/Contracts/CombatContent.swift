@@ -169,6 +169,8 @@ public struct AwarenessSpec: Equatable, Sendable {
 /// § Transit Patrol): how an unaware patrol member moves and sees. The routes
 /// themselves are arena data (`civic-seam-arena-003` `patrols`).
 public struct PatrolSpec: Equatable, Sendable {
+    /// A member's spawn Integrity, as a percent of its archetype's (D-093).
+    public var integrityPercent: Int
     /// Patrol speed, as a percent of the member's archetype speed.
     public var speedPercent: Int
     /// Ticks a member holds at each waypoint it reaches.
@@ -380,7 +382,7 @@ public struct CombatContent: Equatable, Sendable {
     /// express exactly (`PatrolSpec.exactCosineSquared`).
     private static func parsePatrol(_ raw: Any?) throws -> PatrolSpec {
         let values = try strictInts(raw, block: "patrol", minimums: [
-            "speedPercent": 1, "dwellTicks": 0, "sightUnits": 1,
+            "integrityPercent": 1, "speedPercent": 1, "dwellTicks": 0, "sightUnits": 1,
             "sightHalfAngleMilliDegrees": 1, "arrivalUnits": 1
         ])
         let half = values["sightHalfAngleMilliDegrees"]!
@@ -388,6 +390,7 @@ public struct CombatContent: Equatable, Sendable {
             throw CombatContentError.wrongType("patrol.sightHalfAngleMilliDegrees")
         }
         return PatrolSpec(
+            integrityPercent: values["integrityPercent"]!,
             speedPercent: values["speedPercent"]!,
             dwellTicks: values["dwellTicks"]!,
             sightUnits: values["sightUnits"]!,

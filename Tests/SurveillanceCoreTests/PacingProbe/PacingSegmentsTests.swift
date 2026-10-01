@@ -21,9 +21,9 @@ struct PacingSegmentsTests {
     /// and the Lockdown Ring starting at the M-C wave, not `eliteActivated`.
     @Test func windowsMatchTheD090Table() {
         let expected: [PacingSegment: ClosedRange<Int>] = [
-            .spawnAlley: 0...10, .cameraCorridor: 10...40, .civicPlaza: 40...75,
-            .pressureRoute: 75...120, .lockdownRing: 120...255, .captainCourt: 255...345,
-            .extraction: 345...360,
+            .spawnAlley: 0...5, .cameraCorridor: 5...30, .civicPlaza: 30...65,
+            .pressureRoute: 65...110, .lockdownRing: 110...240, .captainCourt: 240...330,
+            .extraction: 330...360,
         ]
         for segment in PacingSegment.allCases {
             #expect(segment.targetSeconds == expected[segment], "\(segment)")

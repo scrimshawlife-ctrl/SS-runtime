@@ -48,13 +48,13 @@ public enum PacingSegment: String, CaseIterable, Sendable {
     /// seconds, so the opening is short and the minutes come from the fights.
     public var targetSeconds: ClosedRange<Int> {
         switch self {
-        case .spawnAlley: 0...10
-        case .cameraCorridor: 10...40
-        case .civicPlaza: 40...75
-        case .pressureRoute: 75...120
-        case .lockdownRing: 120...255
-        case .captainCourt: 255...345
-        case .extraction: 345...360
+        case .spawnAlley: 0...5
+        case .cameraCorridor: 5...30
+        case .civicPlaza: 30...65
+        case .pressureRoute: 65...110
+        case .lockdownRing: 110...240
+        case .captainCourt: 240...330
+        case .extraction: 330...360
         }
     }
 

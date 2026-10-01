@@ -54,7 +54,8 @@ struct TransitPatrolTests {
                 route: index, target: 1, dwellRemaining: 0,
                 facing: VecI(x: second.x - first.x, y: second.y - first.y).asQ8
             ))
-            #expect(member.integrity == sim.state.content.standardEnemies[route.archetype]?.hp)
+            // D-093: 200% of the archetype Integrity.
+            #expect(member.integrity == (sim.state.content.standardEnemies[route.archetype]?.hp ?? 0) * sim.state.content.patrol.integrityPercent / 100)
             #expect(member.spawnTick == 1)
         }
         #expect(sim.state.encounters.values.allSatisfy { !$0.activated && $0.living == 0 && $0.spawned == 0 })
@@ -200,7 +201,8 @@ struct TransitPatrolTests {
         hit.testing_injectPulseHitting(position: try #require(Self.member(hit)).position)
         _ = Self.step(&hit)
         #expect(Self.member(hit)?.awareness == .struck)
-        #expect(Self.member(hit)?.integrity == 90 - 30, "the ambush multiplier applies")
+        // D-093: the patrol Vendor spawns at 200% (180); the ambush (x3) takes 30.
+        #expect(Self.member(hit)?.integrity == 180 - 30, "the ambush multiplier applies")
         let next = Self.step(&hit)
         #expect(next.events.first { $0.type == .enemyAlerted }?.payload["cause"] == .string("damage"))
     }
@@ -233,7 +235,10 @@ struct TransitPatrolTests {
     /// A member at (1500, 300) facing +x and the Player `offset` behind it
     /// (outside the cone, so it stays unaware), with only the weapon's first
     /// opportunity (tick 30) to look at.
-    private static func targetingCase(distance: Int) throws -> (fired: [AuthoritativeEvent], damage: [AuthoritativeEvent], member: EnemyBody) {
+    /// The Player's held direction: toward the member (+x), sideways (+y), or none.
+    private enum Heading { case toward, sideways, still }
+
+    private static func targetingCase(distance: Int, heading: Heading = .toward) throws -> (fired: [AuthoritativeEvent], damage: [AuthoritativeEvent], member: EnemyBody) {
         var sim = try Self.sim(route: Self.route([VecI(x: 1500, y: 300), VecI(x: 1900, y: 300)]))
         sim.testing_emptyCivicPool()
         _ = Self.step(&sim)
@@ -244,7 +249,10 @@ struct TransitPatrolTests {
             // Hold the Player a fixed distance behind the walking member.
             let member = try #require(sim.state.enemies.first { $0.id == id })
             sim.testing_setPlayerPosition(VecI(x: member.position.x.unitsTruncated - distance, y: 300))
-            let result = Self.step(&sim)
+            // D-093: a patrol member is chosen only while the Player moves
+            // toward it; the command sets this tick's velocity.
+            let (mx, my): (Int16, Int16) = heading == .toward ? (32767, 0) : heading == .sideways ? (0, 32767) : (0, 0)
+            let result = sim.step(command: PlayerCommand(tick: sim.state.tick + 1, moveX: mx, moveY: my, dodgePressed: false))
             fired += result.events.filter { $0.type == .weaponFired }
             damage += result.events.filter { $0.type == .entityDamaged && $0.primaryEntityId == id }
         }
@@ -260,20 +268,44 @@ struct TransitPatrolTests {
         #expect(member.awareness == .unaware)
     }
 
-    /// EN-033: the same member at 230 units is targeted, and the ambush
-    /// applies (x3 kills the 30-Integrity Fog Cloud).
+    /// EN-033 / EN-034: the same member at 230 units, the Player moving
+    /// toward it, is targeted and ambushed: ×3 is 30 damage, and the patrol
+    /// Fog Cloud's 200% Integrity (60) survives it, alerted by the hit.
     @Test func patrolEN033UnawareMemberWithin240IsTargetedAndAmbushed() throws {
         let (fired, damage, member) = try Self.targetingCase(distance: 230)
-        #expect(fired.count == 1)
+        #expect(fired.count >= 1)
         #expect(fired.first?.secondaryEntityId == member.id)
         #expect(damage.first?.payload["amount"] == .integer(30))
-        #expect(!member.alive)
+        #expect(member.alive)
+        #expect(member.awareness != .unaware)
+    }
+
+    /// EN-035: at 230 units but moving sideways, the weapon holds fire.
+    @Test func patrolEN035MovingPastHoldsFire() throws {
+        for heading in [Heading.sideways, .still] {
+            let (fired, damage, member) = try Self.targetingCase(distance: 230, heading: heading)
+            #expect(fired.isEmpty, "\(heading)")
+            #expect(damage.isEmpty, "\(heading)")
+            #expect(member.awareness == .unaware, "\(heading)")
+        }
+    }
+
+    /// D-093: a patrol member spawns with 200% of its archetype Integrity.
+    @Test func patrolMembersSpawnAtDoubleIntegrity() throws {
+        var sim = try Simulation.make(seed: 1)
+        _ = Self.step(&sim) // members spawn in the first tick's spawn phase
+        let stats = sim.state.content.standardEnemies
+        let members = sim.state.enemies.filter { $0.patrol != nil }
+        #expect(!members.isEmpty)
+        for m in members { #expect(m.integrity == stats[m.archetype]!.hp * 2, "\(m.archetype)") }
     }
 
     /// The limit is inclusive at 240, applies only while unaware, and only to
     /// patrol members.
     @Test func patrolTargetingLimitIsInclusiveAndUnawareOnly() throws {
-        let player = PlayerBody(id: EntityID(1), spawn: VecI(x: 0, y: 0), integrity: 150)
+        var player = PlayerBody(id: EntityID(1), spawn: VecI(x: 0, y: 0), integrity: 150)
+        // D-093: moving toward the member (+x); a standing Player chooses none.
+        player.velocity = VecI(x: 4, y: 0).asQ8
         func body(_ x: Int, awareness: EnemyAwareness, patrol: Bool) -> EnemyBody {
             var e = EnemyBody(
                 id: EntityID(9), archetype: .fogAnalyticsCloud, position: VecI(x: x, y: 0).asQ8, velocity: .zero,
@@ -290,6 +322,9 @@ struct TransitPatrolTests {
         #expect(!chosen(body(241, awareness: .unaware, patrol: true)))
         #expect(chosen(body(400, awareness: .aware, patrol: true)), "an alerted member is a normal target")
         #expect(chosen(body(400, awareness: .unaware, patrol: false)), "encounter enemies keep the 512 reach")
+        player.velocity = .zero
+        #expect(!chosen(body(200, awareness: .unaware, patrol: true)), "a standing Player does not choose a patrol member")
+        #expect(chosen(body(200, awareness: .unaware, patrol: false)), "encounter enemies need no heading")
     }
 
     // MARK: - Integrity (D-092)
@@ -338,10 +373,12 @@ struct TransitPatrolTests {
         let members = sim.state.enemies.filter { $0.patrol != nil }
         #expect(members.count == 3)
         sim.testing_emptyCivicPool()
-        for member in members { sim.testing_injectPulseHitting(position: member.position) }
+        // D-093: members spawn at 200% (60). The ambush (x3) is 30 and the next
+        // hit in the same tick 10, so three pulses each (30 + 10 + 10) leave 10;
+        // a fourth (10) kills. Four pulses per member, one tick.
+        for member in members { for _ in 0..<4 { sim.testing_injectPulseHitting(position: member.position) } }
         let before = sim.state.encounters
         let result = Self.step(&sim)
-        // Every member is a 30-Integrity archetype, so each ambush (x3) kills.
         #expect(result.events.filter { $0.type == .entityDied }.count == 3)
         #expect(!result.events.contains { $0.type == .mobEncounterCompleted || $0.type == .waveStarted })
         #expect(sim.state.encounters == before)

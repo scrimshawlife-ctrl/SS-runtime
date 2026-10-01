@@ -50,6 +50,7 @@ public enum PatrolSystem {
         index: Int,
         id: EntityID,
         stats: StandardEnemyStats,
+        integrityPercent: Int = 100,
         tick: UInt64,
         nextSpecialTick: UInt64
     ) -> EnemyBody {
@@ -60,7 +61,8 @@ public enum PatrolSystem {
             archetype: route.archetype,
             position: first.asQ8,
             velocity: .zero,
-            integrity: stats.hp,
+            // D-093: tough enough that one ambush wounds but does not kill.
+            integrity: stats.hp * integrityPercent / 100,
             radius: stats.radius,
             speedUnitsPerSecond: stats.speed,
             contactDps: stats.contactDps,

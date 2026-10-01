@@ -1043,6 +1043,7 @@ public struct Simulation: Equatable, Sendable {
                     index: index,
                     id: id,
                     stats: stats,
+                    integrityPercent: state.content.patrol.integrityPercent,
                     tick: tick,
                     nextSpecialTick: Self.firstSpecialTick(route.archetype, spawnTick: tick)
                 )

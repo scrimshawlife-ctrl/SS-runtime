@@ -5,7 +5,7 @@
     {
       "id": "RM-001",
       "fixture": "replay-smoke-001",
-      "expectedFinalDigest": "42b17faae7168baca317f0a8216394d4541054c0896d1ede245c38997aa765db",
+      "expectedFinalDigest": "878cf0f1137a66a24976c7b1e3bd91d3a79340af0162890284d51a08b841b6b4",
       "tripleRunRequired": true
     }
   ]

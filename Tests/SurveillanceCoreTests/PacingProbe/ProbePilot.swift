@@ -266,7 +266,7 @@ struct ProbePilot {
         let holdingExtraction = snapshot.extractionArmed && arena.extraction.aabb.contains(position)
         let solids = Array(zip(snapshot.solidIds, snapshot.solids)).map { (id: $0.0, box: $0.1) }
         cones = snapshot.patrolCones
-        let contacts = snapshot.enemies.map { enemy -> (point: VecI, d: Int, clear: Bool, unaware: Bool, reach: Int) in
+        let allContacts = snapshot.enemies.map { enemy -> (point: VecI, d: Int, clear: Bool, unaware: Bool, reach: Int) in
             let point = VecI(x: enemy.x, y: enemy.y)
             let clear = Self.clearShot(from: position, to: point, solids: solids)
             // The elite and the boss hit hardest on contact; keep them further off
@@ -275,6 +275,12 @@ struct ProbePilot {
             let reach = enemy.unaware && isPatrolMember(point) ? Self.patrolFireRange : Self.fireRange
             return (point, distance(position, point) - (heavy ? Self.heavyMargin : 0), clear, enemy.unaware, reach)
         }
+        // D-093: the stealth pilot slips past the patrol rather than picking it
+        // off (one ambush no longer kills a member). Unaware patrol members are
+        // cones to avoid, never targets; it never moves toward one on purpose.
+        let contacts = profile.cameraStyle == .stealth
+            ? allContacts.filter { !($0.unaware && isPatrolMember($0.point)) }
+            : allContacts
         let nearest = contacts.min { $0.d < $1.d }
         // D-089: an unaware enemy holds and never attacks, so the stealth
         // pilot does not flee it; it keeps out of its sight instead (below).
@@ -613,9 +619,10 @@ struct ProbePilot {
         snapshot: PresentationSnapshot,
         solids: [(id: String, box: AABB)]
     ) -> VecI? {
-        let enemies = snapshot.enemies.map { VecI(x: $0.x, y: $0.y) }
-        // D-092: an unaware patrol member is only in reach within 240.
-        let reaches = snapshot.enemies.map { $0.unaware && isPatrolMember(VecI(x: $0.x, y: $0.y)) ? Self.patrolFireRange : Self.fireRange }
+        // D-093: the stealth pilot never sets up an ambush on the patrol.
+        let targets = snapshot.enemies.filter { !($0.unaware && isPatrolMember(VecI(x: $0.x, y: $0.y))) }
+        let enemies = targets.map { VecI(x: $0.x, y: $0.y) }
+        let reaches = targets.map { _ in Self.fireRange }
         let unaware = snapshot.enemies.filter { $0.unaware && !isPatrolMember(VecI(x: $0.x, y: $0.y)) }
             .map { VecI(x: $0.x, y: $0.y) }
         // Keyed on grid cells, so a drifting or patrolling enemy does not

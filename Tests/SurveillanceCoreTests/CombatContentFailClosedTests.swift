@@ -21,7 +21,7 @@ struct CombatContentFailClosedTests {
             .autonomousInformant: 30, .victorianVendor: 90
         ])
         #expect(content.patrol == PatrolSpec(
-            speedPercent: 40, dwellTicks: 30, sightUnits: 240, sightHalfAngleMilliDegrees: 45_000, arrivalUnits: 4
+            integrityPercent: 200, speedPercent: 40, dwellTicks: 30, sightUnits: 240, sightHalfAngleMilliDegrees: 45_000, arrivalUnits: 4
         ))
         #expect(content.player.damageTakenPercent == 50)
         #expect(content.player.integrity == 150)
@@ -102,13 +102,14 @@ struct CombatContentFailClosedTests {
     @Test func patrolBlockFailsClosed() {
         #expect(Self.mutated { $0["patrol"] = nil } == .missingField("patrol"))
         #expect(Self.mutated { $0["patrol"] = [40] } == .wrongType("patrol"))
-        for key in ["speedPercent", "dwellTicks", "sightUnits", "sightHalfAngleMilliDegrees", "arrivalUnits"] {
+        for key in ["integrityPercent", "speedPercent", "dwellTicks", "sightUnits", "sightHalfAngleMilliDegrees", "arrivalUnits"] {
             #expect(Self.withKey("patrol", key, nil) == .missingField("patrol.\(key)"), "\(key)")
             #expect(Self.withKey("patrol", key, "1") == .wrongType("patrol.\(key)"), "\(key)")
             #expect(Self.withKey("patrol", key, true) == .wrongType("patrol.\(key)"), "\(key)")
             #expect(Self.withKey("patrol", key, 1.5) == .wrongType("patrol.\(key)"), "\(key)")
         }
         #expect(Self.withKey("patrol", "speedPercent", 0) == .wrongType("patrol.speedPercent"))
+        #expect(Self.withKey("patrol", "integrityPercent", 0) == .wrongType("patrol.integrityPercent"))
         #expect(Self.withKey("patrol", "dwellTicks", -1) == .wrongType("patrol.dwellTicks"))
         #expect(Self.withKey("patrol", "sightHalfAngleMilliDegrees", 44_000) == .wrongType("patrol.sightHalfAngleMilliDegrees"))
         #expect(Self.withKey("patrol", "sightRange", 240) == .wrongType("patrol.sightRange"))
