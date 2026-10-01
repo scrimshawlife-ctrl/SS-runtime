@@ -8,7 +8,10 @@ enum FeelPassFixtures {
     /// pinned rules, tried in order. More than one, so a rules change that
     /// turns one into a failure does not silently remove the RS-022 evidence:
     /// the test fails loudly only if none succeeds.
-    static let successSeeds: [UInt64] = [3, 5, 2, 4, 6, 7, 8]
+    ///
+    /// Measured on `ss-rules-004` (debug, about 100 s a run): 5 succeeds with
+    /// SURGICAL and SWIFT, 4 and 8 with BLACKOUT and SWIFT, 2 and 6 with SWIFT.
+    static let successSeeds: [UInt64] = [5, 4, 8, 2, 6]
 
     struct Run: Sendable {
         var seed: UInt64
@@ -25,7 +28,17 @@ enum FeelPassFixtures {
         return nil
     }()
 
-    struct PresentedRun {
+    /// The piloted success presented live, and the same commands bare;
+    /// computed once and shared by RS-022 and the presentation-only proof.
+    static let pilotedPresented: (live: PresentedRun, bare: (state: WorldState, digests: [String]))? = {
+        guard let run = pilotedSuccess,
+              let live = try? livePresenterRun(seed: run.seed, commands: run.commands),
+              let bare = try? bareRun(seed: run.seed, commands: run.commands)
+        else { return nil }
+        return (live, bare)
+    }()
+
+    struct PresentedRun: @unchecked Sendable {
         var state: WorldState
         var medals: [Medal]
         var digests: [String]
@@ -117,8 +130,7 @@ struct FeelPassPresentationOnlyTests {
     /// A full piloted success, to the terminal tick, with medals earned.
     @Test func pilotedSuccessDigestAndReceiptAreUnchanged() throws {
         let run = try #require(FeelPassFixtures.pilotedSuccess)
-        let bare = try FeelPassFixtures.bareRun(seed: run.seed, commands: run.commands)
-        let presented = try FeelPassFixtures.livePresenterRun(seed: run.seed, commands: run.commands)
+        let (presented, bare) = try #require(FeelPassFixtures.pilotedPresented)
         #expect(bare.state.outcome == .success)
         #expect(presented.digests == bare.digests)
         #expect(presented.state.terminalDigest == bare.state.terminalDigest)

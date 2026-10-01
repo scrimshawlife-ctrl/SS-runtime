@@ -10,7 +10,7 @@ import SurveillanceCore
 /// Flash; under Reduced Motion it does not expand.
 enum TakedownRing {
     static let name = "takedown-ring"
-    static let radius: CGFloat = 34
+    static let radius: CGFloat = 44
     static let seconds: TimeInterval = 0.35
 
     static func make(at point: CGPoint, settings: PresentationVFXSettings) -> SKNode {
@@ -24,7 +24,7 @@ enum TakedownRing {
         let ring = SKShapeNode(circleOfRadius: radius)
         ring.fillColor = .clear
         ring.strokeColor = settings.reducedFlash ? SKColor(white: 0.62, alpha: 0.9) : SKColor(white: 0.92, alpha: 0.95)
-        ring.lineWidth = 2
+        ring.lineWidth = 3
         node.addChild(ring)
         if settings.reducedMotion {
             node.setScale(1)

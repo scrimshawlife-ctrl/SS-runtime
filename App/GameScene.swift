@@ -234,6 +234,7 @@ final class GameScene: SKScene {
     /// `-SSHoldIntro <frame>`: hold the intro at that frame for a screenshot.
     private var introHoldFrame: Int?
     private var feelHoldArmed = false
+    private var feelHoldSeen = 0
     private var nearMissLogged = false
 #endif
 #if DEBUG
@@ -790,7 +791,7 @@ final class GameScene: SKScene {
     }
 
 #if DEBUG
-    /// `-SSHoldOnFeel <takedown|nearMiss>:<frames>` freezes the view that many
+    /// `-SSHoldOnFeel <takedown|nearMiss>:<frames>[:<nth>]` freezes the view that many
     /// frames after the first takedown or the first lit near-miss edge, so a
     /// screenshot can catch it. Evidence harness only; both are logged.
     private func noteFeelEvidence() {
@@ -812,6 +813,10 @@ final class GameScene: SKScene {
         let frames = parts.count > 1 ? Int(parts[1]) ?? 0 : 0
         let hit = (kind == "takedown" && !feel.lastTakedowns.isEmpty) || (kind == "nearMiss" && !feel.nearMiss.isEmpty)
         guard hit else { return }
+        // An optional third part holds on the Nth occurrence instead.
+        feelHoldSeen += 1
+        let nth = parts.count > 2 ? Int(parts[2]) ?? 1 : 1
+        guard feelHoldSeen >= nth else { return }
         feelHoldArmed = true
         Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(max(0, frames)) * 16_666_667)

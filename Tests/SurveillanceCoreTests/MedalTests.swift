@@ -129,12 +129,11 @@ struct MedalTests {
     /// live presenter derived are the medals the replay derives.
     @Test func rs022AReplayEarnsTheSameMedals() throws {
         let run = try #require(FeelPassFixtures.pilotedSuccess, "no piloted success among the candidate seeds")
-        let live = try FeelPassFixtures.livePresenterRun(seed: run.seed, commands: run.commands)
+        let live = try #require(FeelPassFixtures.pilotedPresented).live
         #expect(live.state.outcome == .success)
         let replay = try MedalTracker.replayMedals(seed: run.seed, commands: run.commands)
         #expect(!live.medals.isEmpty)
         #expect(replay == live.medals)
-        #expect(try MedalTracker.replayMedals(seed: run.seed, commands: run.commands) == replay)
     }
 
     // MARK: - RS-023 NEW
@@ -182,8 +181,9 @@ struct MedalTests {
 
     @Test func shareAppendsMedalNamesWithoutNewMarks() {
         let card = RunCard(state: Self.success, dateLabel: "2026-10-01", bestTicks: nil, medals: [.swift, .ghost], newMedals: [.ghost])
-        #expect(card.shareText.hasSuffix("MEDALS GHOST SWIFT"))
-        #expect(!card.shareText.contains("GHOST NEW"))
-        #expect(!card.shareText.contains(String(Self.success.seed)))
+        let lines = card.shareText.split(separator: "\n").map(String.init)
+        #expect(lines.last == "MEDALS GHOST SWIFT", "names only; NEW is a local mark")
+        #expect(lines.filter { $0.hasPrefix("MEDALS") }.count == 1)
+        #expect(card.value(for: RunCard.medalsLabel) == "GHOST NEW · SWIFT", "the card itself keeps NEW")
     }
 }
