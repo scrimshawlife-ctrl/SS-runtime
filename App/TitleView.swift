@@ -60,14 +60,16 @@ struct TitleView: View {
                 // a title left open across midnight UTC re-labels itself here
                 // and Start still plays the date it is pressed on.
                 TimelineView(.everyMinute) { context in
-                    Text(DailyRun.titleLabel(for: DailyRun.Day(utc: context.date)))
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                        .kerning(1.5)
-                        .foregroundStyle(Color(white: 0.92))
-                        .padding(.top, 12)
-                        .accessibilityLabel(
-                            "Daily run, \(DailyRun.Day(utc: context.date).label)"
-                        )
+                    let day = DailyRun.Day(utc: context.date)
+                    VStack(spacing: 6) {
+                        Text(DailyRun.titleLabel(for: day))
+                            .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                            .kerning(1.5)
+                            .foregroundStyle(Color(white: 0.92))
+                            .accessibilityLabel("Daily run, \(day.label)")
+                        TitleDailyDetail(day: day)
+                    }
+                    .padding(.top, 12)
                 }
 
                 Spacer(minLength: 24)
@@ -121,5 +123,53 @@ private struct TitleButton: View {
                 .onChanged { _ in pressed = true }
                 .onEnded { _ in pressed = false }
         )
+    }
+}
+
+/// Under the Daily Run label: the day's headline and look (`run-shell.md`
+/// § 10.3, D-099) and today's five medals as the goal list (§ 12, D-095).
+/// Earned medals are filled, the rest outlined, so the state is carried by
+/// shape as well as colour. This is the only run history the title shows.
+struct TitleDailyDetail: View {
+    let day: DailyRun.Day
+
+    private var flavour: DailyFlavour { DailyFlavour(day: day) }
+
+    /// Today's earned set. The seed is derived exactly as Start derives it;
+    /// a stored record from another seed or Replay Identity counts for
+    /// nothing, so a new day starts empty.
+    private var earned: Set<Medal> {
+        guard let run = try? DailyRun(day: day) else { return [] }
+        return MedalStore.earned(seed: run.seed)
+    }
+
+    var body: some View {
+        let goals = MedalGoal.goals(earned: earned)
+        VStack(spacing: 6) {
+            Text(flavour.headline)
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .kerning(1.2)
+                .foregroundStyle(Color(red: 1.0, green: 0.86, blue: 0.55))
+                .accessibilityLabel("Headline: \(flavour.headline.capitalized)")
+            Text(flavour.titleDetail)
+                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                .kerning(1.2)
+                .foregroundStyle(Color(white: 0.80))
+                .accessibilityLabel("Today's city: \(flavour.grade.rawValue.capitalized), fog \(flavour.fogPercent) percent")
+            HStack(spacing: 12) {
+                ForEach(goals, id: \.medal) { goal in
+                    HStack(spacing: 4) {
+                        Image(systemName: goal.earned ? "seal.fill" : "seal")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(goal.medal.name)
+                            .font(.system(size: 10, weight: goal.earned ? .bold : .regular, design: .monospaced))
+                    }
+                    .foregroundStyle(goal.earned ? Color(red: 0.55, green: 0.85, blue: 0.70) : Color(white: 0.70))
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(goal.medal.name.capitalized), \(goal.earned ? "earned" : "not yet earned")")
+                }
+            }
+            .padding(.top, 2)
+        }
     }
 }

@@ -169,6 +169,18 @@ final class VFXRenderer {
         }
     }
 
+    /// D-097 takedown (animation.md § 8c): a 70 ms hit-stop and a brief
+    /// desaturating ring at each target. Call after the step that killed
+    /// them, before redraw; a dead target is placed where it was last drawn.
+    func takedown(targets: [EntityID]) {
+        guard !targets.isEmpty else { return }
+        hitStop.admit(ms: StealthTexture.takedownHitStopMs)
+        for id in targets {
+            guard let point = knownPositions[id] else { continue }
+            worldLayer.addChild(TakedownRing.make(at: point, settings: settings))
+        }
+    }
+
     /// Per unfrozen frame, after the world is drawn: expire effects and run
     /// the ones that follow live state.
     func render(_ snap: PresentationSnapshot) {
