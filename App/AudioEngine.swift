@@ -63,6 +63,10 @@ final class AudioEngine {
     private let deliveredPaths: [String: String]
 
     private(set) var missingCueIds: Set<String> = []
+    /// D-097 pitched voice, created on first use.
+    private lazy var pitchedVoice = PitchedVoice()
+    /// Pitched cues played so far (D-097 evidence and tests).
+    private(set) var pitchedCuesPlayed: [(audioId: String, cents: Int)] = []
 
     init() {
         deliveredPaths = (try? AssetCatalog.bundled())?.deliveredAudioPaths ?? [:]
@@ -105,6 +109,13 @@ final class AudioEngine {
             fire(cue.haptic)
         }
         setMusic(projection.musicState, bed: projection.musicBedAssetId)
+    }
+
+    /// A cue the presentation raises itself (the D-098 intro chirps): played
+    /// and felt like a projected cue, outside any tick.
+    func playPresentationCue(_ cue: ProjectedCue) {
+        play(cue)
+        fire(cue.haptic)
     }
 
     // MARK: - Network Blackout drop
@@ -161,6 +172,12 @@ final class AudioEngine {
         guard settings.effectsEnabled else { return }
         guard let template = player(for: cue.audioId) else {
             missingCueIds.insert(cue.audioId)
+            return
+        }
+        // D-097: a pitched cue (the takedown) takes the pitch-shifting voice.
+        if cue.pitchCents != 0, let url = template.url {
+            pitchedCuesPlayed.append((cue.audioId, cue.pitchCents))
+            pitchedVoice.play(url: url, cents: cue.pitchCents, volume: mix.master * mix.effects)
             return
         }
         // A fresh player per voice: AVAudioPlayer cannot overlap itself.

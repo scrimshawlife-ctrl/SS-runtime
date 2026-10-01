@@ -277,16 +277,17 @@ final class HUDRenderer {
     }
 
     private func drawObjectives(_ snap: PresentationSnapshot, _ projector: HUDProjector) {
-        label(
+        // D-098: an encounter label appears when its encounter activates.
+        if let objectiveCopy { label(
             key: "combat-objective",
-            text: snap.combatObjectiveCopy,
+            text: objectiveCopy,
             at: projector.sceneCentre(of: rect(.combatObjective, projector)),
             size: 10,
             colour: HUDPalette.text,
             alignment: .left,
             leftEdge: projector.sceneCentre(of: rect(.combatObjective, projector)).x
                 - projector.sceneLength(points: rect(.combatObjective, projector).width) / 2
-        )
+        ) }
         // Camera counter stays hidden until first Camera damage.
         if snap.cameraObjectiveVisible || pinCameraCounter {
             let mapped = rect(.cameraObjective, projector)
@@ -407,9 +408,13 @@ final class HUDRenderer {
         }
     }
 
+    /// The card shows a safety message (Lockdown, Extraction) when one is
+    /// up; otherwise the one D-098 tutorial line `TutorialLineQueue` chose.
     private func drawTutorial(_ snap: PresentationSnapshot, _ projector: HUDProjector) {
-        guard let copy = snap.tutorialCopy, !copy.isEmpty else { return }
-        guard tutorialsEnabled || snap.tutorialCopyIsSafetyMessage else { return }
+        let candidate = snap.tutorialCopyIsSafetyMessage
+            ? snap.tutorialCopy
+            : (tutorialsEnabled ? tutorialLine : nil)
+        guard let copy = candidate, !copy.isEmpty else { return }
         let mapped = rect(.tutorialCard, projector)
         let centre = projector.sceneCentre(of: mapped)
         let width = projector.sceneLength(points: mapped.width)
@@ -484,11 +489,15 @@ final class HUDRenderer {
     /// `UNSEEN ENEMIES HOLD • STRIKE FIRST FOR DOUBLE DAMAGE` (hud-tutorial.md,
     /// D-089) in the row `AwarenessHintProjector.referenceRect` names. A
     /// tutorial hint, so the tutorial setting hides it.
+    ///
+    /// D-098 moved that hint into the one-line tutorial queue, so this row
+    /// now carries the D-097 takedown streak (`TAKEDOWN ×3`), which is not a
+    /// tutorial and ignores the tutorial setting.
     private func drawAwarenessHint(_ projector: HUDProjector) {
-        guard tutorialsEnabled, let copy = awarenessHintCopy else { return }
+        guard let copy = takedownStreakCopy else { return }
         let mapped = projector.mapped(AwarenessHintProjector.referenceRect, hudScale: hudScale, informational: true)
         label(
-            key: "awareness-hint",
+            key: "takedown-streak",
             text: copy,
             at: projector.sceneCentre(of: mapped),
             size: 11,
@@ -630,8 +639,15 @@ final class HUDRenderer {
     var captions: [CaptionBoard.Entry] = []
     /// D-083 heat caption from `HeatCaptionProjector`, or nil. This only draws it.
     var reinforcementCopy: String?
-    /// D-089 tutorial copy from `AwarenessHintProjector`, or nil. This only draws it.
+    /// D-089 tutorial copy from `AwarenessHintProjector`, or nil. Since D-098
+    /// the hint reaches the screen through `tutorialLine`; kept for evidence.
     var awarenessHintCopy: String?
+    /// D-098: the combat objective copy, nil before its encounter activates.
+    var objectiveCopy: String?
+    /// D-098: the one tutorial line to draw this frame, or nil.
+    var tutorialLine: String?
+    /// D-097: `TAKEDOWN ×n`, or nil.
+    var takedownStreakCopy: String?
     /// camera-destruction.md: the Camera counter may be pinned through settings.
     var pinCameraCounter = false
     /// hud-tutorial-001: "Tutorial completion is a local setting." It governs
@@ -771,9 +787,21 @@ final class HUDRenderer {
                 text: row.value,
                 at: projector.scenePoint(fromPoints: CGPoint(x: panel.maxX - inset, y: y)),
                 size: 12,
-                colour: row.value == "NEW BEST" ? HUDPalette.accolade : HUDPalette.text,
+                colour: row.value == "NEW BEST" || (row.label == RunCard.medalsLabel && row.value.contains("NEW"))
+                    ? HUDPalette.accolade
+                    : HUDPalette.text,
                 alignment: .right
             )
+            // § 12: five medals, each possibly `NEW`, can outgrow the row;
+            // shrink that one value to fit beside its label.
+            if row.label == RunCard.medalsLabel,
+               let value = nodes["terminal-card-value-\(index)"] as? SKLabelNode
+            {
+                let room = projector.sceneLength(points: Int(panel.width - inset * 2) - 64)
+                while value.frame.width > room, value.fontSize > 6 {
+                    value.fontSize -= 0.5
+                }
+            }
         }
 
         drawTerminalControl(

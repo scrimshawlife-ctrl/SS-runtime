@@ -257,9 +257,10 @@ public enum HUDLayout {
         terminalPanel(safeWidth: safeWidth, safeHeight: safeHeight).y + 68 + index * terminalCardRowHeight
     }
 
-    /// Room for every § 11 row: date, time, cameras, peak detection, ghost.
-    public static let terminalCardRowCapacity = 5
-    public static let terminalCardRowHeight = 22
+    /// Room for every § 11 row (date, time, cameras, peak detection, ghost)
+    /// and the § 12 medals row.
+    public static let terminalCardRowCapacity = 6
+    public static let terminalCardRowHeight = 20
     public static let terminalCardInset = 48
 
     public static let terminalPanelWidth = 460

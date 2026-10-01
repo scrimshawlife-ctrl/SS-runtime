@@ -61,6 +61,15 @@ public struct HitStopClock: Equatable, Sendable {
         remainingFrames = max(remainingFrames, frames)
     }
 
+    /// Starts (or lengthens) a freeze of `ms`, for a beat no recipe carries:
+    /// the D-097 takedown's 70 ms. Freezes still never stack.
+    public mutating func admit(ms: Int) {
+        let frames = PresentationFrameRate.framesWithin(ms: ms)
+        guard frames > 0 else { return }
+        if remainingFrames == 0 { freezes += 1 }
+        remainingFrames = max(remainingFrames, frames)
+    }
+
     /// Call once per display frame, before stepping. True means this frame is
     /// frozen: do not step the simulation and do not redraw the world.
     public mutating func consumeFrame() -> Bool {

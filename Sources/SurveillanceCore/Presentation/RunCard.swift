@@ -14,6 +14,11 @@ public struct RunCard: Equatable, Sendable {
     public static let gameName = "Surveillance Survivor"
 
     public let rows: [Row]
+    /// § 12: the medals this run earned, in canonical order. Empty on failure.
+    public let medals: [Medal]
+    /// § 12: the earned medals that are new today.
+    public let newMedals: Set<Medal>
+    public static let medalsLabel = "MEDALS"
 
     /// - Parameters:
     ///   - state: the finished run.
@@ -24,7 +29,16 @@ public struct RunCard: Equatable, Sendable {
     ///   - storesBest: false when this run cannot become the stored best (a
     ///     debug-seeded harness run), so the card never claims `NEW BEST` for
     ///     a run that was not stored.
-    public init(state: WorldState, dateLabel: String?, bestTicks: UInt64?, storesBest: Bool = true) {
+    ///   - medals: § 12, the medals this run earned (`MedalTracker`).
+    ///   - newMedals: the subset earned for the first time today.
+    public init(
+        state: WorldState,
+        dateLabel: String?,
+        bestTicks: UInt64?,
+        storesBest: Bool = true,
+        medals: [Medal] = [],
+        newMedals: Set<Medal> = []
+    ) {
         var rows: [Row] = []
         if let dateLabel {
             rows.append(Row(label: "DATE", value: dateLabel))
@@ -37,12 +51,33 @@ public struct RunCard: Equatable, Sendable {
         if let ghost = Self.ghostValue(state: state, bestTicks: bestTicks, storesBest: storesBest) {
             rows.append(Row(label: "GHOST", value: ghost))
         }
+        // § 12: a failed run shows no medal row (RS-021), and a success that
+        // earned none has nothing to list.
+        let earned = state.outcome == .success ? Medal.allCases.filter(medals.contains) : []
+        if !earned.isEmpty {
+            let value = earned
+                .map { newMedals.contains($0) ? "\($0.name) NEW" : $0.name }
+                .joined(separator: " · ")
+            rows.append(Row(label: Self.medalsLabel, value: value))
+        }
         self.rows = rows
+        self.medals = earned
+        self.newMedals = newMedals.intersection(earned)
     }
 
     /// § 11 share text: the game's name and the same rows, nothing else.
+    ///
+    /// § 12: Share appends the earned medal names, without the `NEW` marks,
+    /// which only mean something on this device.
     public var shareText: String {
-        ([Self.gameName] + rows.map { "\($0.label) \($0.value)" }).joined(separator: "\n")
+        var lines = [Self.gameName]
+        for row in rows where row.label != Self.medalsLabel {
+            lines.append("\(row.label) \(row.value)")
+        }
+        if !medals.isEmpty {
+            lines.append("\(Self.medalsLabel) " + medals.map(\.name).joined(separator: " "))
+        }
+        return lines.joined(separator: "\n")
     }
 
     public func value(for label: String) -> String? {
