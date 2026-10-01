@@ -1,6 +1,6 @@
 {
   "schemaVersion": "arena-manifest-001",
-  "arenaVersion": "civic-seam-arena-003",
+  "arenaVersion": "civic-seam-arena-004",
   "cellSizeUnits": 64,
   "gridSizeCells": {
     "width": 36,
@@ -949,11 +949,11 @@
     "leaveRule": "reset"
   },
   "viewport": {
-    "baselineWorldWidth": 896,
-    "baselineWorldHeight": 414,
-    "deadZoneWidth": 96,
-    "deadZoneHeight": 64,
-    "maximumLookAheadUnits": 96
+    "baselineWorldWidth": 704,
+    "baselineWorldHeight": 326,
+    "deadZoneWidth": 76,
+    "deadZoneHeight": 50,
+    "maximumLookAheadUnits": 76
   },
   "decorations": [
     {

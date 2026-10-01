@@ -23,15 +23,15 @@ public enum SpawnFairness {
         }
     }
 
+    /// The "current viewport" spawns must stay out of. `RulesViewport`, not the
+    /// presentation camera: D-094 shrank the camera's view, and this box keeps
+    /// the pre-D-094 size so spawn selection (and the digest) is unchanged. It
+    /// contains the camera's view, so offscreen here is offscreen on screen.
     public static func viewportBox(player: VecQ8, heading: VecQ8, bounds: ArenaManifest.Bounds) -> AABB {
-        let view = PresentationCamera.follow(
+        RulesViewport.box(
             player: VecI(x: player.x.unitsTruncated, y: player.y.unitsTruncated),
             heading: heading,
             bounds: bounds
-        )
-        return AABB(
-            center: view.center,
-            halfSize: VecI(x: PresentationCamera.visibleWidth / 2, y: PresentationCamera.visibleHeight / 2)
         )
     }
 
@@ -111,7 +111,7 @@ public enum SpawnFairness {
         return true
     }
 
-    /// Point-in-solid sockets. Pinned `civic-seam-arena-003.json` defects; do not rewrite coordinates.
+    /// Point-in-solid sockets. Pinned `civic-seam-arena-004.json` defects; do not rewrite coordinates.
     public static func socketsBlockedByPermanentSolids(_ manifest: ArenaManifest) -> [String] {
         let solids = manifest.permanentSolids
         var ids: [String] = []

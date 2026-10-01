@@ -167,7 +167,7 @@ public struct AwarenessSpec: Equatable, Sendable {
 
 /// `combat-content-004` `patrol` (D-091, `enemies-and-encounters.md`
 /// § Transit Patrol): how an unaware patrol member moves and sees. The routes
-/// themselves are arena data (`civic-seam-arena-003` `patrols`).
+/// themselves are arena data (`civic-seam-arena-004` `patrols`).
 public struct PatrolSpec: Equatable, Sendable {
     /// A member's spawn Integrity, as a percent of its archetype's (D-093).
     public var integrityPercent: Int

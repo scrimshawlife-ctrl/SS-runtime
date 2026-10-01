@@ -174,7 +174,7 @@ struct SpawnFairnessTests {
         let content = CombatContent.bundled()
         let blocked = SpawnFairness.socketsBlockedByPermanentSolids(arena)
         let leaked = SpawnFairness.socketsOutsideEncounterZone(arena, content: content)
-        // Pinned civic-seam-arena-003.json; do not rewrite coordinates.
+        // Pinned civic-seam-arena-004.json; do not rewrite coordinates.
         #expect(blocked == ["ma-02", "mb-02", "mc-08"])
         #expect(leaked == ["mb-01"])
     }

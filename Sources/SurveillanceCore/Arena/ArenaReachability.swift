@@ -357,13 +357,19 @@ public enum ArenaReachability {
         fieldOriginsInsideSolids(manifest).isEmpty
     }
 
+    /// `arena-layout.md` "Camera and viewport framing" (D-094, arena `-004`):
+    /// 704 × 326 visible, a 76 × 50 dead zone, 76 units of look-ahead. The
+    /// presentation camera carries the same numbers, so the manifest and the
+    /// camera cannot disagree without failing the arena load.
     public static func viewportMatchesContract(_ manifest: ArenaManifest) -> Bool {
         let view = manifest.viewport
-        return view.baselineWorldWidth == 896
-            && view.baselineWorldHeight == 414
-            && view.deadZoneWidth == 96
-            && view.deadZoneHeight == 64
-            && view.maximumLookAheadUnits == 96
+        return view.baselineWorldWidth == PresentationCamera.visibleWidth
+            && view.baselineWorldHeight == PresentationCamera.visibleHeight
+            && view.deadZoneWidth == PresentationCamera.deadZoneWidth
+            && view.deadZoneHeight == PresentationCamera.deadZoneHeight
+            && view.maximumLookAheadUnits == PresentationCamera.maxLookAhead
+            && PresentationCamera.visibleWidth == 704
+            && PresentationCamera.visibleHeight == 326
     }
 
     public static func diagonalSpine(_ manifest: ArenaManifest) -> Bool {

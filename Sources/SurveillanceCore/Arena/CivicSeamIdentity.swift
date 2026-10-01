@@ -1,4 +1,4 @@
-/// Civic Seam identity checks for T307/T308. Pinned `civic-seam-arena-003` coordinates are not rewritten.
+/// Civic Seam identity checks for T307/T308. Pinned `civic-seam-arena-004` coordinates are not rewritten.
 public enum CivicSeamIdentity {
     public static let zoneIdentities: [(id: String, name: String)] = [
         ("Z-01", "Residential Wedge"),

@@ -109,7 +109,7 @@ public struct Decoration: Equatable, Sendable, Codable {
     }
 }
 
-/// One Transit Patrol member (D-091, `civic-seam-arena-003` `patrols`): a
+/// One Transit Patrol member (D-091, `civic-seam-arena-004` `patrols`): a
 /// standard archetype and the closed loop of waypoints it walks while
 /// unaware. Decoded strictly, like the schema: every key required, no other
 /// key, integer coordinates.
@@ -202,7 +202,7 @@ public struct ArenaManifest: Equatable, Sendable, Codable {
     public var cameraSockets: [CameraSocket]
     public var extraction: ExtractionRegion
     public var viewport: ViewportSpec
-    /// D-091 Transit Patrol members. Required by `civic-seam-arena-003`.
+    /// D-091 Transit Patrol members. Required by `civic-seam-arena-004`.
     public var patrols: [PatrolRoute]
 
     public struct VecIWidthHeight: Equatable, Sendable, Codable {
@@ -225,7 +225,7 @@ public struct ArenaManifest: Equatable, Sendable, Codable {
     }
 
     public static func bundled() throws -> ArenaManifest {
-        let data = BundledResource.data(name: "civic-seam-arena-003", subdirectory: "contracts")
+        let data = BundledResource.data(name: "civic-seam-arena-004", subdirectory: "contracts")
         return try ArenaLoader.decodeAndValidate(data)
     }
 

@@ -454,27 +454,74 @@ public struct TutorialState: Equatable, Sendable {
     }
 }
 
+/// The world camera (`arena-layout.md` "Camera and viewport framing").
+///
+/// D-094 (arena `-004`) tightened the framing from 896 × 414 to 704 × 326
+/// world units, so every actor draws about 27% larger. Presentation only:
+/// the simulation's own view tests use `RulesViewport`, which keeps the
+/// pre-D-094 box so no rule changes.
 public struct PresentationCamera: Equatable, Sendable {
-    public static let visibleWidth = 896
-    public static let visibleHeight = 414
-    public static let deadZoneWidth = 96
-    public static let deadZoneHeight = 64
-    public static let maxLookAhead = 96
+    public static let visibleWidth = 704
+    public static let visibleHeight = 326
+    public static let deadZoneWidth = 76
+    public static let deadZoneHeight = 50
+    public static let maxLookAhead = 76
+    /// Look-ahead actually applied along the heading; within `maxLookAhead`.
+    public static let lookAhead = 48
 
     public var center: VecI
 
     public static func follow(player: VecI, heading: VecQ8, bounds: ArenaManifest.Bounds) -> PresentationCamera {
-        var look = 0
-        if heading != .zero {
-            look = min(maxLookAhead, 48)
-        }
+        PresentationCamera(
+            center: centre(
+                player: player,
+                heading: heading,
+                bounds: bounds,
+                width: visibleWidth,
+                height: visibleHeight
+            )
+        )
+    }
+
+    /// Follow arithmetic for a view of any size: look-ahead along the
+    /// heading's x sign, then clamped so the view stays inside the arena.
+    static func centre(player: VecI, heading: VecQ8, bounds: ArenaManifest.Bounds, width: Int, height: Int) -> VecI {
+        let look = heading != .zero ? min(maxLookAhead, lookAhead) : 0
         let dirX = heading.x.raw >= 0 ? 1 : -1
         var x = player.x + dirX * look
         var y = player.y
-        let halfW = visibleWidth / 2
-        let halfH = visibleHeight / 2
+        let halfW = width / 2
+        let halfH = height / 2
         x = min(max(x, bounds.minX + halfW), bounds.maxX - halfW)
         y = min(max(y, bounds.minY + halfH), bounds.maxY - halfH)
-        return PresentationCamera(center: VecI(x: x, y: y))
+        return VecI(x: x, y: y)
+    }
+
+    /// True when `point` lies inside the view centred on `center`.
+    public static func contains(_ point: VecI, center: VecI) -> Bool {
+        abs(point.x - center.x) <= visibleWidth / 2 && abs(point.y - center.y) <= visibleHeight / 2
+    }
+}
+
+/// The view box the simulation's rules test against: spawn fairness
+/// (`arena.md` § 8, "outside the current viewport") and the T1 tutorial's
+/// "Camera in view" trigger.
+///
+/// D-094 is presentation only and states that the viewport change touches
+/// no rule. These two tests are authoritative (they reach the digest), so
+/// they keep the pre-D-094 896 × 414 box rather than following the camera.
+/// The 704 × 326 view always lies inside this box (same follow, smaller
+/// half-sizes, both clamped to the arena), so a socket outside it is also
+/// outside what the player sees: the offscreen-spawn guarantee only gets
+/// stricter.
+public enum RulesViewport {
+    public static let width = 896
+    public static let height = 414
+
+    public static func box(player: VecI, heading: VecQ8, bounds: ArenaManifest.Bounds) -> AABB {
+        AABB(
+            center: PresentationCamera.centre(player: player, heading: heading, bounds: bounds, width: width, height: height),
+            halfSize: VecI(x: width / 2, y: height / 2)
+        )
     }
 }

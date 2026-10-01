@@ -225,14 +225,12 @@ public struct Simulation: Equatable, Sendable {
         state.tutorial.lockdownPreempts = state.exposure.lockdownEntered && state.tutorial.phase != .complete
         state.tutorial.extractionPreempts = tutorialExtractionPrompt()
         state.tutorial.notePresentedTick()
-        let view = PresentationCamera.follow(
+        // T1 "Camera in view" is tutorial state, which is authoritative, so it
+        // tests the rules' view box rather than the D-094 presentation camera.
+        let viewBox = RulesViewport.box(
             player: VecI(x: state.player.position.x.unitsTruncated, y: state.player.position.y.unitsTruncated),
             heading: state.player.facing,
             bounds: state.arena.boundsUnits
-        )
-        let viewBox = AABB(
-            center: view.center,
-            halfSize: VecI(x: PresentationCamera.visibleWidth / 2, y: PresentationCamera.visibleHeight / 2)
         )
         if state.cameras.contains(where: { viewBox.contains($0.position) }) {
             state.tutorial.noteCameraInViewport()
