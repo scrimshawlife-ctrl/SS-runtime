@@ -68,6 +68,38 @@ struct MedalTests {
 
     // MARK: - RS-019 SHADOW
 
+    /// Real events, not hand-built ones (the D-095 GHOST lesson): a run that
+    /// reaches M-A with the Transit Patrol never alerted earns `SHADOW`, and
+    /// the same run with the patrol alerted first does not. The probe pilot
+    /// never slips all three members (0 of 540 runs), so without this test
+    /// nothing would show the medal can be earned at all.
+    @Test func shadowIsEarnedFromARealRunThatSlipsThePatrol() throws {
+        for alertFirst in [false, true] {
+            var sim = try Simulation.make(seed: 1)
+            var tracker = MedalTracker()
+            var result = sim.step(command: .neutral(tick: 1))
+            tracker.notePatrol(sim.state)
+            tracker.ingest(result.events)
+            #expect(sim.state.enemies.contains { $0.patrol != nil })
+            if alertFirst {
+                // Surveillance (`tracked`) alerts every enemy, the patrol too.
+                sim.testing_setExposure(450)
+                result = sim.step(command: .neutral(tick: 2))
+                tracker.notePatrol(sim.state)
+                tracker.ingest(result.events)
+                #expect(result.events.contains { $0.type == .enemyAlerted })
+            }
+            let trigger = try #require(sim.state.arena.encounterTriggers.first { $0.encounterId == "M-A" })
+            sim.testing_setPlayerPosition(trigger.aabb.center)
+            result = sim.step(command: .neutral(tick: sim.state.tick + 1))
+            tracker.notePatrol(sim.state)
+            tracker.ingest(result.events)
+            #expect(tracker.mobAStarted, "M-A must have started for the test to mean anything")
+            #expect(tracker.patrolAlertedBeforeMobA == alertFirst)
+            #expect(tracker.medals(for: Self.success).contains(.shadow) == !alertFirst, "alertFirst \(alertFirst)")
+        }
+    }
+
     @Test func rs019PatrolAlertedBeforeMobALosesShadow() {
         let earned = Self.medals([[Self.alert(Self.patrolMember)], [Self.wave(.mobA)]])
         #expect(!earned.contains(.shadow))
