@@ -82,6 +82,15 @@ struct PacingProbe {
         /// ambush (included in `standardKills` and `ambushKills`).
         var patrolKills = 0
         var patrolAmbushKills = 0
+        /// Presentation cross-checks: each event-driven presentation tracker
+        /// fed this run's real events, beside the authoritative truth it
+        /// claims to reconstruct. A mismatch is an ordering defect like the
+        /// D-095 `GHOST` one (D-101).
+        var medals: [String] = []
+        var takedownsPresented = 0
+        var takedownsTruth = 0
+        var reinforcementsCaptioned = 0
+        var reinforcementsQueued = 0
 
         var seconds: Double { Double(ticks) / 60 }
         var damageTaken: Int { damageBySource.values.reduce(0, +) }
@@ -159,6 +168,12 @@ struct PacingProbe {
         var patrolAlertsByCause: [String: Int] = [:]
         var patrolKills = 0
         var patrolAmbushKills = 0
+        var medalTracker = MedalTracker()
+        var takedownTracker = TakedownTracker()
+        var firstHitTick: [EntityID: UInt64] = [:]
+        var takedownsTruth = 0
+        var reinforcementsCaptioned = 0
+        var reinforcementsQueued = 0
 
         while !sim.isTerminal, sim.state.tick < tickCeiling {
             let current = PresentationSnapshot(sim.state)
@@ -185,7 +200,21 @@ struct PacingProbe {
             }
             commands.append(command)
             let detectionBefore = sim.state.exposure.detectionState
+            let enemiesBefore = sim.state.enemies
             let result = sim.step(command: command)
+            // Cross-checks, fed exactly as GameSession feeds them.
+            medalTracker.notePatrol(sim.state)
+            medalTracker.ingest(result.events)
+            takedownTracker.ingest(events: result.events, before: enemiesBefore, after: sim.state.enemies)
+            reinforcementsCaptioned += HeatCaptionProjector.reinforcements(
+                events: result.events,
+                detection: sim.state.exposure.detectionState,
+                heat: sim.state.content.heat
+            )
+            for event in result.events where event.type == .waveStarted {
+                guard case .string(let encounter)? = event.payload["encounterId"] else { continue }
+                reinforcementsQueued += sim.state.encounters[encounter]?.queuedReinforcements ?? 0
+            }
             if sustained, !sim.isTerminal { sim.testing_setPlayerIntegrity(sim.state.player.maxIntegrity) }
 
             // D-089 measurement. Awareness moves to `struck` only in damage
@@ -213,6 +242,7 @@ struct PacingProbe {
                         if case .string(let cause)? = event.payload["cause"] { patrolAlertsByCause[cause, default: 0] += 1 }
                     }
                 case .entityDamaged:
+                    if let id = event.primaryEntityId, firstHitTick[id] == nil { firstHitTick[id] = event.tick }
                     guard let id = event.primaryEntityId, firstHitAmbush[id] == nil,
                           let enemy = sim.state.enemies.first(where: { $0.id == id }),
                           standard.contains(enemy.archetype) else { continue }
@@ -223,6 +253,9 @@ struct PacingProbe {
                           standard.contains(enemy.archetype) else { continue }
                     standardKills += 1
                     if firstHitAmbush[id] == true { ambushKills += 1 }
+                    // Truth for a takedown (animation.md § 8c): the ambush
+                    // hit itself kills, so death and first hit share a tick.
+                    if firstHitAmbush[id] == true, firstHitTick[id] == event.tick { takedownsTruth += 1 }
                     if enemy.patrol != nil {
                         patrolKills += 1
                         if firstHitAmbush[id] == true { patrolAmbushKills += 1 }
@@ -350,7 +383,12 @@ struct PacingProbe {
             patrolOutcomes: patrolOutcomes,
             patrolAlertsByCause: patrolAlertsByCause,
             patrolKills: patrolKills,
-            patrolAmbushKills: patrolAmbushKills
+            patrolAmbushKills: patrolAmbushKills,
+            medals: medalTracker.medals(for: sim.state).map(\.name),
+            takedownsPresented: takedownTracker.total,
+            takedownsTruth: takedownsTruth,
+            reinforcementsCaptioned: reinforcementsCaptioned,
+            reinforcementsQueued: reinforcementsQueued
         )
     }
 
@@ -403,6 +441,9 @@ struct PacingProbe {
             + "\"spawnedAwareBy\":\(map(r.spawnedAwareBy)),"
             + "\"patrolOutcomes\":\(map(r.patrolOutcomes)),\"patrolAlertsByCause\":\(map(r.patrolAlertsByCause)),"
             + "\"patrolKills\":\(r.patrolKills),\"patrolAmbushKills\":\(r.patrolAmbushKills),"
+            + "\"medals\":[\(r.medals.map { "\"\($0)\"" }.joined(separator: ","))],"
+            + "\"takedownsPresented\":\(r.takedownsPresented),\"takedownsTruth\":\(r.takedownsTruth),"
+            + "\"reinforcementsCaptioned\":\(r.reinforcementsCaptioned),\"reinforcementsQueued\":\(r.reinforcementsQueued),"
             + "\"waveHeat\":[\(r.waveHeat.map { "{\"wave\":\"\($0.wave)\",\"tick\":\($0.tick),\"state\":\"\($0.state.rawValue)\",\"added\":\($0.added),\"queued\":\($0.queued),\"authored\":\($0.authored),\"peakExposure\":\($0.peakExposureSincePreviousWave),\"camerasBefore\":\($0.camerasDestroyedBefore)}" }.joined(separator: ","))],"
             + "\"damageBySource\":\(map(r.damageBySource)),"
             + "\"bossDamageBySource\":\(map(r.bossDamageBySource)),"
