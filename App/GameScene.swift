@@ -243,6 +243,7 @@ final class GameScene: SKScene {
     private var introHoldFrame: Int?
     private var feelHoldArmed = false
     private var feelHoldSeen = 0
+    private var quietLostLogged = false
     private var nearMissLogged = false
 #endif
 #if DEBUG
@@ -802,9 +803,10 @@ final class GameScene: SKScene {
     }
 
 #if DEBUG
-    /// `-SSHoldOnFeel <takedown|nearMiss>:<frames>[:<nth>]` freezes the view that many
-    /// frames after the first takedown or the first lit near-miss edge, so a
-    /// screenshot can catch it. Evidence harness only; both are logged.
+    /// `-SSHoldOnFeel <takedown|nearMiss|quietLost>:<frames>[:<nth>]` freezes the
+    /// view that many frames after the first takedown, the first lit near-miss
+    /// edge, or the D-101 `QUIET APPROACH LOST` caption, so a screenshot can
+    /// catch it. Evidence harness only; all three are logged.
     private func noteFeelEvidence() {
         let feel = session.feel
         let tick = session.simulation.state.tick
@@ -815,6 +817,11 @@ final class GameScene: SKScene {
             nearMissLogged = true
             Self.autopilotLog.notice("near miss tick=\(tick, privacy: .public) ids=\(feel.nearMiss.map(\.decimalString).joined(separator: ","), privacy: .public)")
         }
+        let quietLost = session.quietFrame.caption == QuietApproachProjector.lostCopy
+        if quietLost, !quietLostLogged {
+            quietLostLogged = true
+            Self.autopilotLog.notice("quiet approach lost tick=\(tick, privacy: .public) state=\(self.session.simulation.state.exposure.detectionState.rawValue, privacy: .public)")
+        }
         guard !feelHoldArmed,
               let flag = ProcessInfo.processInfo.arguments.firstIndex(of: "-SSHoldOnFeel"),
               flag + 1 < ProcessInfo.processInfo.arguments.count
@@ -822,7 +829,9 @@ final class GameScene: SKScene {
         let parts = ProcessInfo.processInfo.arguments[flag + 1].split(separator: ":")
         let kind = parts.first.map(String.init) ?? ""
         let frames = parts.count > 1 ? Int(parts[1]) ?? 0 : 0
-        let hit = (kind == "takedown" && !feel.lastTakedowns.isEmpty) || (kind == "nearMiss" && !feel.nearMiss.isEmpty)
+        let hit = (kind == "takedown" && !feel.lastTakedowns.isEmpty)
+            || (kind == "nearMiss" && !feel.nearMiss.isEmpty)
+            || (kind == "quietLost" && quietLost)
         guard hit else { return }
         // An optional third part holds on the Nth occurrence instead.
         feelHoldSeen += 1
